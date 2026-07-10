@@ -1,0 +1,9 @@
+[project]
+name = "datacatalog"
+version = "1.0.0"
+description = "Streamlit App in Snowflake"
+requires-python = "~=3.11.0"
+
+dependencies = [
+  "streamlit[snowflake]~=1.52.0",
+]

@@ -1,0 +1,12 @@
+__pycache__
+.env
+.packages/
+.sqruff
+.venv/
+.vscode/
+app.zip
+dcm/manifest.yml
+streamlit/.streamlit/secrets.toml
+streamlit/output/
+streamlit/settings.py
+streamlit/snowflake.yml

@@ -1,0 +1,30 @@
+# このファイルはテンプレートです。実体の snowflake.yml は make が .env から生成します。
+# 値を変更する場合は snowflake.yml ではなく、このテンプレートと .env を編集してください。
+
+# yaml-language-server: $schema=.config/snowflake-schema.json
+# references: https://docs.snowflake.com/en/developer-guide/snowflake-cli/streamlit-apps/manage-apps/initialize-app
+
+definition_version: "2"
+entities:
+  app:
+    type: streamlit
+    identifier:
+      name: datacatalog
+      database: ${SIS_DATABASE_NAME}
+      schema: APP
+    title: ${STREAMLIT_TITLE_NAME}
+    comment: データカタログ
+    compute_pool: ${SIS_COMPUTE_POOL_NAME}
+    runtime_name: SYSTEM$ST_CONTAINER_RUNTIME_PY3_11
+    query_warehouse: ${SIS_WAREHOUSE_NAME}
+    external_access_integrations:
+      - ${EXTERNAL_ACCESS_PYPI_NAME}
+    main_file: streamlit_app.py
+    artifacts:
+      - .streamlit/config.toml
+      - components
+      - lib
+      - views
+      - pyproject.toml
+      - settings.py
+      - streamlit_app.py

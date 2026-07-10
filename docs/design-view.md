@@ -1,0 +1,295 @@
+# Design View
+
+画面設計書にあたる資料。
+
+## 画面設計の方針
+
+オブジェクト指向 UI デザイン（OOUI）の設計手法を採用する。
+
+## 画面要求
+
+### 必須要求
+
+- テーブル / ビュー / ダイナミック・テーブル / カラムに設定されている、以下の情報を参照できる
+  - 説明
+  - タグ
+  - 連絡先（※テーブル / ビュー / ダイナミック・テーブルのみ）
+- テーブル / ビュー / ダイナミック・テーブルの統計情報の参照できる
+- テーブル / ビュー / ダイナミック・テーブルの閲覧可能 Snowflake ユーザーを参照できる
+- 以下情報による、検索・フィルタリング表示が可能
+  - フリーワード
+  - 階層（データベース / スキーマ）
+  - オブジェクト種別
+  - タグ
+
+### 不要要求
+
+- データのプレビュー参照
+- データリネージの参照
+- データカタログ情報の更新機能
+
+## オブジェクト関係図
+
+以下をメインオブジェクトとして扱う。
+
+- データ資産_テーブル_ビュー_ダイナミックテーブル
+- カラム
+- ユーザー
+
+```mermaid
+flowchart
+
+  database["データベース"]
+  schema["スキーマ"]
+  asset[["データ資産_テーブル_ビュー_ダイナミックテーブル"]]
+  column[["カラム"]]
+  tag["タグ"]
+  contact["連絡先"]
+  role["ロール"]
+  user[["ユーザー"]]
+
+  database --- schema
+  schema --- asset
+  asset --- column
+
+  tag --- database
+  tag --- schema
+  tag --- asset
+  tag --- column
+
+  contact --- database
+  contact --- schema
+  contact --- asset
+
+  role --- role
+  role --- user
+
+  role --- database
+  role --- schema
+  role --- asset
+```
+
+`データ資産_テーブル_ビュー_ダイナミックテーブル` は、以降 `データ資産` として扱う。
+
+## メインオブジェクト関係図
+
+```mermaid
+classDiagram
+
+  class データ資産{
+    名前
+    オブジェクト種類
+    説明
+    階層_データベース
+    階層_スキーマ
+    タグ一覧
+    連絡先_スチュワード
+    連絡先_サポート
+    連絡先_承認者
+    連絡先_セキュリティとコンプライアンス
+    統計情報_行数
+    統計情報_データサイズ
+    付与ロール
+    PUBLIC参照可否
+  }
+
+  class カラム{
+    名前
+    表示順
+    データ型
+    説明
+    タグ一覧
+    制約_PRIMARY_KEY
+    制約_UNIQUE
+    制約_FOREIGN_KEY
+    制約_NOT_NULL
+    マスキングポリシー
+  }
+
+  class ユーザー{
+    名前
+    表示名
+    タイプ
+    ステータス
+    付与ロール
+  }
+
+  %% 関係
+  データ資産 "1" *-- "1..*" カラム
+  データ資産 "0..*" -- "0..*" ユーザー
+```
+
+各属性の表示データは [design-model.md](design-model.md) を参照。
+
+## ビューのナビゲーション
+
+```mermaid
+flowchart TD
+  c_asset["コレクション：データ資産"]
+  s_asset["シングル：データ資産"]
+  c_column["コレクション：カラム"]
+  s_column["シングル：カラム"]
+  c_user["コレクション：ユーザー"]
+  s_user["シングル：ユーザー"]
+
+  c_asset ---> s_asset
+  s_asset ---> c_column
+  s_asset ---> c_user
+  c_column ---> s_column
+  c_user ---> s_user
+  s_user ---> c_asset
+```
+
+## ルートナビゲーション項目
+
+- データ資産
+- ユーザー
+
+## ルートナビゲーション項目の配置先
+
+- `st.navigation` + `st.Page` によるナビゲーションに配置する
+  - ページ本体は `streamlit/views/`（ASCII 名のファイル）に置き、表示名（日本語）は
+    エントリポイント（`streamlit_app.py`）の `st.Page(..., title=...)` で与える
+  - `pages/` ディレクトリの自動ナビゲーションは用いない（ファイル名から日本語を排すため）
+  - NOTE: [st.navigation](https://docs.streamlit.io/develop/api-reference/navigation/st.navigation)
+
+## 作成画面 / 画面レイアウト
+
+原則、空状態や未設定値を表示する場合には、画面を崩さず、空欄で表示する。
+
+### page：データ資産
+
+[streamlit/settings.py](../streamlit/settings.py) の `DISPLAY_SCOPES` で定義されたデータベース / スキーマに所属するもののみ表示する。
+
+#### 画面レイアウト
+
+- 画面を left pane / main pane に分けて配置する
+- 比率は `1 : 3` とする
+  - `st.columns([1, 3])`
+
+#### 初期画面
+
+- left pane
+  - `コレクション：データ資産` 検索向け画面
+    - 設置する検索機能については [docs/design-search](design-search.md) を参照
+- main pane
+  - `コレクション：データ資産` 検索結果の一覧画面
+    - `st.dataframe`
+  - 初期状態では空欄表示（検索条件が未入力の間は一覧を出さない）
+    - 検索は入力に応じてインタラクティブに反映する（明示の「検索」ボタンは設けない）
+    - 検索入力を一括初期化する「入力をクリア」ボタンを設ける
+  - ソート順
+    1. 階層_データベース
+    2. 階層_スキーマ
+    3. 名前
+  - pagination
+    - 100 件単位
+
+#### 詳細画面
+
+- 表示「データ資産」のセルクリックにて、main pane を左右分割し、右側カラムにクリックした「データ資産」の詳細ペインを表示する
+  - 左右分割の比率は  `1 : 2` とする
+    - `st.columns([1, 2])`
+  - `st.dataframe(df, selection_mode="single-cell", on_select="rerun")` を標準とする
+    - `single-row`（左端チェック列）ではセル本文クリックで選択できないため、`single-cell` を採用し
+      `event.selection.cells`（`[(行位置, 列名)]`）の行位置から選択行 ID（`TABLE_ID` / `USER_NAME`）を得る
+    - 選択行 ID を `st.session_state` に保存してから詳細ペインを描画する
+  - 詳細ペインには「閉じる」ボタンを設け、選択を解除して一覧のみの表示へ戻せるようにする
+- 詳細ペイン上部
+  - `シングル：データ資産` の名前
+  - `シングル：データ資産` の説明
+  - `シングル：データ資産` の階層
+  - `シングル：データ資産` のオブジェクト種類
+  - `シングル：データ資産` のタグ
+  - `シングル：データ資産` の PUBLIC 参照可否
+- 詳細ペイン下部
+  - タブ (`st.tabs`) により表示情報を管理する
+    - タブ: カラム
+      - `コレクション：カラム` / `シングル：カラム`
+      - アコーディオン (`st.expander`) を利用して両情報を適切に表示する
+    - タブ: 連絡先
+      - `シングル：データ資産` の各連絡先
+    - タブ: 統計情報
+      - `シングル：データ資産` の統計情報
+    - タブ: ユーザー
+      - 以下情報をペアで表示
+        - 選択「データ資産」に直接付与されているロール
+        - 付与ロールより導かれる、閲覧可能な `コレクション：ユーザー`
+      - ロールを選択時、「データ資産」から「ユーザー」までのロール継承 graph をポップアップ (`st.dialog`) にて表示
+        - graph 描画は `st.graphviz_chart` を利用
+        - 選択した「データ資産」と「ユーザー」ペア間の経路のみを描画する
+      - [streamlit/settings.py](../streamlit/settings.py) の `IS_VISIBLE_ONLY_SELF_USER` が True の場合、表示ユーザーを Snowflake 接続ユーザーのみに絞って表示する
+
+### page：ユーザー
+
+#### 画面レイアウト
+
+- 画面を left pane / main pane に分けて配置する
+- 比率は `1 : 3` とする
+  - `st.columns([1, 3])`
+
+#### 初期画面
+
+- left pane
+  - `コレクション：ユーザー` 検索向け画面
+    - 設置する検索機能については [docs/design-search](design-search.md) を参照
+- main pane
+  - `コレクション：ユーザー` 検索結果の一覧画面
+    - `st.dataframe`
+  - 初期状態では全ユーザーを表示
+  - ソート順
+    1. 名前
+  - pagination
+    - 100 件単位
+
+#### 詳細画面
+
+- 表示「ユーザー」のセルクリックにて、main pane を左右分割し、右側カラムにクリックした「ユーザー」の詳細ペインを表示する
+  - 左右分割の比率は  `1 : 2` とする
+    - `st.columns([1, 2])`
+  - データ資産ページと同様に `st.dataframe(df, selection_mode="single-cell", on_select="rerun")` を標準とし、
+    `event.selection.cells` の行位置から選択行 ID（`USER_NAME`）を得て `st.session_state` に保存してから詳細ペインを描画する
+- 詳細ペイン上部
+  - `シングル：ユーザー` の名前
+  - `シングル：ユーザー` の表示名
+  - `シングル：ユーザー` のタイプ
+  - `シングル：ユーザー` のステータス
+- 詳細ペイン下部
+  - 以下情報をペアで表示
+    - `シングル：ユーザー` に直接付与されているロール
+    - 付与ロールより導かれる、閲覧可能な `コレクション：データ資産`
+  - ロールを選択時、「ユーザー」から「データ資産」までのロール継承 graph をポップアップ (`st.dialog`) にて表示
+    - graph 描画は `st.graphviz_chart` を利用
+    - 選択した「ユーザー」と「データ資産」ペア間の経路のみを描画する
+
+## 画面遷移図
+
+```Mermaid
+flowchart LR
+
+  asset["データ資産"]
+  user["ユーザー"]
+
+  asset --閲覧可能なユーザー一覧より選択時--> user
+  user --閲覧可能データ資産一覧より選択時--> asset
+```
+
+- `st.session_state` に「遷移先で選択させたい ID」を積んで `st.switch_page()` で移動する
+- `st.session_state` のキーは接頭辞で名前空間を分ける
+  - 例：`asset_selected_table_id` / `user_selected_name` / `search_*`
+
+## 配色
+
+- 標準カラーは Snowflake コーポレートカラー（水色 `#29B5E8`）に寄せる
+- `.streamlit/config.toml` の `[theme]`（`base = "light"` / `primaryColor = "#29B5E8"`）で指定する
+
+## 言語
+
+### UI 画面
+
+「日本語」で固定。
+
+### エラーメッセージ
+
+- main pane に、日本語のエラーメッセージ ([st.error](https://docs.streamlit.io/develop/api-reference/status/st.error#sterror)) を表示
+- traceback 等のシステム内部情報は表示しない

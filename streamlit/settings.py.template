@@ -1,0 +1,78 @@
+# このファイルはテンプレートです。実体の settings.py は make が .env から生成します。
+# 値を変更する場合は settings.py ではなく、このテンプレートと .env を編集してください。
+
+from typing import Annotated, TypedDict
+
+
+class CatalogLocation(TypedDict):
+    """カタログテーブル所属先のデータベース名 / スキーマ名"""
+
+    DATABASE_NAME: str  # カタログテーブルが所属するデータベース名
+    SCHEMA_NAME: str  # カタログテーブルが所属するスキーマ名
+
+
+CATALOG_LOCATION: CatalogLocation = {
+    "DATABASE_NAME": "${SIS_DATABASE_NAME}",
+    "SCHEMA_NAME": "CATALOG",
+}
+
+
+class DisplayScope(TypedDict):
+    """Streamlit App で公開するデータ資産のデータベース名 / スキーマ名"""
+
+    DATABASE_NAME: str  # 公開するデータベース名
+    SCHEMA_NAME: str  # 公開するスキーマ名
+
+
+DISPLAY_SCOPES: list[DisplayScope] = [
+    {
+        "DATABASE_NAME": "${SIS_DATABASE_NAME}",
+        "SCHEMA_NAME": "DATA_AD",
+    },
+    {
+        "DATABASE_NAME": "${SIS_DATABASE_NAME}",
+        "SCHEMA_NAME": "DATA_SALES",
+    },
+]
+
+
+class SelectableTagKey(TypedDict):
+    """検索画面のフィルターとして利用可能なタグ名"""
+
+    DATABASE_NAME: str  # タグが所属するデータベース名
+    SCHEMA_NAME: str  # タグが所属するスキーマ名
+    TAG_NAME: str  # タグ名
+
+
+SELECTABLE_TAG_KEYS: list[SelectableTagKey] = [
+    {
+        "DATABASE_NAME": "${SIS_DATABASE_NAME}",
+        "SCHEMA_NAME": "TAG",
+        "TAG_NAME": "DATA_CATEGORY",
+    },
+    {
+        "DATABASE_NAME": "${SIS_DATABASE_NAME}",
+        "SCHEMA_NAME": "TAG",
+        "TAG_NAME": "DATA_DOMAIN",
+    },
+    {
+        "DATABASE_NAME": "${SIS_DATABASE_NAME}",
+        "SCHEMA_NAME": "TAG",
+        "TAG_NAME": "PII",
+    },
+    {
+        "DATABASE_NAME": "${SIS_DATABASE_NAME}",
+        "SCHEMA_NAME": "TAG",
+        "TAG_NAME": "SENSITIVITY",
+    },
+]
+
+IsVisibleOnlySelfUser = Annotated[
+    bool,
+    """
+    Streamlit App 内で表示される、データ資産にアクセス可能ユーザーを
+    ログインユーザーのみに絞るかどうかの制御値
+    """,
+]
+
+IS_VISIBLE_ONLY_SELF_USER: IsVisibleOnlySelfUser = False

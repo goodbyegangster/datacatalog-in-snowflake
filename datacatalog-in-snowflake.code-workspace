@@ -1,0 +1,25 @@
+{
+  "folders": [
+    {
+      "name": "/",
+      "path": "."
+    },
+    {
+      "name": "docs",
+      "path": "./docs"
+    },
+    {
+      "name": "bootstrap",
+      "path": "./bootstrap"
+    },
+    {
+      "name": "dcm",
+      "path": "./dcm"
+    },
+    {
+      "name": "streamlit",
+      "path": "./streamlit"
+    },
+  ],
+  "settings": {}
+}

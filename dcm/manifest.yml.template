@@ -1,0 +1,34 @@
+# このファイルはテンプレートです。実体の manifest.yml は make が .env から生成します。
+# 値を変更する場合は manifest.yml ではなく、このテンプレートと .env を編集してください。
+
+# references: manifest.yml
+# https://docs.snowflake.com/ja/user-guide/dcm-projects/dcm-projects-files#create-a-manifest-file
+
+manifest_version: 2
+type: dcm_project
+default_target: dcm_sample
+
+# references: manifest.yml => target
+# https://docs.snowflake.com/ja/user-guide/dcm-projects/dcm-projects-files#project-targets
+
+targets:
+  dcm_sample:
+    account_identifier: ${SNOWFLAKE_ACCOUNT_IDENTIFIER}
+    project_name: ${DCM_DATABASE_NAME}.DCM.DCM_SAMPLE
+    project_owner: ${DCM_PROJECT_OWNER_ROLE_NAME}
+    templating_config: sis_sample
+
+# references: manifest.yml => templating
+# https://docs.snowflake.com/ja/user-guide/dcm-projects/dcm-projects-files#project-templating-configurations
+
+templating:
+  defaults:
+    snowflake_account_name: ${SNOWFLAKE_ACCOUNT_NAME}
+    project_owner_role: ${DCM_PROJECT_OWNER_ROLE_NAME}
+    wh_size: X-SMALL
+  configurations:
+    sis_sample:
+      external_access_pypi_name: ${EXTERNAL_ACCESS_PYPI_NAME}
+      sis_database_name: ${SIS_DATABASE_NAME}
+      sis_warehouse_name: ${SIS_WAREHOUSE_NAME}
+      sis_role_prefix: ${SIS_ROLE_PREFIX}
