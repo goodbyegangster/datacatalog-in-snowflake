@@ -5,5 +5,5 @@ description = "Streamlit App in Snowflake"
 requires-python = "~=3.11.0"
 
 dependencies = [
-  "streamlit[snowflake]~=1.52.0",
+  "streamlit[snowflake]~=1.58.0",
 ]
