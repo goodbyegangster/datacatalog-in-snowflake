@@ -1,6 +1,9 @@
 __pycache__
+.agents/
+.codex/
 .env
 .packages/
+.pytest_cache/
 .sqruff
 .venv/
 .vscode/

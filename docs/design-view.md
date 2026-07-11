@@ -164,8 +164,7 @@ flowchart TD
 #### 画面レイアウト
 
 - 画面を left pane / main pane に分けて配置する
-- 比率は `1 : 3` とする
-  - `st.columns([1, 3])`
+- 比率は `st.columns([1, 3])` とする
 
 #### 初期画面
 
@@ -189,8 +188,7 @@ flowchart TD
 #### 詳細画面
 
 - 表示「データ資産」のセルクリックにて、main pane を左右分割し、右側カラムにクリックした「データ資産」の詳細ペインを表示する
-  - 左右分割の比率は  `1 : 2` とする
-    - `st.columns([1, 2])`
+  - 左右分割の比率は  `st.columns([1, 2])` とする
   - `st.dataframe(df, selection_mode="single-cell", on_select="rerun")` を標準とする
     - `single-row`（左端チェック列）ではセル本文クリックで選択できないため、`single-cell` を採用し
       `event.selection.cells`（`[(行位置, 列名)]`）の行位置から選択行 ID（`TABLE_ID` / `USER_NAME`）を得る
@@ -213,27 +211,24 @@ flowchart TD
       - 表示列は「位置」「名前」「説明」「型」「PKEY」「NOT NULL」「UNIQUE」「外部 KEY」「マスキングポリシー」「タグ」とする
       - `マスキングポリシー` はポリシー名ではなく有無を boolean で表示する
     - タブ: 連絡先
-      - `シングル：データ資産` の各連絡先
-      - `st.dataframe` で表示する
+      - `st.dataframe` で`シングル：データ資産` の各連絡先を表示する
     - タブ: 統計情報
-      - `シングル：データ資産` の統計情報
-      - `st.dataframe` で表示する
+      - `st.dataframe` で `シングル：データ資産` の統計情報を表示する
     - タブ: ユーザー
-      - 以下情報をペアで表示
+      - 以下情報を`st.dataframe` で表示する
+        - `ASSET_VISIBILITY`テーブルより、表示中データ資産に閲覧可能な`USER_NAME`
         - 選択「データ資産」に直接付与されているロール
-        - 付与ロールより導かれる、閲覧可能な `コレクション：ユーザー`
       - ロールを選択時、「データ資産」から「ユーザー」までのロール継承 graph をポップアップ (`st.dialog`) にて表示
         - graph 描画は `st.graphviz_chart` を利用
         - 選択した「データ資産」と「ユーザー」ペア間の経路のみを描画する
-      - [streamlit/settings.py](../streamlit/settings.py) の `IS_VISIBLE_ONLY_SELF_USER` が True の場合、表示ユーザーを Snowflake 接続ユーザーのみに絞って表示する
+      - [streamlit/settings.py](../streamlit/settings.py) の `IS_VISIBLE_ONLY_SELF_USER` が True の場合、表示ユーザーを Snowflake ログインユーザーのみに絞って表示する
 
 ### page：ユーザー
 
 #### 画面レイアウト
 
 - 画面を left pane / main pane に分けて配置する
-- 比率は `1 : 3` とする
-  - `st.columns([1, 3])`
+- 比率は `st.columns([1, 3])` とする
 
 #### 初期画面
 
@@ -241,8 +236,7 @@ flowchart TD
   - `コレクション：ユーザー` 検索向け画面
     - 設置する検索機能については [docs/design-search](design-search.md) を参照
 - main pane
-  - `コレクション：ユーザー` 検索結果の一覧画面
-    - `st.dataframe`
+  - `st.dataframe`で`コレクション：ユーザー` 検索結果の一覧画面を表示する
   - 初期状態では全ユーザーを表示
   - ソート順
     1. 名前
@@ -252,8 +246,7 @@ flowchart TD
 #### 詳細画面
 
 - 表示「ユーザー」のセルクリックにて、main pane を左右分割し、右側カラムにクリックした「ユーザー」の詳細ペインを表示する
-  - 左右分割の比率は  `1 : 2` とする
-    - `st.columns([1, 2])`
+  - 左右分割の比率は  `st.columns([1, 2])` とする
   - データ資産ページと同様に `st.dataframe(df, selection_mode="single-cell", on_select="rerun")` を標準とし、
     `event.selection.cells` の行位置から選択行 ID（`USER_NAME`）を得て `st.session_state` に保存してから詳細ペインを描画する
 - 詳細ペイン上部
@@ -263,9 +256,9 @@ flowchart TD
     - `NULL` / 空は `PERSON` と同義として表示する
   - `シングル：ユーザー` のステータス（badge 表示）
 - 詳細ペイン下部
-  - 以下情報をペアで表示
+  - 以下情報を`st.dataframe` で表示する
+    - `ASSET_VISIBILITY`テーブルより、表示中ユーザーが閲覧可能な`ASSET_NAME`
     - `シングル：ユーザー` に直接付与されているロール
-    - 付与ロールより導かれる、閲覧可能な `コレクション：データ資産`
   - 直接付与ロールと閲覧可能データ資産のペア表示、および graph 表示ボタンの選択単位は Step 4 で再設計する
   - ロールを選択時、「ユーザー」から「データ資産」までのロール継承 graph をポップアップ (`st.dialog`) にて表示
     - graph 描画は `st.graphviz_chart` を利用
