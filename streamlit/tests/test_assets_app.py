@@ -9,8 +9,8 @@ import pandas as pd
 import pytest
 from streamlit.testing.v1 import AppTest
 
-from tests.fixtures import catalog_data
 from lib import catalog_fake, schema, state
+from tests.fixtures import catalog_data
 
 ASSETS_PAGE = Path(__file__).resolve().parents[1] / "views" / "assets.py"
 BASE_ASSET = catalog_data.assets().iloc[0].to_dict()
