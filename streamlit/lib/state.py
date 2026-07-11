@@ -12,15 +12,9 @@ from __future__ import annotations
 
 # --- ページ内で選択中の行 ID ---
 ASSET_SELECTED_TABLE_ID = "asset_selected_table_id"
+ASSET_SEARCH_FINGERPRINT = "asset_search_fingerprint"
+ASSET_PAGE = "asset_page"
 USER_SELECTED_NAME = "user_selected_name"
-
-# --- 検索ウィジェットのキー世代（クリア時に +1 して確実にリセットする） ---
-ASSET_SEARCH_NONCE = "asset_search_nonce"
-
-# --- 検索アコーディオンの開閉ラッチ（一度開いたら選択解除では閉じない。クリアで閉じる） ---
-ASSET_EXPANDED_HIERARCHY = "asset_expanded_hierarchy"
-ASSET_EXPANDED_TYPE = "asset_expanded_type"
-ASSET_EXPANDED_TAG = "asset_expanded_tag"
 
 # --- 検索ウィジェットの選択値（データ資産ページ） ---
 SEARCH_ASSET_FREEWORD = "search_asset_freeword"

@@ -13,7 +13,6 @@ import pandas as pd
 import streamlit as st
 
 from lib import catalog, schema, state
-from lib.connection import get_session
 
 
 def render_search() -> None:
@@ -107,10 +106,9 @@ def main() -> None:
 
     with main_pane:
         try:
-            session = get_session()
-            users = catalog.load_users(session)
-            visibility = catalog.load_asset_visibility(session)
-            edges = catalog.load_access_edges(session)
+            users = catalog.load_users()
+            visibility = catalog.load_asset_visibility()
+            edges = catalog.load_access_edges()
         except Exception:  # traceback は出さず日本語メッセージのみ表示する
             st.error("データの取得に失敗しました。接続設定やカタログテーブルの生成状況をご確認ください。")
             return

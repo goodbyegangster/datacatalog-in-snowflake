@@ -23,9 +23,21 @@ init-secrets-toml: ## .env から .streamlit/secrets.toml を生成する
 init-settings-py: ## .env から settings.py を生成する
 	bash ./scripts/init-settings-py.sh
 
+.PHONY: run_test
+run_test: ## テスト
+	uv run --group dev pytest
+
 .PHONY: run_local
 run_local: ## ローカルサーバーを起動
 	streamlit run streamlit_app.py
+
+.PHONY: run_fake
+run_fake: ## fake catalog でローカルサーバーを起動
+	CATALOG_DATA_MODE=fake streamlit run streamlit_app.py
+
+.PHONY: run_fake_headless
+run_fake_headless: ## fake catalog でローカルサーバーを起動 (headless mode)
+	CATALOG_DATA_MODE=fake streamlit run streamlit_app.py --server.headless true
 
 .PHONY: deploy
 deploy: ## Snowflake へデプロイ
