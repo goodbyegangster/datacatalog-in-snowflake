@@ -69,7 +69,7 @@ begin
         and a.schema_name   = gr.table_schema
         and a.asset_name    = gr.name
     where gr.deleted_on is null
-        and gr.granted_on in ('TABLE', 'VIEW', 'MATERIALIZED VIEW')
+        and gr.granted_on in ('TABLE', 'VIEW', 'MATERIALIZED VIEW', 'EXTERNAL TABLE')
         and gr.privilege in ('SELECT', 'OWNERSHIP')
         and gr.granted_to in ('ROLE', 'DATABASE_ROLE')
         and gr.grantee_name <> 'PUBLIC'
