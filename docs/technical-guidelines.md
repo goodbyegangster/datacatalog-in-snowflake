@@ -53,11 +53,13 @@ Streamlit in Snowflake（SiS）実装規則を定義する。
 
 - データアクセス / ロジック層
   - pytest を利用
-  - SQL 組み立て・フィルタ結合ロジック・「閲覧可能ユーザー」のロール階層展開を Streamlit から切り離した純関数にし、モックした Snowflake セッションで検証可能とする
-  - 前提として、セッション取得（`get_active_session()` / `st.connection`）を注入可能にしておく
+  - フィルタ結合ロジック・「閲覧可能ユーザー」のロール階層展開を Streamlit から切り離した純関数にし、Snowflake 接続なしで検証可能とする
+  - ローカルの画面確認 / AppTest では `CATALOG_DATA_MODE=fake` により fake catalog provider を利用する
+  - Snowflake 接続処理は data access provider 側に閉じ込め、UI 層から直接呼ばない
 - ページ / 状態層
   - `streamlit.testing.v1.AppTest` を利用
-  - ブラウザ不要・CI 高速。フィルタ選択→想定クエリ発行、行選択→詳細ペイン表示・タブ切替、`session_state` 経由のページ間遷移（データ資産 ⇄ ユーザー）、空状態 / エラー表示をカバー
+  - ブラウザ不要・CI 高速。検索ウィジェットの状態変化、検索結果、pagination、空状態 / エラー表示をカバー
+  - `st.dataframe` の行選択や実際の詳細ペイン表示・タブ切替は AppTest が苦手なため、必要に応じて実ブラウザ確認へ回す
 - e2e
   - PlayWright を利用
   - AppTest が苦手な部分だけ対応

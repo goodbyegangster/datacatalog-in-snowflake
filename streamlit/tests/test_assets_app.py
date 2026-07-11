@@ -77,6 +77,21 @@ def test_assets_page_filters_by_freeword(assets_app: AppTest) -> None:
     assert result["説明"].tolist() == ["Sales order facts"]
 
 
+def test_assets_page_shows_empty_message_when_no_asset_matches(
+    assets_app: AppTest,
+) -> None:
+    app = assets_app.run()
+
+    app.text_input[0].set_value("not-found").run()
+
+    assert_no_exception(app)
+    assert any("検索結果" in md.value and ">0 件<" in md.value for md in app.markdown)
+    assert [info.value for info in app.info] == [
+        "該当するデータ資産がありません。検索条件を変更してください。"
+    ]
+    assert len(app.dataframe) == 0
+
+
 def test_assets_page_resets_schema_when_database_changes(assets_app: AppTest) -> None:
     app = assets_app.run()
 

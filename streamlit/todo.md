@@ -25,7 +25,7 @@
   `lib/catalog`（実カタログ表ロード）を実装し差し替え。`make run_local` で実データ表示を確認済み
   （両ページとも実データ表示 OK）。
 - [~] **Step 3. 検索を肉付け**：`lib/search` → 検索 UI を機能追加。
-  - [x] Step 3a. データ資産検索（フリーワード / 階層 / 種別 / タグ / AND・OR トグル / 初期空欄＋検索ボタン）。AppTest 検証済み。
+  - [x] Step 3a. データ資産検索（フリーワード / 階層 / 種別 / タグ / AND・OR トグル / 初期空欄＋インタラクティブ検索）。AppTest 検証済み。
   - [ ] Step 3b. ユーザー検索（全 / 自ユーザートグル＋フリーワード）。
 - [ ] **Step 4. 詳細・グラフを肉付け**：`lib/graph` → detail pane の `st.dialog` グラフを追加。
 - [ ] **Step 5. 仕上げ**：ページ間遷移・エラー表示・空状態・ソート/ページネーションの詰め。
@@ -53,19 +53,19 @@
 
 ## Phase 2. components 層（再利用 UI）
 
-- [ ] `components/asset_search.py`：データ資産 left pane。4 カテゴリ＋カテゴリ間 AND/OR トグル（初期 AND）。DB→スキーマ連動プルダウン（DB `on_change` でスキーマ選択を全選択リセット）。
+- [ ] `components/asset_search.py`：データ資産 left pane。4 カテゴリ＋カテゴリ間 AND/OR トグル（初期 AND）。DB→スキーマ連動プルダウン（DB `on_change` でスキーマ選択を未選択へリセット）。
 - [ ] `components/user_search.py`：ユーザー left pane。全/自ユーザートグル（`IS_VISIBLE_ONLY_SELF_USER=True` で自固定）＋フリーワード。
-- [ ] `components/result_table.py`：`st.dataframe(selection_mode="single-row", on_select="rerun")` ＋ 100 件ページネーション。選択 ID を session_state へ。
-- [ ] `components/asset_detail.py`：資産 detail pane。ヘッダ（名前/説明/階層/種別/タグ/PUBLIC 可否）＋タブ（カラム / 連絡先 / 統計 / ユーザー）。ユーザータブはロール選択で `st.dialog`＋`st.graphviz_chart`。
+- [ ] `components/result_table.py`：`st.dataframe(selection_mode="single-cell", on_select="rerun")` ＋ `st.pagination` による 100 件ページネーション。選択 ID を session_state へ。
+- [ ] `components/asset_detail.py`：資産 detail pane。ヘッダ（名前/説明/階層/種別 badge/タグ badge/PUBLIC badge）＋タブ（カラム / 連絡先 / 統計 / ユーザー）。カラム / 連絡先 / 統計は `st.dataframe` 表示。ユーザータブはロール選択で `st.dialog`＋`st.graphviz_chart`。
 - [ ] `components/user_detail.py`：ユーザー detail pane。ヘッダ（名前/表示名/タイプ/ステータス）＋付与ロール／閲覧可能資産ペア＋`st.dialog` グラフ。
 
 ## Phase 3. views 層／エントリ
 
-- [ ] `views/assets.py`：1:3 レイアウト、行選択で main を 1:2 分割。ソート DB→スキーマ→名前。初期一覧は空欄。
+- [ ] `views/assets.py`：1:3 レイアウト、行選択で main を 1:2 分割。ソート DB→スキーマ→名前。初期一覧は空欄。検索条件ありで 0 件の場合は空状態メッセージを表示。
 - [ ] `views/users.py`：1:3 レイアウト、行選択で 1:2 分割。ソート 名前。初期は全ユーザー表示。
 - [ ] `streamlit_app.py`：`st.set_page_config`・`st.navigation` + `st.Page`（ASCII ファイル名・日本語タイトル）。
 - [ ] ページ間遷移：`st.session_state` に選択 ID を積み `st.switch_page`（`asset_selected_table_id` / `user_selected_name`）。
-- [ ] エラー：main pane に日本語 `st.error`、traceback 非表示。UI 日本語固定。空状態は空欄。
+- [ ] エラー：main pane に日本語 `st.error`、traceback は fake mode のみ表示。UI 日本語固定。検索条件未入力は案内表示、検索結果 0 件は空状態メッセージを表示。
 
 ## Phase 4. テスト／確認
 

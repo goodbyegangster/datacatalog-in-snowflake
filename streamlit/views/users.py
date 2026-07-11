@@ -17,7 +17,7 @@ from lib import catalog, schema, state
 
 def render_search() -> None:
     """left pane：検索 UI（Step 1 はプレースホルダ）。"""
-    st.subheader("検索")
+    st.subheader("検索", anchor=False)
     st.radio("表示範囲", options=["全ユーザー", "自ユーザー"], key="user_scope", disabled=True)
     st.text_input("フリーワード", key="user_freeword", placeholder="名前 / 表示名 で検索", disabled=True)
     st.caption("※ 検索機能は Step 3 で実装します。")
@@ -62,7 +62,7 @@ def render_detail(user_name: str, users: pd.DataFrame, visibility: pd.DataFrame,
     user = match.iloc[0]
 
     # --- 詳細ペイン上部 ---
-    st.subheader(user[U.USER_NAME])
+    st.subheader(user[U.USER_NAME], anchor=False)
     st.text(f"表示名: {user[U.DISPLAY_NAME] or ''}")
     st.text(f"タイプ: {user[U.USER_TYPE]}")
     st.text(f"ステータス: {'無効' if user[U.DISABLED] else '有効'}")
@@ -98,7 +98,7 @@ def render_detail(user_name: str, users: pd.DataFrame, visibility: pd.DataFrame,
 
 
 def main() -> None:
-    st.title("👤 ユーザー")
+    st.title("👤 ユーザー", anchor=False)
 
     left, main_pane = st.columns([1, 3])
     with left:

@@ -18,6 +18,18 @@ from lib.search import AssetSearchCriteria, FreewordQuery, TagSelection
 from settings import SELECTABLE_TAG_KEYS
 
 PAGE_SIZE = 100
+ASSET_TYPE_BADGE_COLORS = {
+    "BASE TABLE": "blue",
+    "VIEW": "green",
+    "MATERIALIZED VIEW": "violet",
+    "DYNAMIC TABLE": "orange",
+    "ICEBERG TABLE": "blue",
+    "HYBRID TABLE": "yellow",
+    "EXTERNAL TABLE": "gray",
+    "EVENT TABLE": "red",
+    "TEMPORARY TABLE": "gray",
+}
+TAG_BADGE_COLOR_PALETTE = ("blue", "green", "orange", "violet", "red", "gray")
 ASSET_PAGE_CSS = """
 <style>
 [data-testid="stMainBlockContainer"] {
@@ -62,6 +74,9 @@ _ASSET_COLUMN_CONFIG = {
     "名前": st.column_config.TextColumn(width="medium"),
     "説明": st.column_config.TextColumn(width="large"),
 }
+_ASSET_COMPACT_COLUMN_CONFIG = {
+    "名前": st.column_config.TextColumn(width="medium"),
+}
 
 
 def _search_defaults() -> dict[str, object]:
@@ -91,6 +106,41 @@ def _fmt_tags(tags: list[dict]) -> str:
     if not isinstance(tags, list) or not tags:
         return ""
     return ", ".join(f"{t['TAG_NAME']}={t['TAG_VALUE']}" for t in tags)
+
+
+def _fmt_roles(roles: object) -> str:
+    """ロール配列を dataframe 表示向けに整形する。"""
+    if not isinstance(roles, list) or not roles:
+        return ""
+    return ", ".join(str(role) for role in roles)
+
+
+def _fmt_foreign_keys(foreign_keys: object) -> str:
+    """FOREIGN_KEYS 列（object の list）を表示用の文字列へ整形する。"""
+    if not isinstance(foreign_keys, list) or not foreign_keys:
+        return ""
+    return ", ".join(
+        ".".join(
+            [
+                str(fk["REFERENCED_DATABASE"]),
+                str(fk["REFERENCED_SCHEMA"]),
+                str(fk["REFERENCED_TABLE"]),
+                str(fk["REFERENCED_COLUMN"]),
+            ]
+        )
+        for fk in foreign_keys
+    )
+
+
+def _asset_type_badge_color(asset_type: str) -> str:
+    """ASSET_TYPE に応じた badge 色を返す。"""
+    return ASSET_TYPE_BADGE_COLORS.get(asset_type, "gray")
+
+
+def _tag_badge_color(tag_name: str) -> str:
+    """タグキー名から安定した badge 色を返す。"""
+    index = sum(ord(char) for char in tag_name) % len(TAG_BADGE_COLOR_PALETTE)
+    return TAG_BADGE_COLOR_PALETTE[index]
 
 
 def _tag_allowed_values(tags: pd.DataFrame, tag_key: dict) -> list[str]:
@@ -285,7 +335,7 @@ def render_search(assets: pd.DataFrame, tags: pd.DataFrame) -> AssetSearchCriter
     )
 
 
-def render_table(assets: pd.DataFrame) -> int | None:
+def render_table(assets: pd.DataFrame, *, compact: bool = False) -> int | None:
     """main pane：一覧（st.dataframe）。100 件単位ページング。選択中の TABLE_ID を返す。"""
     A = schema.Assets
     ordered = assets.sort_values([A.DATABASE_NAME, A.SCHEMA_NAME, A.ASSET_NAME]).reset_index(
@@ -309,18 +359,23 @@ def render_table(assets: pd.DataFrame) -> int | None:
     else:
         page_df = ordered
 
-    display = pd.DataFrame(
-        {
-            "データベース": page_df[A.DATABASE_NAME],
-            "スキーマ": page_df[A.SCHEMA_NAME],
-            "名前": page_df[A.ASSET_NAME],
-            "説明": page_df[A.DESCRIPTION],
-        }
-    ).reset_index(drop=True)
+    if compact:
+        display = pd.DataFrame({"名前": page_df[A.ASSET_NAME]}).reset_index(drop=True)
+        column_config = _ASSET_COMPACT_COLUMN_CONFIG
+    else:
+        display = pd.DataFrame(
+            {
+                "データベース": page_df[A.DATABASE_NAME],
+                "スキーマ": page_df[A.SCHEMA_NAME],
+                "名前": page_df[A.ASSET_NAME],
+                "説明": page_df[A.DESCRIPTION],
+            }
+        ).reset_index(drop=True)
+        column_config = _ASSET_COLUMN_CONFIG
 
     event = table_slot.dataframe(
         display,
-        column_config=_ASSET_COLUMN_CONFIG,
+        column_config=column_config,
         hide_index=True,
         width="stretch",
         selection_mode="single-cell",
@@ -366,14 +421,57 @@ def render_detail(
     asset = match.iloc[0]
 
     # --- 詳細ペイン上部 ---
-    st.button("✕ 閉じる", on_click=_close_detail, key="asset_detail_close")
-    st.subheader(asset[A.ASSET_NAME])
-    st.write(asset[A.DESCRIPTION] or "")
-    st.text(f"データベース: {asset[A.DATABASE_NAME]}")
-    st.text(f"スキーマ: {asset[A.SCHEMA_NAME]}")
-    st.text(f"オブジェクト種別: {asset[A.ASSET_TYPE]}")
-    st.text(f"タグ: {_fmt_tags(asset[A.TAGS])}")
-    st.text(f"PUBLIC: {'参照可能' if asset[A.IS_PUBLIC_VISIBILITY] else '参照不可'}")
+    _, close_col = st.columns([1, 0.16], vertical_alignment="top")
+    with close_col:
+        st.button(
+            "",
+            icon=":material/close:",
+            help="詳細を閉じる",
+            on_click=_close_detail,
+            key="asset_detail_close",
+            type="primary",
+        )
+
+    with st.container(key="asset-summary"):
+        st.subheader(asset[A.ASSET_NAME], anchor=False)
+        if asset[A.DESCRIPTION]:
+            st.markdown(f"**{asset[A.DESCRIPTION]}**")
+
+        col1, col2, col3, col4 = st.columns(4)
+        with col1:
+            st.caption("データベース")
+            st.markdown(f"**{asset[A.DATABASE_NAME]}**")
+        with col2:
+            st.caption("スキーマ")
+            st.markdown(f"**{asset[A.SCHEMA_NAME]}**")
+        with col3:
+            st.caption("オブジェクト種別")
+            st.badge(
+                asset[A.ASSET_TYPE],
+                color=_asset_type_badge_color(asset[A.ASSET_TYPE]),
+            )
+        with col4:
+            is_public = bool(asset[A.IS_PUBLIC_VISIBILITY])
+            st.caption("PUBLIC")
+            st.badge(
+                "参照可能" if is_public else "参照不可",
+                color="primary" if is_public else "gray",
+            )
+
+        st.caption("タグ")
+        tags = asset[A.TAGS]
+        if isinstance(tags, list) and tags:
+            tag_cols = st.columns(3)
+            for index, tag in enumerate(tags):
+                with tag_cols[index % len(tag_cols)]:
+                    tag_name = str(tag["TAG_NAME"])
+                    st.badge(
+                        f"{tag_name}: {tag['TAG_VALUE']}",
+                        icon=":material/sell:",
+                        color=_tag_badge_color(tag_name),
+                    )
+        else:
+            st.caption("タグはありません。")
 
     # --- 詳細ペイン下部（タブ）---
     tab_cols, tab_contact, tab_stats, tab_users = st.tabs(
@@ -395,38 +493,85 @@ def _render_columns_tab(table_id: int, columns: pd.DataFrame) -> None:
     if cols.empty:
         st.caption("カラム情報がありません。")
         return
-    for _, c in cols.iterrows():
-        badges = []
-        if c[C.IS_PRIMARY_KEY]:
-            badges.append("PK")
-        if c[C.IS_UNIQUE_KEY]:
-            badges.append("UK")
-        if c[C.FOREIGN_KEYS]:
-            badges.append("FK")
-        if not c[C.IS_NULLABLE]:
-            badges.append("NOT NULL")
-        suffix = f"  [{', '.join(badges)}]" if badges else ""
-        with st.expander(f"{c[C.COLUMN_NAME]}（{c[C.DATA_TYPE]}）{suffix}"):
-            st.text(f"説明: {c[C.DESCRIPTION] or ''}")
-            st.text(f"タグ: {_fmt_tags(c[C.TAGS])}")
-            st.text(f"マスキングポリシー: {c[C.MASKING_POLICY_NAME] or ''}")
+    display = pd.DataFrame(
+        {
+            "位置": cols[C.ORDINAL_POSITION],
+            "名前": cols[C.COLUMN_NAME],
+            "説明": cols[C.DESCRIPTION].fillna(""),
+            "型": cols[C.DATA_TYPE],
+            "PKEY": cols[C.IS_PRIMARY_KEY],
+            "NOT NULL": ~cols[C.IS_NULLABLE],
+            "UNIQUE": cols[C.IS_UNIQUE_KEY],
+            "外部KEY": cols[C.FOREIGN_KEYS].map(_fmt_foreign_keys),
+            "タグ": cols[C.TAGS].map(_fmt_tags),
+            "マスキングポリシー": cols[C.MASKING_POLICY_NAME].fillna("").astype(bool),
+        }
+    )
+    st.dataframe(
+        display,
+        hide_index=True,
+        width="stretch",
+        column_config={
+            "位置": st.column_config.NumberColumn(width="small"),
+            "名前": st.column_config.TextColumn(width="medium"),
+            "説明": st.column_config.TextColumn(width="large"),
+            "型": st.column_config.TextColumn(width="small"),
+            "PKEY": st.column_config.CheckboxColumn(width="small"),
+            "NOT NULL": st.column_config.CheckboxColumn(width="small"),
+            "UNIQUE": st.column_config.CheckboxColumn(width="small"),
+            "外部KEY": st.column_config.TextColumn(width="large"),
+            "タグ": st.column_config.TextColumn(width="medium"),
+            "マスキングポリシー": st.column_config.CheckboxColumn(width="small"),
+        },
+    )
 
 
 def _render_contact_tab(asset: pd.Series) -> None:
     A = schema.Assets
-    st.text(f"スチュワード: {asset[A.CONTACT_STEWARD] or ''}")
-    st.text(f"サポート: {asset[A.CONTACT_SUPPORT] or ''}")
-    st.text(f"承認者: {asset[A.CONTACT_ACCESS_APPROVAL] or ''}")
-    st.text(f"セキュリティとコンプライアンス: {asset[A.CONTACT_SECURITY_COMPLIANCE] or ''}")
+    display = pd.DataFrame(
+        [
+            {"項目": "スチュワード", "ロール": asset[A.CONTACT_STEWARD] or ""},
+            {"項目": "サポート", "ロール": asset[A.CONTACT_SUPPORT] or ""},
+            {"項目": "承認者", "ロール": asset[A.CONTACT_ACCESS_APPROVAL] or ""},
+            {
+                "項目": "セキュリティとコンプライアンス",
+                "ロール": asset[A.CONTACT_SECURITY_COMPLIANCE] or "",
+            },
+        ]
+    )
+    st.dataframe(
+        display,
+        hide_index=True,
+        width="stretch",
+        column_config={
+            "項目": st.column_config.TextColumn(width="medium"),
+            "ロール": st.column_config.TextColumn(width="large"),
+        },
+    )
 
 
 def _render_stats_tab(asset: pd.Series) -> None:
     A = schema.Assets
     row_count = asset[A.ROW_COUNT]
     n_bytes = asset[A.BYTES]
-    c1, c2 = st.columns(2)
-    c1.metric("行数", f"{int(row_count):,}" if pd.notna(row_count) else "-")
-    c2.metric("データサイズ (bytes)", f"{int(n_bytes):,}" if pd.notna(n_bytes) else "-")
+    display = pd.DataFrame(
+        [
+            {"項目": "行数", "値": f"{int(row_count):,}" if pd.notna(row_count) else "-"},
+            {
+                "項目": "データサイズ (bytes)",
+                "値": f"{int(n_bytes):,}" if pd.notna(n_bytes) else "-",
+            },
+        ]
+    )
+    st.dataframe(
+        display,
+        hide_index=True,
+        width="stretch",
+        column_config={
+            "項目": st.column_config.TextColumn(width="medium"),
+            "値": st.column_config.TextColumn(width="medium"),
+        },
+    )
 
 
 def _render_users_tab(table_id: int, visibility: pd.DataFrame) -> None:
@@ -438,8 +583,11 @@ def _render_users_tab(table_id: int, visibility: pd.DataFrame) -> None:
     asset_roles = sorted({r for roles in vis[V.ASSET_ROLES] for r in roles})
     st.text(f"直接付与ロール: {', '.join(asset_roles)}")
     st.dataframe(
-        vis[[V.USER_NAME, V.USER_ROLES]].rename(
-            columns={V.USER_NAME: "ユーザー", V.USER_ROLES: "起点ロール"}
+        pd.DataFrame(
+            {
+                "ユーザー": vis[V.USER_NAME],
+                "起点ロール": vis[V.USER_ROLES].map(_fmt_roles),
+            }
         ),
         hide_index=True,
         width="stretch",
@@ -448,7 +596,7 @@ def _render_users_tab(table_id: int, visibility: pd.DataFrame) -> None:
 
 
 def main() -> None:
-    st.title("🗂️ データ資産")
+    st.title("🗂️ データ資産", anchor=False)
     _render_asset_page_css()
     result_count = st.empty()
 
@@ -489,13 +637,18 @@ def main() -> None:
         filtered = search.filter_assets(assets, columns, criteria)
         with result_count:
             render_result_count(len(filtered))
+        if filtered.empty:
+            _clear_selection()
+            st.info("該当するデータ資産がありません。検索条件を変更してください。")
+            return
+
         prior = st.session_state.get(state.ASSET_SELECTED_TABLE_ID)
         if prior is None:
             selected_now = render_table(filtered)
         else:
             list_col, detail_col = st.columns([1, 2])
             with list_col:
-                selected_now = render_table(filtered)
+                selected_now = render_table(filtered, compact=True)
             with detail_col:
                 render_detail(prior, assets, columns, visibility)
 
