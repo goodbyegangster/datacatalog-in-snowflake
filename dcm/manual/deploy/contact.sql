@@ -52,3 +52,17 @@ alter table <% sis_database_name %>.DATA_SALES.PRODUCTS
 alter table <% sis_database_name %>.DATA_SALES.PRODUCTS
     set contact support = <% sis_database_name %>.CONTACT."佐藤二郎"
 ;
+
+-- V_PRODUCTS テーブルに contact を付与
+alter view <% sis_database_name %>.DATA_SALES.V_PRODUCTS
+    set contact access_approval = <% sis_database_name %>.CONTACT."山田太郎"
+;
+alter view <% sis_database_name %>.DATA_SALES.V_PRODUCTS
+    set contact security_compliance = <% sis_database_name %>.CONTACT."鈴木四郎"
+;
+alter view <% sis_database_name %>.DATA_SALES.V_PRODUCTS
+    set contact steward = <% sis_database_name %>.CONTACT."加藤三郎"
+;
+alter view <% sis_database_name %>.DATA_SALES.V_PRODUCTS
+    set contact support = <% sis_database_name %>.CONTACT."佐藤二郎"
+;

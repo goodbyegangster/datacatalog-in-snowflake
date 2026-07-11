@@ -32,3 +32,10 @@ alter table <% sis_database_name %>.DATA_SALES.PRODUCT_CATEGORIES set tag
     <% sis_database_name %>.TAG.DATA_CATEGORY = 'master',
     <% sis_database_name %>.TAG.SENSITIVITY = 'internal'
 ;
+
+-- V_PRODUCTS ビューに tag を付与
+alter view <% sis_database_name %>.DATA_SALES.V_PRODUCTS set tag
+    <% sis_database_name %>.TAG.DATA_DOMAIN = 'sales',
+    <% sis_database_name %>.TAG.DATA_CATEGORY = 'master',
+    <% sis_database_name %>.TAG.SENSITIVITY = 'internal'
+;

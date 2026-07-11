@@ -92,7 +92,7 @@ begin
         from snowflake.account_usage.grants_to_roles as g
         where g.deleted_on is null
           and g.grantee_name = 'PUBLIC'
-          and g.granted_on in ('TABLE', 'VIEW', 'MATERIALIZED VIEW')
+          and g.granted_on in ('TABLE', 'VIEW', 'MATERIALIZED VIEW', 'EXTERNAL TABLE')
           and g.privilege in ('SELECT', 'OWNERSHIP')
     )
     select

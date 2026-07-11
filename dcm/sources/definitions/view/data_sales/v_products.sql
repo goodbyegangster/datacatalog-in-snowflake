@@ -1,0 +1,16 @@
+-- noqa: disable=LT02
+
+define view {{ sis_database_name }}.DATA_SALES.V_PRODUCTS (
+    PRODUCT_ID comment '商品ID',
+    PRODUCT_NAME comment '商品名',
+    CATEGORY_ID comment '商品カテゴリID',
+    PRICE  comment '価格',
+    CREATED_AT comment 'レコード作成日時'
+)
+comment = '商品マスター（日用品）'
+as
+select *
+from {{ sis_database_name }}.DATA_SALES.PRODUCTS
+where
+    CATEGORY_ID = 1
+;
