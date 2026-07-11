@@ -4,7 +4,7 @@ design-view.md の「page：ユーザー」に対応。left pane（検索）と 
 1:3 で配置し、ユーザー検索・一覧・詳細ペインを表示する。初期は全ユーザー表示。
 
 詳細ペインでは、選択ユーザーの基本情報と閲覧可能なデータ資産を表示する。
-ロール継承グラフは Step 4 で実装する。
+閲覧可能データ資産一覧では、行選択後のボタン操作でロール継承グラフを表示する。
 """
 
 from __future__ import annotations
@@ -12,14 +12,13 @@ from __future__ import annotations
 import pandas as pd
 import streamlit as st
 
-from lib import catalog, schema, search, state, ui, user_context
+from lib import catalog, graph, schema, search, state, ui, user_context
 from lib.search import UserFreewordQuery
 from settings import IS_VISIBLE_ONLY_SELF_USER
 
-PAGE_SIZE = 100
-
 # 一覧テーブルの行選択ウィジェットの key（閉じる際に選択状態も解除するため定数化）。
 _USER_TABLE_KEY = "user_table"
+_USER_ASSETS_TABLE_KEY = "user_assets_table"
 
 _USER_COLUMN_CONFIG = {
     "名前": st.column_config.TextColumn(width="medium"),
@@ -86,6 +85,7 @@ def _clear_selection() -> None:
 def _close_detail() -> None:
     """詳細ペインを閉じる。行選択ウィジェットの選択状態も解除する。"""
     _clear_selection()
+    st.session_state.pop(state.NAV_TO_USER_NAME, None)
 
 
 def _clear_search() -> None:
@@ -95,12 +95,31 @@ def _clear_search() -> None:
     if IS_VISIBLE_ONLY_SELF_USER:
         st.session_state[state.SEARCH_USER_ONLY_SELF] = True
     _clear_selection()
-    st.session_state.pop(state.USER_PAGE, None)
 
 
 def _render_user_page_css() -> None:
     """ユーザーページ用の CSS を適用する。"""
     ui.render_page_spacing_css()
+
+
+def _set_asset_page_navigation(table_id: int) -> None:
+    """データ資産ページへ遷移するための状態を積む。"""
+    st.session_state[state.NAV_TO_TABLE_ID] = int(table_id)
+    st.session_state.pop(state.ASSET_SELECTED_TABLE_ID, None)
+
+
+def _consume_nav_to_user_name(users: pd.DataFrame) -> str | None:
+    """ページ間遷移で指定されたユーザー名を取り出し、存在する場合のみ返す。"""
+    user_name = st.session_state.pop(state.NAV_TO_USER_NAME, None)
+    if user_name is None:
+        return None
+
+    normalized = str(user_name).upper()
+    U = schema.Users
+    if normalized in set(users[U.USER_NAME].astype(str).str.upper().tolist()):
+        st.session_state[state.USER_SELECTED_NAME] = normalized
+        return normalized
+    return None
 
 
 def _user_search_fingerprint(
@@ -167,42 +186,25 @@ def render_search() -> tuple[UserFreewordQuery, str | None, bool]:
 
 
 def render_table(users: pd.DataFrame, *, compact: bool = False) -> str | None:
-    """main pane：一覧（st.dataframe）。100 件単位ページング。選択中の USER_NAME を返す。"""
+    """main pane：一覧（st.dataframe）。選択中の USER_NAME を返す。"""
     U = schema.Users
     ordered = users.sort_values(U.USER_NAME).reset_index(drop=True)
 
-    total = len(ordered)
-    table_slot = st.empty()
-    if total > PAGE_SIZE:
-        page_count = (total - 1) // PAGE_SIZE + 1
-        current_page = st.session_state.get(state.USER_PAGE)
-        if current_page is not None and not 1 <= current_page <= page_count:
-            st.session_state.pop(state.USER_PAGE, None)
-        page = st.pagination(
-            num_pages=page_count,
-            key=state.USER_PAGE,
-            on_change=_clear_selection,
-        )
-        start = (page - 1) * PAGE_SIZE
-        page_df = ordered.iloc[start : start + PAGE_SIZE]
-    else:
-        page_df = ordered
-
     if compact:
-        display = pd.DataFrame({"名前": page_df[U.USER_NAME]}).reset_index(drop=True)
+        display = pd.DataFrame({"名前": ordered[U.USER_NAME]}).reset_index(drop=True)
         column_config = _USER_COMPACT_COLUMN_CONFIG
     else:
         display = pd.DataFrame(
             {
-                "名前": page_df[U.USER_NAME],
-                "表示名": page_df[U.DISPLAY_NAME],
-                "タイプ": page_df[U.USER_TYPE],
-                "ステータス": page_df[U.DISABLED].map(lambda d: "無効" if d else "有効"),
+                "名前": ordered[U.USER_NAME],
+                "表示名": ordered[U.DISPLAY_NAME],
+                "タイプ": ordered[U.USER_TYPE],
+                "ステータス": ordered[U.DISABLED].map(lambda d: "無効" if d else "有効"),
             }
         ).reset_index(drop=True)
         column_config = _USER_COLUMN_CONFIG
 
-    event = table_slot.dataframe(
+    event = st.dataframe(
         display,
         column_config=column_config,
         hide_index=True,
@@ -213,9 +215,37 @@ def render_table(users: pd.DataFrame, *, compact: bool = False) -> str | None:
     )
 
     cells = event.selection.cells
-    if cells and cells[0][0] < len(page_df):
-        return str(page_df.iloc[cells[0][0]][U.USER_NAME])
+    if cells and cells[0][0] < len(ordered):
+        return str(ordered.iloc[cells[0][0]][U.USER_NAME])
     return None
+
+
+@st.dialog("ロール継承グラフ", width="large")
+def _render_user_asset_graph_dialog(user_name: str, asset_fqn: str, edges: pd.DataFrame) -> None:
+    """選択ユーザーから選択資産までの graph を表示する。"""
+    result = graph.build_user_asset_graph(edges, user_name=user_name, asset_fqn=asset_fqn)
+    st.markdown(f"**{user_name}** から **{asset_fqn}** までのロール継承")
+    if result.path_limit_exceeded:
+        st.warning("経路が多すぎるため表示できません。")
+        return
+    if not result.paths:
+        st.warning("ロール継承 graph の経路が見つかりませんでした。")
+        return
+    st.caption(f"{len(result.paths)} 経路")
+    st.graphviz_chart(result.dot, width="stretch")
+
+
+def _selected_asset_row(event: object, display: pd.DataFrame) -> int | None:
+    """閲覧可能データ資産一覧で選択されたセルの行位置を返す。"""
+    cells = event.selection.cells
+    if not cells:
+        return None
+
+    cell = cells[0]
+    row_index = cell["row"] if isinstance(cell, dict) else cell[0]
+    if row_index >= len(display):
+        return None
+    return int(row_index)
 
 
 def render_detail(
@@ -271,19 +301,71 @@ def render_detail(
     if vis.empty:
         st.caption("閲覧可能なデータ資産がありません。")
     else:
-        st.dataframe(
-            pd.DataFrame(
-                {
-                    "データベース": vis[V.DATABASE_NAME],
-                    "スキーマ": vis[V.SCHEMA_NAME],
-                    "名前": vis[V.ASSET_NAME],
-                    "起点ロール": vis[V.USER_ROLES].map(_fmt_roles),
-                }
-            ),
+        vis_display_source = vis.reset_index(drop=True)
+        display = pd.DataFrame(
+            {
+                "データベース": vis_display_source[V.DATABASE_NAME],
+                "スキーマ": vis_display_source[V.SCHEMA_NAME],
+                "名前": vis_display_source[V.ASSET_NAME],
+                "ユーザー付与ロール": vis_display_source[V.USER_ROLES].map(_fmt_roles),
+                "データ資産付与ロール": vis_display_source[V.ASSET_ROLES].map(_fmt_roles),
+            }
+        ).reset_index(drop=True)
+        st.caption("行を選択してから、必要な操作ボタンを押してください")
+        action_slot = st.container()
+        event = st.dataframe(
+            display,
             hide_index=True,
             width="stretch",
+            selection_mode="single-cell",
+            on_select="rerun",
+            key=f"{_USER_ASSETS_TABLE_KEY}_{user_name}",
+            column_config={
+                "データベース": st.column_config.TextColumn(width="small"),
+                "スキーマ": st.column_config.TextColumn(width="small"),
+                "名前": st.column_config.TextColumn(width="medium"),
+                "ユーザー付与ロール": st.column_config.TextColumn(width="medium"),
+                "データ資産付与ロール": st.column_config.TextColumn(width="medium"),
+            },
         )
-    st.button("ロール継承グラフを表示", disabled=True, help="Step 4 で実装します。")
+
+        selected_asset_row = _selected_asset_row(event, display)
+        selected_table_id = (
+            None
+            if selected_asset_row is None
+            else int(vis_display_source.iloc[selected_asset_row][V.TABLE_ID])
+        )
+        with action_slot:
+            open_col, graph_col = st.columns(2)
+            with open_col:
+                if st.button(
+                    "選択データ資産を開く",
+                    icon=":material/table_view:",
+                    disabled=selected_table_id is None,
+                    key=f"user_asset_open_button_{user_name}",
+                    width="stretch",
+                ):
+                    _set_asset_page_navigation(selected_table_id or 0)
+                    st.switch_page("views/assets.py")
+            with graph_col:
+                if st.button(
+                    "ロール継承グラフを表示",
+                    icon=":material/account_tree:",
+                    disabled=selected_asset_row is None,
+                    key=f"user_asset_graph_button_{user_name}",
+                    width="stretch",
+                ):
+                    _render_user_asset_graph_dialog(
+                        user_name=user_name,
+                        asset_fqn=".".join(
+                            [
+                                str(display.iloc[selected_asset_row]["データベース"]),
+                                str(display.iloc[selected_asset_row]["スキーマ"]),
+                                str(display.iloc[selected_asset_row]["名前"]),
+                            ]
+                        ),
+                        edges=edges,
+                    )
 
 
 def main() -> None:
@@ -315,8 +397,9 @@ def main() -> None:
         search_fingerprint = _user_search_fingerprint(freeword, only_user_name)
         if st.session_state.get(state.USER_SEARCH_FINGERPRINT) != search_fingerprint:
             _clear_selection()
-            st.session_state.pop(state.USER_PAGE, None)
             st.session_state[state.USER_SEARCH_FINGERPRINT] = search_fingerprint
+
+        _consume_nav_to_user_name(users)
 
         filtered = search.filter_users(users, freeword, only_user_name=only_user_name)
         if filtered.empty:
@@ -325,6 +408,11 @@ def main() -> None:
             return
 
         prior = st.session_state.get(state.USER_SELECTED_NAME)
+        U = schema.Users
+        if prior is not None and prior not in set(filtered[U.USER_NAME].astype(str).tolist()):
+            _clear_selection()
+            prior = None
+
         if prior is None:
             selected_now = render_table(filtered)
         else:
@@ -334,12 +422,9 @@ def main() -> None:
             with detail_col:
                 render_detail(prior, users, visibility, edges)
 
-        # 選択の変化を 1 操作で反映する（行選択で即座に詳細を開閉する）。
-        if selected_now != prior:
-            if selected_now is None:
-                st.session_state.pop(state.USER_SELECTED_NAME, None)
-            else:
-                st.session_state[state.USER_SELECTED_NAME] = selected_now
+        # 選択セルがない rerun は、詳細ペイン内の操作でも発生するため既存詳細を維持する。
+        if selected_now is not None and selected_now != prior:
+            st.session_state[state.USER_SELECTED_NAME] = selected_now
             st.rerun()
 
 

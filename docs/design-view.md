@@ -156,6 +156,8 @@ flowchart TD
 ## 作成画面 / 画面レイアウト
 
 原則、空状態や未設定値を表示する場合には、画面を崩さず、空欄で表示する。
+ページ本文の下余白は `stMainBlockContainer` の `padding-bottom: 32px` に抑える。
+`st.title` / `st.subheader` の自動 anchor link は、画面内リンクとして意味を持たないため非表示にする。
 
 ### page：データ資産
 
@@ -182,8 +184,7 @@ flowchart TD
     1. 階層_データベース
     2. 階層_スキーマ
     3. 名前
-  - pagination
-    - 100 件単位
+  - pagination は行わず、`st.dataframe` のスクロール / fullscreen 表示に委ねる
 
 #### 詳細画面
 
@@ -193,6 +194,7 @@ flowchart TD
     - `single-row`（左端チェック列）ではセル本文クリックで選択できないため、`single-cell` を採用し
       `event.selection.cells`（`[(行位置, 列名)]`）の行位置から選択行 ID（`TABLE_ID` / `USER_NAME`）を得る
     - 選択行 ID を `st.session_state` に保存してから詳細ペインを描画する
+    - `event.selection.cells` が空の rerun は「詳細を閉じる」意思とは扱わず、既存の選択 state を維持する
   - 詳細ペインには「閉じる」ボタンを設け、選択を解除して一覧のみの表示へ戻せるようにする
     - 閉じるボタンは詳細ペイン上部の見出し行右端に primary のアイコンボタンとして配置する
   - 詳細ペイン表示時の左側一覧は、狭い領域でも読みやすいよう「名前」列のみ表示する
@@ -211,17 +213,27 @@ flowchart TD
       - 表示列は「位置」「名前」「説明」「型」「PKEY」「NOT NULL」「UNIQUE」「外部 KEY」「マスキングポリシー」「タグ」とする
       - `マスキングポリシー` はポリシー名ではなく有無を boolean で表示する
     - タブ: 連絡先
-      - `st.dataframe` で`シングル：データ資産` の各連絡先を表示する
+      - `st.dataframe` で `シングル：データ資産` の各連絡先を表示する
     - タブ: 統計情報
       - `st.dataframe` で `シングル：データ資産` の統計情報を表示する
     - タブ: ユーザー
-      - 以下情報を`st.dataframe` で表示する
-        - `ASSET_VISIBILITY`テーブルより、表示中データ資産に閲覧可能な`USER_NAME`
-        - 選択「データ資産」に直接付与されているロール
-      - ロールを選択時、「データ資産」から「ユーザー」までのロール継承 graph をポップアップ (`st.dialog`) にて表示
+      - 以下情報を `st.dataframe` で表示する
+        - `ASSET_VISIBILITY` テーブルより、表示中データ資産を閲覧可能なユーザーの行
+          1. `USER_NAME` 列
+          2. `USER_ROLES` 列
+             - 列名を「ユーザー付与ロール」に変更し、配列を `aaa, bbb` と文字列表現
+          3. `ASSET_ROLES` 列
+             - 列名を「データ資産付与ロール」に変更し、配列を `aaa, bbb` と文字列表現
+      - `st.dataframe` の行を選択してから「ロール継承グラフを表示」ボタンを押した場合、以下をポップアップ (`st.dialog`) にて表示
+        - 選択行の `USER_NAME` から表示中データ資産までを辿ったロール継承 graph (選択行の USER_NAME から表示中データ資産までの全経路 graph)
         - graph 描画は `st.graphviz_chart` を利用
-        - 選択した「データ資産」と「ユーザー」ペア間の経路のみを描画する
-      - [streamlit/settings.py](../streamlit/settings.py) の `IS_VISIBLE_ONLY_SELF_USER` が True の場合、表示ユーザーを Snowflake ログインユーザーのみに絞って表示する
+        - 経路数が多すぎる場合は graph を描画せず、「経路が多すぎるため表示できません。」を表示する
+      - ユーザーページへの遷移は、dataframe のセル選択ではなく「選択ユーザーを開く」ボタンで行う
+      - 操作ボタンは dataframe の上に 2 つ横並びで表示し、「ロール継承グラフを表示」は右側に配置する
+      - なお、[streamlit/settings.py](../streamlit/settings.py) の `IS_VISIBLE_ONLY_SELF_USER` が True の場合、表示ユーザーを Snowflake ログインユーザーのみに絞って表示する
+        - Snowflake ログインユーザー名を取得できない場合は一覧を表示しない
+  - ユーザーページから遷移した場合、検索条件が未指定でも詳細ペインを表示する
+    - この場合も `st.columns([1, 2])` の左右分割を使い、左側には一覧の代わりに「検索条件が未指定のため、一覧は表示していません。左の検索条件を指定すると一覧が表示されます。」を表示する
 
 ### page：ユーザー
 
@@ -236,12 +248,11 @@ flowchart TD
   - `コレクション：ユーザー` 検索向け画面
     - 設置する検索機能については [docs/design-search](design-search.md) を参照
 - main pane
-  - `st.dataframe`で`コレクション：ユーザー` 検索結果の一覧画面を表示する
+  - `st.dataframe` で `コレクション：ユーザー` 検索結果の一覧画面を表示する
   - 初期状態では全ユーザーを表示
   - ソート順
     1. 名前
-  - pagination
-    - 100 件単位
+  - pagination は行わず、`st.dataframe` のスクロール / fullscreen 表示に委ねる
 
 #### 詳細画面
 
@@ -249,6 +260,9 @@ flowchart TD
   - 左右分割の比率は  `st.columns([1, 2])` とする
   - データ資産ページと同様に `st.dataframe(df, selection_mode="single-cell", on_select="rerun")` を標準とし、
     `event.selection.cells` の行位置から選択行 ID（`USER_NAME`）を得て `st.session_state` に保存してから詳細ペインを描画する
+  - `event.selection.cells` が空の rerun は「詳細を閉じる」意思とは扱わず、既存の選択 state を維持する
+  - 詳細ペインには「閉じる」ボタンを設け、選択を解除して一覧のみの表示へ戻せるようにする
+    - 閉じるボタンは詳細ペイン上部の見出し行右端に primary のアイコンボタンとして配置する
 - 詳細ペイン上部
   - `シングル：ユーザー` の名前
   - `シングル：ユーザー` の表示名（太字表示）
@@ -256,13 +270,24 @@ flowchart TD
     - `NULL` / 空は `PERSON` と同義として表示する
   - `シングル：ユーザー` のステータス（badge 表示）
 - 詳細ペイン下部
-  - 以下情報を`st.dataframe` で表示する
-    - `ASSET_VISIBILITY`テーブルより、表示中ユーザーが閲覧可能な`ASSET_NAME`
-    - `シングル：ユーザー` に直接付与されているロール
-  - 直接付与ロールと閲覧可能データ資産のペア表示、および graph 表示ボタンの選択単位は Step 4 で再設計する
-  - ロールを選択時、「ユーザー」から「データ資産」までのロール継承 graph をポップアップ (`st.dialog`) にて表示
+  - 以下情報を `st.dataframe` で表示する
+    - `ASSET_VISIBILITY` テーブルより、表示中ユーザーが閲覧可能なデータ資産の行
+      1. `DATABASE_NAME` 列
+         - 列名を「データベース」に変更する
+      2. `SCHEMA_NAME` 列
+         - 列名を「スキーマ」に変更する
+      3. `ASSET_NAME` 列
+         - 列名を「名前」に変更する
+      4. `USER_ROLES` 列
+         - 列名を「ユーザー付与ロール」に変更し、配列を `aaa, bbb` と文字列表現
+      5. `ASSET_ROLES` 列
+         - 列名を「データ資産付与ロール」に変更し、配列を `aaa, bbb` と文字列表現
+  - `st.dataframe` の行を選択してから「ロール継承グラフを表示」ボタンを押した場合、以下をポップアップ (`st.dialog`) にて表示
+    - 表示中ユーザーから選択行データ資産までを辿ったロール継承 graph
     - graph 描画は `st.graphviz_chart` を利用
-    - 選択した「ユーザー」と「データ資産」ペア間の経路のみを描画する
+    - 経路数が多すぎる場合は graph を描画せず、「経路が多すぎるため表示できません。」を表示する
+  - データ資産ページへの遷移は、dataframe のセル選択ではなく「選択データ資産を開く」ボタンで行う
+  - 操作ボタンは dataframe の上に 2 つ横並びで表示し、「ロール継承グラフを表示」は右側に配置する
 
 ## 画面遷移図
 
@@ -278,7 +303,10 @@ flowchart LR
 
 - `st.session_state` に「遷移先で選択させたい ID」を積んで `st.switch_page()` で移動する
 - `st.session_state` のキーは接頭辞で名前空間を分ける
-  - 例：`asset_selected_table_id` / `user_selected_name` / `search_*`
+  - 例：`asset_selected_table_id` / `user_selected_name` / `search_*` / `nav_to_table_id` / `nav_to_user_name`
+- ブラウザの「戻る」ボタンによる状態復元は保証しない
+- URL query params はページ間状態管理に利用しない
+- ページ間遷移は dataframe の暗黙的なセルクリックではなく、明示的なボタン操作で行う
 
 ## 配色
 

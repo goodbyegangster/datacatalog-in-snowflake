@@ -36,6 +36,7 @@
 
 ### 3. `ASSET_VISIBILITY` の `USER_ROLES` / `ASSET_ROLES` の対応関係
 
+- 解決済み
 - 現 SQL は `USER_NAME + TABLE_ID` 単位で以下を別々に集約している。
   - `array_agg(distinct r.first_role)` as `USER_ROLES`
   - `array_agg(distinct ag.role_node)` as `ASSET_ROLES`
@@ -51,19 +52,18 @@
 
 ### 4. asset tags の `domain = 'TABLE'` 固定
 
-- `refresh_assets.sql` では asset tag の収集が `TAG_REFERENCES.DOMAIN = 'TABLE'` 固定。
-- view / materialized view / dynamic table 等に付与されたタグの `DOMAIN` が別値なら欠落する。
-- すぐには確認できないため保留。
-- 要確認:
-  - 実環境で `select distinct domain from snowflake.account_usage.tag_references` を確認する。
+- 解決済み
+- Snowflake 公式 docs の `TAG_REFERENCES` では、`TABLE` は views / materialized views /
+  external tables などの table-like objects 全般に使う値とされている。
+  - <https://docs.snowflake.com/en/sql-reference/functions/tag_references>
+- よって、`refresh_assets.sql` の `TAG_REFERENCES.DOMAIN = 'TABLE'` 固定は現時点では妥当。
 
 ### 5. recursive CTE の `union all` による中間行増加
 
-- `refresh_asset_visibility.sql` の `reach` は `union all` でロール継承を辿る。
-- Snowflake は循環ロールを禁止しているため無限ループにはなりにくい。
-- ただし diamond 型のロール継承では、同じ role へ複数経路で到達し、中間行が膨らむ可能性がある。
-- 要説明:
-  - 例を使って diamond 型でなぜ行が増えるのか整理する。
-- 要対応候補:
-  - `reach` の途中または後段で重複排除する。
-  - 規模が小さいうちは、最終集約の `distinct` で許容する判断もあり。
+- 解決方針: 現時点では `union all` を維持する。
+- diamond 型のロール継承では、同じ role へ複数経路で到達し、中間行が増える。
+- ただし、この複数経路は RBAC の冗長さ・複雑さを示す監査上有用な情報である。
+- `reach_distinct` などで早期重複排除すると、複数経路の存在を失うため採用しない。
+- `ASSET_VISIBILITY` では最終的に `array_agg(distinct ...)` で要約する。
+- Step 4 の graph では `ACCESS_EDGES` から全経路を探索し、複数経路を可視化する。
+- 性能問題が実測された場合のみ、別途 `経路数` の集計テーブルや上限を検討する。

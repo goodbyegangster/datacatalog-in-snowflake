@@ -57,6 +57,22 @@ def test_users_page_initial_state_shows_all_users(users_app: AppTest) -> None:
     assert result["表示名"].tolist() == ["Alice Analytics", "Bob Builder", "ETL Service"]
 
 
+def test_users_page_opens_detail_from_navigation_state(users_app: AppTest) -> None:
+    app = users_app.run()
+    app.session_state[state.NAV_TO_USER_NAME] = "ALICE"
+
+    app.run()
+
+    assert_no_exception(app)
+    assert [subheader.value for subheader in app.subheader] == ["ALICE"]
+    assert state.NAV_TO_USER_NAME not in app.session_state
+
+    app.run()
+
+    assert_no_exception(app)
+    assert [subheader.value for subheader in app.subheader] == ["ALICE"]
+
+
 def test_users_page_filters_by_freeword(users_app: AppTest) -> None:
     app = users_app.run()
 
@@ -135,14 +151,12 @@ def test_users_page_clears_selection_when_search_condition_changes(
     app = users_app.run()
 
     app.session_state[state.USER_SELECTED_NAME] = "ALICE"
-    app.session_state[state.USER_PAGE] = 2
     assert app.session_state[state.USER_SELECTED_NAME] == "ALICE"
 
     app.text_input[0].set_value("service").run()
 
     assert_no_exception(app)
     assert state.USER_SELECTED_NAME not in app.session_state
-    assert state.USER_PAGE not in app.session_state
     assert dataframe_value(app)["名前"].tolist() == ["SVC_ETL"]
 
 
@@ -158,7 +172,7 @@ def test_users_page_shows_empty_message_when_no_user_matches(users_app: AppTest)
     assert len(app.dataframe) == 0
 
 
-def test_users_page_paginates_large_results_with_pagination_widget(
+def test_users_page_shows_large_results_without_pagination(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     monkeypatch.setenv("CATALOG_DATA_MODE", "fake")
@@ -167,8 +181,7 @@ def test_users_page_paginates_large_results_with_pagination_widget(
 
     assert_no_exception(app)
     assert len(app.number_input) == 0
-    assert app.session_state[state.USER_PAGE] == 1
-    assert len(dataframe_value(app)) == 100
+    assert len(dataframe_value(app)) == 105
 
 
 def test_users_page_shows_traceback_in_fake_mode(monkeypatch: pytest.MonkeyPatch) -> None:

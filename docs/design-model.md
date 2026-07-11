@@ -134,6 +134,11 @@ erDiagram
 | USER_TYPE | USERS.TYPE | null は `PERSON` に正規化 |
 | DISABLED | USERS.DISABLED | boolean |
 
+`USERS` には、現時点で利用しない Snowflake 側の ID 列を持たない。
+画面表示・検索・権限経路の結合では `USER_NAME` を利用する。
+ただし `USER_NAME` はメールアドレス等の個人情報に近い値を含み得るため、URL query parameter 等の外部に残りやすい場所へ露出させない。
+ページ間遷移は Streamlit の `session_state` による一時的な状態受け渡しで扱う。
+
 ### ACCESS_EDGES
 
 | 列 | ソース | 変換 / 導出 |
@@ -156,6 +161,8 @@ erDiagram
 | TAG_VALUE | TAGS.ALLOWED_VALUES | 配列を flatten して 1 値 1 行に展開 |
 
 なお `allowed_values` 未定義（自由記述）のタグは値を列挙できないため、本マスターには現れない。
+`TAGS` には、現時点で利用しない Snowflake 側の ID 列を持たない。
+タグは `TAG_DATABASE` / `TAG_SCHEMA` / `TAG_NAME` / `TAG_VALUE` の組み合わせを検索 UI 用の値として扱う。
 
 ## 収集対象 データベース
 

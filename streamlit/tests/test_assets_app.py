@@ -65,6 +65,26 @@ def test_assets_page_initial_state_is_empty_until_search_condition(
     assert len(app.dataframe) == 0
 
 
+def test_assets_page_opens_detail_from_navigation_state(assets_app: AppTest) -> None:
+    app = assets_app.run()
+    app.session_state[state.NAV_TO_TABLE_ID] = 1
+
+    app.run()
+
+    assert_no_exception(app)
+    assert [subheader.value for subheader in app.subheader] == ["ORDERS"]
+    assert [
+        "検索条件が未指定のため、一覧は表示していません。"
+        "左の検索条件を指定すると一覧が表示されます。"
+    ] == [info.value for info in app.info]
+    assert state.NAV_TO_TABLE_ID not in app.session_state
+
+    app.run()
+
+    assert_no_exception(app)
+    assert [subheader.value for subheader in app.subheader] == ["ORDERS"]
+
+
 def test_assets_page_filters_by_freeword(assets_app: AppTest) -> None:
     app = assets_app.run()
 
@@ -154,18 +174,16 @@ def test_assets_page_clears_selection_when_search_condition_changes(
 
     app.text_input[0].set_value("orders").run()
     app.session_state[state.ASSET_SELECTED_TABLE_ID] = 1
-    app.session_state[state.ASSET_PAGE] = 2
     assert app.session_state[state.ASSET_SELECTED_TABLE_ID] == 1
 
     app.text_input[0].set_value("customer").run()
 
     assert_no_exception(app)
     assert state.ASSET_SELECTED_TABLE_ID not in app.session_state
-    assert state.ASSET_PAGE not in app.session_state
     assert dataframe_value(app)["名前"].tolist() == ["CUSTOMERS"]
 
 
-def test_assets_page_paginates_large_results_with_pagination_widget(
+def test_assets_page_shows_large_results_without_pagination(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     monkeypatch.setenv("CATALOG_DATA_MODE", "fake")
@@ -177,8 +195,7 @@ def test_assets_page_paginates_large_results_with_pagination_widget(
     assert_no_exception(app)
     assert any("検索結果" in md.value and ">105 件<" in md.value for md in app.markdown)
     assert len(app.number_input) == 0
-    assert app.session_state[state.ASSET_PAGE] == 1
-    assert len(dataframe_value(app)) == 100
+    assert len(dataframe_value(app)) == 105
 
 
 def test_assets_page_shows_traceback_in_fake_mode(

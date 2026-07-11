@@ -27,14 +27,14 @@
 - [x] **Step 3. 検索を肉付け**：`lib/search` → 検索 UI を機能追加。
   - [x] Step 3a. データ資産検索（フリーワード / 階層 / 種別 / タグ / AND・OR トグル / 初期空欄＋インタラクティブ検索）。AppTest 検証済み。
   - [x] Step 3b. ユーザー検索（ログインユーザーのみ表示トグル＋フリーワード）。AppTest 検証済み。
-- [ ] **Step 4. 詳細・グラフを肉付け**：`lib/graph` → detail pane の `st.dialog` グラフを追加。
+- [x] **Step 4. 詳細・グラフを肉付け**：`lib/graph` → detail pane の `st.dialog` グラフを追加。
   - Step 4 開始時に、グラフ導線と合わせて以下の表示形式を再設計する。
     - `assets.py` 詳細ペインの「ユーザー」タブ。
     - `users.py` 詳細ペインの「閲覧可能なデータ資産」一覧。
     - 直接付与ロールと可視性一覧を、どの粒度でペア表示するか。
     - graph 表示ボタンを、どの行・どの選択単位（ユーザー / 資産 / 起点ロール）に紐づけるか。
   - 一覧は単なる参照表ではなく、`st.dialog` で表示するロール継承 graph の起点選択 UI として扱う。
-- [ ] **Step 5. 仕上げ**：ページ間遷移・エラー表示・空状態・ソート/ページネーションの詰め。
+- [x] **Step 5. 仕上げ**：ページ間遷移・エラー表示・空状態・ソート/一覧表示の詰め。
 - [ ] **Step 6. テスト**：純関数（search/graph）の pytest ＋ スモーク。行選択 e2e は後続。
 
 各 Step で対応する成果物は下部 Phase 一覧を参照（進捗はこの Step 側で管理）。
@@ -61,17 +61,20 @@
 
 - [ ] `components/asset_search.py`：データ資産 left pane。4 カテゴリ＋カテゴリ間 AND/OR トグル（初期 AND）。DB→スキーマ連動プルダウン（DB `on_change` でスキーマ選択を未選択へリセット）。
 - [ ] `components/user_search.py`：ユーザー left pane。ログインユーザーのみ表示トグル（`IS_VISIBLE_ONLY_SELF_USER=True` で ON 固定）＋フリーワード。
-- [ ] `components/result_table.py`：`st.dataframe(selection_mode="single-cell", on_select="rerun")` ＋ `st.pagination` による 100 件ページネーション。選択 ID を session_state へ。
+- [ ] `components/result_table.py`：`st.dataframe(selection_mode="single-cell", on_select="rerun")` による全件表示。選択 ID を session_state へ。
 - [ ] `components/asset_detail.py`：資産 detail pane。ヘッダ（名前/説明/階層/種別 badge/タグ badge/PUBLIC badge）＋タブ（カラム / 連絡先 / 統計 / ユーザー）。カラム / 連絡先 / 統計は `st.dataframe` 表示。ユーザータブはロール選択で `st.dialog`＋`st.graphviz_chart`。
 - [ ] `components/user_detail.py`：ユーザー detail pane。ヘッダ（名前/表示名/タイプ/ステータス）＋付与ロール／閲覧可能資産ペア＋`st.dialog` グラフ。
 
 ## Phase 3. views 層／エントリ
 
-- [ ] `views/assets.py`：1:3 レイアウト、行選択で main を 1:2 分割。ソート DB→スキーマ→名前。初期一覧は空欄。検索条件ありで 0 件の場合は空状態メッセージを表示。
-- [ ] `views/users.py`：1:3 レイアウト、行選択で 1:2 分割。ソート 名前。初期は全ユーザー表示。
-- [ ] `streamlit_app.py`：`st.set_page_config`・`st.navigation` + `st.Page`（ASCII ファイル名・日本語タイトル）。
-- [ ] ページ間遷移：`st.session_state` に選択 ID を積み `st.switch_page`（`asset_selected_table_id` / `user_selected_name`）。
-- [ ] エラー：main pane に日本語 `st.error`、traceback は fake mode のみ表示。UI 日本語固定。検索条件未入力は案内表示、検索結果 0 件は空状態メッセージを表示。
+- [x] `views/assets.py`：1:3 レイアウト、行選択で main を 1:2 分割。ソート DB→スキーマ→名前。初期一覧は空欄。検索条件ありで 0 件の場合は空状態メッセージを表示。
+- [x] `views/users.py`：1:3 レイアウト、行選択で 1:2 分割。ソート 名前。初期は全ユーザー表示。
+- [x] `streamlit_app.py`：`st.set_page_config`・`st.navigation` + `st.Page`（ASCII ファイル名・日本語タイトル）。
+- [x] ページ間遷移：`st.session_state` に選択 ID を積み `st.switch_page`（`asset_selected_table_id` / `user_selected_name`）。
+  - ブラウザの「戻る」ボタンによる状態復元は保証しない。
+  - URL query params はページ間状態管理に利用しない。
+  - 遷移操作は `st.dataframe` の暗黙的なセルクリックではなく、明示的なボタンに寄せる。
+- [x] エラー：main pane に日本語 `st.error`、traceback は fake mode のみ表示。UI 日本語固定。検索条件未入力は案内表示、検索結果 0 件は空状態メッセージを表示。
 
 ## Phase 4. テスト／確認
 

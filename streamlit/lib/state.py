@@ -13,9 +13,7 @@ from __future__ import annotations
 # --- ページ内で選択中の行 ID ---
 ASSET_SELECTED_TABLE_ID = "asset_selected_table_id"
 ASSET_SEARCH_FINGERPRINT = "asset_search_fingerprint"
-ASSET_PAGE = "asset_page"
 USER_SELECTED_NAME = "user_selected_name"
-USER_PAGE = "user_page"
 USER_SEARCH_FINGERPRINT = "user_search_fingerprint"
 
 # --- 検索ウィジェットの選択値（データ資産ページ） ---

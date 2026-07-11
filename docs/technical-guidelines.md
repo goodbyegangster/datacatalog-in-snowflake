@@ -60,8 +60,10 @@ Streamlit in Snowflake（SiS）実装規則を定義する。
   - Snowflake 接続処理は data access provider 側に閉じ込め、UI 層から直接呼ばない
 - ページ / 状態層
   - `streamlit.testing.v1.AppTest` を利用
-  - ブラウザ不要・CI 高速。検索ウィジェットの状態変化、検索結果、pagination、空状態 / エラー表示をカバー
+  - ブラウザ不要・CI 高速。検索ウィジェットの状態変化、検索結果、一覧表示、空状態 / エラー表示をカバー
   - production 相当のエラーでは traceback を出さない。`CATALOG_DATA_MODE=fake` のローカル検証時のみ、原因調査のため `st.exception` を表示してよい
+  - `st.dataframe` は pagination せず、`width="stretch"` と dataframe 側のスクロール / fullscreen 表示に委ねる
+  - `st.dataframe` の selection が空の rerun は「詳細を閉じる」意思とは扱わず、既存の選択 state を維持する
   - `st.dataframe` の行選択や実際の詳細ペイン表示・タブ切替は AppTest が苦手なため、必要に応じて実ブラウザ確認へ回す
 - e2e
   - PlayWright を利用
