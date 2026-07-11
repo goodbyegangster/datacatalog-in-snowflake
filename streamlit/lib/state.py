@@ -15,6 +15,8 @@ ASSET_SELECTED_TABLE_ID = "asset_selected_table_id"
 ASSET_SEARCH_FINGERPRINT = "asset_search_fingerprint"
 ASSET_PAGE = "asset_page"
 USER_SELECTED_NAME = "user_selected_name"
+USER_PAGE = "user_page"
+USER_SEARCH_FINGERPRINT = "user_search_fingerprint"
 
 # --- 検索ウィジェットの選択値（データ資産ページ） ---
 SEARCH_ASSET_FREEWORD = "search_asset_freeword"
@@ -30,6 +32,12 @@ SEARCH_ASSET_OP_HIERARCHY = "search_asset_op_hierarchy"
 SEARCH_ASSET_OP_TYPE = "search_asset_op_type"
 SEARCH_ASSET_OP_TAG = "search_asset_op_tag"
 # タグの選択値は tag key ごとに動的なキーを用いる（下記ヘルパで生成）。
+
+# --- 検索ウィジェットの選択値（ユーザーページ） ---
+SEARCH_USER_ONLY_SELF = "search_user_only_self"
+SEARCH_USER_FREEWORD = "search_user_freeword"
+SEARCH_USER_TARGET_USER_NAME = "search_user_target_user_name"
+SEARCH_USER_TARGET_DISPLAY_NAME = "search_user_target_display_name"
 
 
 def search_asset_tag_key(tag_database: str, tag_schema: str, tag_name: str) -> str:

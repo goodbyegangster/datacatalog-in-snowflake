@@ -13,7 +13,7 @@ from __future__ import annotations
 import pandas as pd
 import streamlit as st
 
-from lib import catalog, schema, search, state
+from lib import catalog, schema, search, state, ui
 from lib.search import AssetSearchCriteria, FreewordQuery, TagSelection
 from settings import SELECTABLE_TAG_KEYS
 
@@ -32,9 +32,6 @@ ASSET_TYPE_BADGE_COLORS = {
 TAG_BADGE_COLOR_PALETTE = ("blue", "green", "orange", "violet", "red", "gray")
 ASSET_PAGE_CSS = """
 <style>
-[data-testid="stMainBlockContainer"] {
-    padding-bottom: 32px;
-}
 .asset-result-count {
     position: fixed;
     top: 72px;
@@ -98,6 +95,7 @@ def _search_defaults() -> dict[str, object]:
 
 def _render_asset_page_css() -> None:
     """データ資産ページ用の CSS を適用する。"""
+    ui.render_page_spacing_css()
     st.markdown(ASSET_PAGE_CSS, unsafe_allow_html=True)
 
 
@@ -283,7 +281,7 @@ def render_search(assets: pd.DataFrame, tags: pd.DataFrame) -> AssetSearchCriter
             "スキーマ",
             schema_options,
             key=state.SEARCH_ASSET_SCHEMAS,
-            help="データベースを選択すると候補が表示されます。",
+            help="データベースを選択すると候補が表示されます",
         )
 
     # カテゴリ3：オブジェクト種別
@@ -420,20 +418,20 @@ def render_detail(
         return
     asset = match.iloc[0]
 
-    # --- 詳細ペイン上部 ---
-    _, close_col = st.columns([1, 0.16], vertical_alignment="top")
-    with close_col:
-        st.button(
-            "",
-            icon=":material/close:",
-            help="詳細を閉じる",
-            on_click=_close_detail,
-            key="asset_detail_close",
-            type="primary",
-        )
-
     with st.container(key="asset-summary"):
-        st.subheader(asset[A.ASSET_NAME], anchor=False)
+        title_col, close_col = st.columns([1, 0.12], vertical_alignment="center")
+        with title_col:
+            st.subheader(asset[A.ASSET_NAME], anchor=False)
+        with close_col:
+            st.button(
+                "",
+                icon=":material/close:",
+                help="詳細を閉じる",
+                on_click=_close_detail,
+                key="asset_detail_close",
+                type="primary",
+            )
+
         if asset[A.DESCRIPTION]:
             st.markdown(f"**{asset[A.DESCRIPTION]}**")
 
@@ -471,7 +469,7 @@ def render_detail(
                         color=_tag_badge_color(tag_name),
                     )
         else:
-            st.caption("タグはありません。")
+            st.caption("タグはありません")
 
     # --- 詳細ペイン下部（タブ）---
     tab_cols, tab_contact, tab_stats, tab_users = st.tabs(
@@ -491,8 +489,9 @@ def _render_columns_tab(table_id: int, columns: pd.DataFrame) -> None:
     C = schema.Columns
     cols = columns[columns[C.TABLE_ID] == table_id].sort_values(C.ORDINAL_POSITION)
     if cols.empty:
-        st.caption("カラム情報がありません。")
+        st.caption("カラム情報がありません")
         return
+    st.caption("詳細な確認は Fullscreen モード（表選択時に右上出現）を利用してください")
     display = pd.DataFrame(
         {
             "位置": cols[C.ORDINAL_POSITION],
@@ -502,9 +501,9 @@ def _render_columns_tab(table_id: int, columns: pd.DataFrame) -> None:
             "PKEY": cols[C.IS_PRIMARY_KEY],
             "NOT NULL": ~cols[C.IS_NULLABLE],
             "UNIQUE": cols[C.IS_UNIQUE_KEY],
-            "外部KEY": cols[C.FOREIGN_KEYS].map(_fmt_foreign_keys),
-            "タグ": cols[C.TAGS].map(_fmt_tags),
+            "外部 KEY": cols[C.FOREIGN_KEYS].map(_fmt_foreign_keys),
             "マスキングポリシー": cols[C.MASKING_POLICY_NAME].fillna("").astype(bool),
+            "タグ": cols[C.TAGS].map(_fmt_tags),
         }
     )
     st.dataframe(
@@ -519,9 +518,9 @@ def _render_columns_tab(table_id: int, columns: pd.DataFrame) -> None:
             "PKEY": st.column_config.CheckboxColumn(width="small"),
             "NOT NULL": st.column_config.CheckboxColumn(width="small"),
             "UNIQUE": st.column_config.CheckboxColumn(width="small"),
-            "外部KEY": st.column_config.TextColumn(width="large"),
-            "タグ": st.column_config.TextColumn(width="medium"),
+            "外部 KEY": st.column_config.TextColumn(width="large"),
             "マスキングポリシー": st.column_config.CheckboxColumn(width="small"),
+            "タグ": st.column_config.TextColumn(width="medium"),
         },
     )
 
@@ -578,7 +577,7 @@ def _render_users_tab(table_id: int, visibility: pd.DataFrame) -> None:
     V = schema.AssetVisibility
     vis = visibility[visibility[V.TABLE_ID] == table_id]
     if vis.empty:
-        st.caption("閲覧可能なユーザーがいません。")
+        st.caption("閲覧可能なユーザーがいません")
         return
     asset_roles = sorted({r for roles in vis[V.ASSET_ROLES] for r in roles})
     st.text(f"直接付与ロール: {', '.join(asset_roles)}")

@@ -45,6 +45,8 @@ Streamlit in Snowflake（SiS）実装規則を定義する。
   - DB プルダウンの `on_change` コールバックで、スキーマの選択 session_state をクリアし**未選択へリセット**する（未選択 = 無制約）
 - 「入力をクリア」は、ウィジェットキーを安定させたまま `session_state` へ初期値を明示代入して初期化する
   - `session_state` とフロント側ウィジェット値の同期に問題が出る場合のみ、キー世代（nonce）を進めてウィジェットを再生成する方式を fallback として検討する
+- ログインユーザーのみ表示を適用する場合、`st.user` からユーザー名を取得できなければ fail-closed とする
+  - 全ユーザー表示へ fallback せず、main pane に日本語メッセージを表示して一覧描画を止める
 - SQL を動的に組む場合は**必ずパラメータバインディング**を使い、フリーワードを文字列連結しない（インジェクション防止）。識別子はクォート規約に従う
 
 ## テストコードの方針
@@ -59,6 +61,7 @@ Streamlit in Snowflake（SiS）実装規則を定義する。
 - ページ / 状態層
   - `streamlit.testing.v1.AppTest` を利用
   - ブラウザ不要・CI 高速。検索ウィジェットの状態変化、検索結果、pagination、空状態 / エラー表示をカバー
+  - production 相当のエラーでは traceback を出さない。`CATALOG_DATA_MODE=fake` のローカル検証時のみ、原因調査のため `st.exception` を表示してよい
   - `st.dataframe` の行選択や実際の詳細ペイン表示・タブ切替は AppTest が苦手なため、必要に応じて実ブラウザ確認へ回す
 - e2e
   - PlayWright を利用
