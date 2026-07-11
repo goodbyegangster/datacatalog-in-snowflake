@@ -360,6 +360,7 @@ def render_table(assets: pd.DataFrame, *, compact: bool = False) -> int | None:
         display,
         column_config=column_config,
         hide_index=True,
+        height="stretch",
         width="stretch",
         selection_mode="single-cell",
         on_select="rerun",
@@ -512,7 +513,7 @@ def _render_columns_tab(table_id: int, columns: pd.DataFrame) -> None:
             "説明": cols[C.DESCRIPTION].fillna(""),
             "型": cols[C.DATA_TYPE],
             "PKEY": cols[C.IS_PRIMARY_KEY],
-            "NOT NULL": ~cols[C.IS_NULLABLE],
+            "NOT NULL": cols[C.IS_NULLABLE],
             "UNIQUE": cols[C.IS_UNIQUE_KEY],
             "外部 KEY": cols[C.FOREIGN_KEYS].map(_fmt_foreign_keys),
             "マスキングポリシー": cols[C.MASKING_POLICY_NAME].fillna("").astype(bool),
@@ -522,6 +523,7 @@ def _render_columns_tab(table_id: int, columns: pd.DataFrame) -> None:
     st.dataframe(
         display,
         hide_index=True,
+        height="stretch",
         width="stretch",
         column_config={
             "位置": st.column_config.NumberColumn(width="small"),
@@ -630,6 +632,7 @@ def _render_users_tab(asset: pd.Series, visibility: pd.DataFrame, edges: pd.Data
         st.caption("閲覧可能なユーザーがいません")
         return
 
+    vis = vis.sort_values(V.USER_NAME).reset_index(drop=True)
     display = pd.DataFrame(
         {
             "ユーザー": vis[V.USER_NAME],
@@ -637,11 +640,11 @@ def _render_users_tab(asset: pd.Series, visibility: pd.DataFrame, edges: pd.Data
             "データ資産付与ロール": vis[V.ASSET_ROLES].map(_fmt_roles),
         }
     ).reset_index(drop=True)
-    st.caption("行を選択してから、必要な操作ボタンを押してください")
     action_slot = st.container()
     event = st.dataframe(
         display,
         hide_index=True,
+        height="stretch",
         width="stretch",
         selection_mode="single-cell",
         on_select="rerun",
@@ -688,6 +691,7 @@ def _render_users_tab(asset: pd.Series, visibility: pd.DataFrame, edges: pd.Data
                     ),
                     edges=edges,
                 )
+        st.caption("行を選択してから、必要な操作ボタンを押してください")
 
 
 def main() -> None:
@@ -730,12 +734,9 @@ def main() -> None:
                 previous_search = False
 
             if selected_table_id is not None and not previous_search:
-                list_col, detail_col = st.columns([1, 2])
+                list_col, detail_col = st.columns([1, 3])
                 with list_col:
-                    st.info(
-                        "検索条件が未指定のため、一覧は表示していません。"
-                        "左の検索条件を指定すると一覧が表示されます。"
-                    )
+                    st.info("検索条件が未指定のため、一覧は非表示です。")
                 with detail_col:
                     render_detail(selected_table_id, assets, columns, visibility, edges)
             else:
@@ -761,7 +762,7 @@ def main() -> None:
         if prior is None:
             selected_now = render_table(filtered)
         else:
-            list_col, detail_col = st.columns([1, 2])
+            list_col, detail_col = st.columns([1, 3])
             with list_col:
                 selected_now = render_table(filtered, compact=True)
             with detail_col:

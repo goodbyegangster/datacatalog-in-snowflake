@@ -208,6 +208,7 @@ def render_table(users: pd.DataFrame, *, compact: bool = False) -> str | None:
         display,
         column_config=column_config,
         hide_index=True,
+        height="stretch",
         width="stretch",
         selection_mode="single-cell",
         on_select="rerun",
@@ -286,22 +287,16 @@ def render_detail(
         st.caption("ステータス")
         st.badge("無効" if disabled else "有効", color="red" if disabled else "green")
 
-    # --- 詳細ペイン下部：付与ロール / 閲覧可能なデータ資産 ---
-    E = schema.AccessEdges
-    direct_roles = sorted(
-        edges[(edges[E.SOURCE_NODE] == user_name) & (edges[E.RELATION_TYPE] == "USER_TO_ROLE")][
-            E.TARGET_NODE
-        ].tolist()
-    )
-    st.text(f"直接付与ロール: {', '.join(direct_roles)}")
-
+    # --- 詳細ペイン下部：閲覧可能なデータ資産 ---
     V = schema.AssetVisibility
     vis = visibility[visibility[V.USER_NAME] == user_name]
     st.markdown("**閲覧可能なデータ資産**")
     if vis.empty:
         st.caption("閲覧可能なデータ資産がありません。")
     else:
-        vis_display_source = vis.reset_index(drop=True)
+        vis_display_source = vis.sort_values(
+            [V.DATABASE_NAME, V.SCHEMA_NAME, V.ASSET_NAME]
+        ).reset_index(drop=True)
         display = pd.DataFrame(
             {
                 "データベース": vis_display_source[V.DATABASE_NAME],
@@ -311,11 +306,11 @@ def render_detail(
                 "データ資産付与ロール": vis_display_source[V.ASSET_ROLES].map(_fmt_roles),
             }
         ).reset_index(drop=True)
-        st.caption("行を選択してから、必要な操作ボタンを押してください")
         action_slot = st.container()
         event = st.dataframe(
             display,
             hide_index=True,
+            height="stretch",
             width="stretch",
             selection_mode="single-cell",
             on_select="rerun",
@@ -366,6 +361,7 @@ def render_detail(
                         ),
                         edges=edges,
                     )
+            st.caption("行を選択してから、必要な操作ボタンを押してください")
 
 
 def main() -> None:
@@ -416,7 +412,7 @@ def main() -> None:
         if prior is None:
             selected_now = render_table(filtered)
         else:
-            list_col, detail_col = st.columns([1, 2])
+            list_col, detail_col = st.columns([1, 3])
             with list_col:
                 selected_now = render_table(filtered, compact=True)
             with detail_col:

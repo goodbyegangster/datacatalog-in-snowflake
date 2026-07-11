@@ -84,6 +84,36 @@ def test_users_page_filters_by_freeword(users_app: AppTest) -> None:
     assert result["表示名"].tolist() == ["ETL Service"]
 
 
+def test_users_page_orders_visible_assets_by_hierarchy(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("CATALOG_DATA_MODE", "fake")
+    V = schema.AssetVisibility
+    visibility = catalog_data.asset_visibility()
+    campaign_visibility = visibility.iloc[1].copy()
+    campaign_visibility[V.USER_NAME] = "ALICE"
+    visibility = pd.concat([visibility, campaign_visibility.to_frame().T], ignore_index=True)
+    monkeypatch.setattr(
+        catalog_fake,
+        "load_asset_visibility",
+        lambda: visibility.sort_values(
+            [V.DATABASE_NAME, V.SCHEMA_NAME, V.ASSET_NAME],
+            ascending=False,
+        ).reset_index(drop=True),
+    )
+    app = AppTest.from_file(USERS_PAGE).run()
+    app.session_state[state.NAV_TO_USER_NAME] = "ALICE"
+
+    app.run()
+
+    assert_no_exception(app)
+    result = dataframe_value(app, index=1)
+    assert result[["データベース", "スキーマ", "名前"]].values.tolist() == [
+        [catalog_data.DB, "DATA_AD", "CAMPAIGN_LEADS"],
+        [catalog_data.DB, "DATA_SALES", "ORDERS"],
+    ]
+
+
 def test_users_page_filters_only_self_in_fake_mode(users_app: AppTest) -> None:
     app = users_app.run()
 

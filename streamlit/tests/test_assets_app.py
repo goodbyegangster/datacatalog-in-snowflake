@@ -97,6 +97,31 @@ def test_assets_page_filters_by_freeword(assets_app: AppTest) -> None:
     assert result["説明"].tolist() == ["Sales order facts"]
 
 
+def test_assets_page_orders_visible_users_by_user_name(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("CATALOG_DATA_MODE", "fake")
+    V = schema.AssetVisibility
+    visibility = catalog_data.asset_visibility()
+    bob_visibility = visibility.iloc[0].copy()
+    bob_visibility[V.USER_NAME] = "BOB"
+    bob_visibility[V.USER_ROLES] = ["ANALYST"]
+    bob_visibility[V.ASSET_ROLES] = ["SALES_READER"]
+    visibility = pd.concat([visibility, bob_visibility.to_frame().T], ignore_index=True)
+    monkeypatch.setattr(
+        catalog_fake,
+        "load_asset_visibility",
+        lambda: visibility.sort_values(V.USER_NAME, ascending=False).reset_index(drop=True),
+    )
+    app = AppTest.from_file(ASSETS_PAGE).run()
+    app.session_state[state.NAV_TO_TABLE_ID] = 1
+
+    app.run()
+
+    assert_no_exception(app)
+    assert dataframe_value(app, index=3)["ユーザー"].tolist() == ["ALICE", "BOB"]
+
+
 def test_assets_page_shows_empty_message_when_no_asset_matches(
     assets_app: AppTest,
 ) -> None:
