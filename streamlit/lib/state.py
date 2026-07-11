@@ -43,10 +43,3 @@ SEARCH_USER_TARGET_DISPLAY_NAME = "search_user_target_display_name"
 def search_asset_tag_key(tag_database: str, tag_schema: str, tag_name: str) -> str:
     """タグ絞り込み multiselect 用の session_state キーを生成する。"""
     return f"search_asset_tag__{tag_database}__{tag_schema}__{tag_name}"
-
-
-# --- ページ間遷移で「遷移先に選択させたい ID」を積むキー ---
-# データ資産ページのユーザー一覧から遷移する際に対象ユーザー名を積む。
-NAV_TO_USER_NAME = "nav_to_user_name"
-# ユーザーページの閲覧可能資産一覧から遷移する際に対象 TABLE_ID を積む。
-NAV_TO_TABLE_ID = "nav_to_table_id"

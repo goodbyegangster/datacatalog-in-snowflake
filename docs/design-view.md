@@ -211,17 +211,22 @@ flowchart TD
       - 表示列は「位置」「名前」「説明」「型」「PKEY」「NOT NULL」「UNIQUE」「外部 KEY」「マスキングポリシー」「タグ」とする
       - `マスキングポリシー` はポリシー名ではなく有無を boolean で表示する
     - タブ: 連絡先
-      - `st.dataframe` で`シングル：データ資産` の各連絡先を表示する
+      - `st.dataframe` で `シングル：データ資産` の各連絡先を表示する
     - タブ: 統計情報
       - `st.dataframe` で `シングル：データ資産` の統計情報を表示する
     - タブ: ユーザー
-      - 以下情報を`st.dataframe` で表示する
-        - `ASSET_VISIBILITY`テーブルより、表示中データ資産に閲覧可能な`USER_NAME`
-        - 選択「データ資産」に直接付与されているロール
-      - ロールを選択時、「データ資産」から「ユーザー」までのロール継承 graph をポップアップ (`st.dialog`) にて表示
+      - 以下情報を `st.dataframe` で表示する
+        - `ASSET_VISIBILITY` テーブルより、表示中データ資産を閲覧可能なユーザーの行
+          1. `USER_NAME` 列
+          2. `USER_ROLES` 列
+             - 列名を「ユーザー付与ロール」に変更し、配列を `aaa, bbb` と文字列表現
+          3. `ASSET_ROLES` 列
+             - 列名を「データ資産付与ロール」に変更し、配列を `aaa, bbb` と文字列表現
+      - `st.dataframe` の「ユーザー付与ロール」または「データ資産付与ロール」セルを選択した場合、以下をポップアップ (`st.dialog`) にて表示
+        - 選択セルのロール単体ではなく、選択行の `USER_NAME` から表示中データ資産までを辿ったロール継承 graph (選択行の USER_NAME から表示中データ資産までの全経路 graph)
         - graph 描画は `st.graphviz_chart` を利用
-        - 選択した「データ資産」と「ユーザー」ペア間の経路のみを描画する
-      - [streamlit/settings.py](../streamlit/settings.py) の `IS_VISIBLE_ONLY_SELF_USER` が True の場合、表示ユーザーを Snowflake ログインユーザーのみに絞って表示する
+      - なお、[streamlit/settings.py](../streamlit/settings.py) の `IS_VISIBLE_ONLY_SELF_USER` が True の場合、表示ユーザーを Snowflake ログインユーザーのみに絞って表示する
+        - Snowflake ログインユーザー名を取得できない場合は一覧を表示しない
 
 ### page：ユーザー
 
@@ -236,7 +241,7 @@ flowchart TD
   - `コレクション：ユーザー` 検索向け画面
     - 設置する検索機能については [docs/design-search](design-search.md) を参照
 - main pane
-  - `st.dataframe`で`コレクション：ユーザー` 検索結果の一覧画面を表示する
+  - `st.dataframe` で `コレクション：ユーザー` 検索結果の一覧画面を表示する
   - 初期状態では全ユーザーを表示
   - ソート順
     1. 名前
@@ -256,13 +261,21 @@ flowchart TD
     - `NULL` / 空は `PERSON` と同義として表示する
   - `シングル：ユーザー` のステータス（badge 表示）
 - 詳細ペイン下部
-  - 以下情報を`st.dataframe` で表示する
-    - `ASSET_VISIBILITY`テーブルより、表示中ユーザーが閲覧可能な`ASSET_NAME`
-    - `シングル：ユーザー` に直接付与されているロール
-  - 直接付与ロールと閲覧可能データ資産のペア表示、および graph 表示ボタンの選択単位は Step 4 で再設計する
-  - ロールを選択時、「ユーザー」から「データ資産」までのロール継承 graph をポップアップ (`st.dialog`) にて表示
+  - 以下情報を `st.dataframe` で表示する
+    - `ASSET_VISIBILITY` テーブルより、表示中ユーザーが閲覧可能なデータ資産の行
+      1. `DATABASE_NAME` 列
+         - 列名を「データベース」に変更する
+      2. `SCHEMA_NAME` 列
+         - 列名を「スキーマ」に変更する
+      3. `ASSET_NAME` 列
+         - 列名を「名前」に変更する
+      4. `USER_ROLES` 列
+         - 列名を「ユーザー付与ロール」に変更し、配列を `aaa, bbb` と文字列表現
+      5. `ASSET_ROLES` 列
+         - 列名を「データ資産付与ロール」に変更し、配列を `aaa, bbb` と文字列表現
+  - `st.dataframe` の「ユーザー付与ロール」または「データ資産付与ロール」セルを選択した場合、以下をポップアップ (`st.dialog`) にて表示
+    - 選択セルのロール単体ではなく、表示中ユーザーから選択行データ資産までを辿ったロール継承 graph
     - graph 描画は `st.graphviz_chart` を利用
-    - 選択した「ユーザー」と「データ資産」ペア間の経路のみを描画する
 
 ## 画面遷移図
 

@@ -4,7 +4,7 @@ design-view.md の「page：ユーザー」に対応。left pane（検索）と 
 1:3 で配置し、ユーザー検索・一覧・詳細ペインを表示する。初期は全ユーザー表示。
 
 詳細ペインでは、選択ユーザーの基本情報と閲覧可能なデータ資産を表示する。
-ロール継承グラフは Step 4 で実装する。
+閲覧可能データ資産一覧では、ロール列のセル選択でロール継承グラフを表示する。
 """
 
 from __future__ import annotations
@@ -12,7 +12,7 @@ from __future__ import annotations
 import pandas as pd
 import streamlit as st
 
-from lib import catalog, schema, search, state, ui, user_context
+from lib import catalog, graph, schema, search, state, ui, user_context
 from lib.search import UserFreewordQuery
 from settings import IS_VISIBLE_ONLY_SELF_USER
 
@@ -20,6 +20,8 @@ PAGE_SIZE = 100
 
 # 一覧テーブルの行選択ウィジェットの key（閉じる際に選択状態も解除するため定数化）。
 _USER_TABLE_KEY = "user_table"
+_USER_ASSETS_TABLE_KEY = "user_assets_table"
+_USER_ASSET_GRAPH_COLUMNS = {"ユーザー付与ロール", "データ資産付与ロール"}
 
 _USER_COLUMN_CONFIG = {
     "名前": st.column_config.TextColumn(width="medium"),
@@ -218,6 +220,50 @@ def render_table(users: pd.DataFrame, *, compact: bool = False) -> str | None:
     return None
 
 
+@st.dialog("ロール継承グラフ", width="large")
+def _render_user_asset_graph_dialog(user_name: str, asset_fqn: str, edges: pd.DataFrame) -> None:
+    """選択ユーザーから選択資産までの graph を表示する。"""
+    result = graph.build_user_asset_graph(edges, user_name=user_name, asset_fqn=asset_fqn)
+    st.markdown(f"**{user_name}** から **{asset_fqn}** までのロール継承")
+    if result.path_limit_exceeded:
+        st.warning("経路が多すぎるため表示できません。")
+        return
+    if not result.paths:
+        st.warning("ロール継承 graph の経路が見つかりませんでした。")
+        return
+    st.caption(f"{len(result.paths)} 経路")
+    st.graphviz_chart(result.dot, width="stretch")
+
+
+def _selected_asset_graph_row(event: object, display: pd.DataFrame) -> int | None:
+    """閲覧可能データ資産一覧で graph 対象セルが選択された場合、行位置を返す。"""
+    cells = event.selection.cells
+    if not cells:
+        return None
+
+    cell = cells[0]
+    if isinstance(cell, dict):
+        row_index = cell["row"]
+        column_ref = cell["column"]
+    else:
+        row_index = cell[0]
+        column_ref = cell[1]
+
+    if row_index >= len(display):
+        return None
+
+    if isinstance(column_ref, int):
+        if column_ref >= len(display.columns):
+            return None
+        column_name = display.columns[column_ref]
+    else:
+        column_name = str(column_ref)
+
+    if column_name not in _USER_ASSET_GRAPH_COLUMNS:
+        return None
+    return int(row_index)
+
+
 def render_detail(
     user_name: str, users: pd.DataFrame, visibility: pd.DataFrame, edges: pd.DataFrame
 ) -> None:
@@ -271,19 +317,47 @@ def render_detail(
     if vis.empty:
         st.caption("閲覧可能なデータ資産がありません。")
     else:
-        st.dataframe(
-            pd.DataFrame(
-                {
-                    "データベース": vis[V.DATABASE_NAME],
-                    "スキーマ": vis[V.SCHEMA_NAME],
-                    "名前": vis[V.ASSET_NAME],
-                    "起点ロール": vis[V.USER_ROLES].map(_fmt_roles),
-                }
-            ),
+        display = pd.DataFrame(
+            {
+                "データベース": vis[V.DATABASE_NAME],
+                "スキーマ": vis[V.SCHEMA_NAME],
+                "名前": vis[V.ASSET_NAME],
+                "ユーザー付与ロール": vis[V.USER_ROLES].map(_fmt_roles),
+                "データ資産付与ロール": vis[V.ASSET_ROLES].map(_fmt_roles),
+            }
+        ).reset_index(drop=True)
+        st.caption(
+            "ユーザー付与ロール / データ資産付与ロール を選択すると「ロール継承グラフ」を表示します"
+        )
+        event = st.dataframe(
+            display,
             hide_index=True,
             width="stretch",
+            selection_mode="single-cell",
+            on_select="rerun",
+            key=f"{_USER_ASSETS_TABLE_KEY}_{user_name}",
+            column_config={
+                "データベース": st.column_config.TextColumn(width="small"),
+                "スキーマ": st.column_config.TextColumn(width="small"),
+                "名前": st.column_config.TextColumn(width="medium"),
+                "ユーザー付与ロール": st.column_config.TextColumn(width="medium"),
+                "データ資産付与ロール": st.column_config.TextColumn(width="medium"),
+            },
         )
-    st.button("ロール継承グラフを表示", disabled=True, help="Step 4 で実装します。")
+
+        selected_row = _selected_asset_graph_row(event, display)
+        if selected_row is not None:
+            _render_user_asset_graph_dialog(
+                user_name=user_name,
+                asset_fqn=".".join(
+                    [
+                        str(display.iloc[selected_row]["データベース"]),
+                        str(display.iloc[selected_row]["スキーマ"]),
+                        str(display.iloc[selected_row]["名前"]),
+                    ]
+                ),
+                edges=edges,
+            )
 
 
 def main() -> None:
