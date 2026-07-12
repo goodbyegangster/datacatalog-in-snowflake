@@ -19,10 +19,10 @@
 ### 開発 Step（この順で進める）
 
 - [x] **Step 1. 骨組みを画面に通す**：`streamlit_app.py` ＋ `views/` 2 枚を **モックデータ**で描画。
-  sidebar 検索・`st.dataframe`・行選択・タブが出る状態にする。`lib/connection` `lib/catalog`
+  sidebar 検索・`st.dataframe`・行選択・タブが出る状態にする。`infrastructure/snowflake` `catalog`
   はダミー（固定 DataFrame）で可。→ AppTest でスモーク済み。
-- [x] **Step 2. モックを本物へ差し替え**：`lib/connection`（ローカル secrets.toml 接続）→
-  `lib/catalog`（実カタログ表ロード）を実装し差し替え。`make run_local` で実データ表示を確認済み
+- [x] **Step 2. モックを本物へ差し替え**：`infrastructure/snowflake`（ローカル secrets.toml 接続）→
+  `catalog/providers/snowflake.py`（実カタログ表ロード）を実装し差し替え。`make run_local` で実データ表示を確認済み
   （両ページとも実データ表示 OK）。
 - [x] **Step 3. 検索を肉付け**：`lib/search` → 検索 UI を機能追加。
   - [x] Step 3a. データ資産検索（フリーワード / 階層 / 種別 / タグ / AND・OR トグル / 初期空欄＋インタラクティブ検索）。AppTest 検証済み。
@@ -45,25 +45,33 @@
 - [x] docs/design-model.md：ER 図 `MASKING_POLICY`→`MASKING_POLICY_NAME`
 - [x] docs/design-view.md / dcm/README.md：`design-catalog-data.md`→`design-model.md`
 
-## Phase 1. lib 層（ロジック）
+## Phase 1. アプリ共通層（data access / logic / runtime）
 
 追加依存なし方針。グラフは `st.graphviz_chart` に DOT 文字列を渡す。pytest を dev 依存へ追加。
 
-- [ ] `lib/connection.py`：`get_session()`。SiS は `get_active_session()`、ローカルは secrets.toml。UI から接続処理を書かず 1 箇所に集約。注入可能にする。
-- [ ] `lib/catalog.py`：data access。各カタログ表を `@st.cache_data(ttl=3600)` で一括ロードし DataFrame 化。
+- [x] `catalog/`：カタログテーブルの schema / provider facade / provider 実装を管理する。
+  - `catalog/schema.py`：カタログテーブル / DataFrame の列定義。
+  - `catalog/provider.py`：`CATALOG_DATA_MODE` を見て provider を切り替える facade。
+  - `catalog/providers/fake.py`：Snowflake 接続不要の fake provider。
+  - `catalog/providers/snowflake.py`：Snowflake 上のカタログテーブルを読む provider。
   - 対象：ASSETS / COLUMNS / USERS / TAGS / ACCESS_EDGES / ASSET_VISIBILITY。資産は `DISPLAY_SCOPES` で絞る。`SNOWFLAKE.ACCOUNT_USAGE` や本体には触れない。
-- [ ] `lib/search.py`：純関数。フリーワード解析（部分一致・大小無視・` OR `/` AND `）、資産フィルタ（カテゴリ1 AND (2 <トグル> 3 <トグル> 4)）、ユーザーフィルタ。
-- [ ] `lib/graph.py`：`ACCESS_EDGES` から user↔asset の経路のみを抽出し DOT 生成（多段継承・DB ロール修飾・PUBLIC 除外）。
-- [ ] `lib/state.py`：`st.session_state` キー定数・名前空間ヘルパ（`asset_` / `user_` / `search_`）。
-- [ ] pytest 導入（`pyproject.toml` dev 依存）。
+- [x] `infrastructure/snowflake.py`：`get_session()`。SiS は `get_active_session()`、ローカルは secrets.toml。UI から接続処理を書かず 1 箇所に集約。
+- [ ] `logic/search.py`：純関数。フリーワード解析（部分一致・大小無視・` OR `/` AND `）、資産フィルタ（カテゴリ1 AND (2 <トグル> 3 <トグル> 4)）、ユーザーフィルタ。
+- [ ] `logic/graph.py`：`ACCESS_EDGES` から user↔asset の経路のみを抽出し DOT 生成（多段継承・DB ロール修飾・PUBLIC 除外）。
+- [ ] `runtime/state.py`：`st.session_state` キー定数・名前空間ヘルパ（`asset_` / `user_` / `search_`）。
+- [ ] `runtime/user_context.py`：Streamlit ログインユーザー名を取得する。fake mode では固定ユーザーを返す。
+- [ ] `lib/`：上記 package への移行完了後、`from lib...` import が残っていないことを確認して削除する。
+- [x] pytest 導入（`pyproject.toml` dev 依存）。
 
 ## Phase 2. components 層（再利用 UI）
 
-- [ ] `components/asset_search.py`：データ資産 sidebar。4 カテゴリ＋カテゴリ間 AND/OR トグル（初期 AND）。DB→スキーマ連動プルダウン（DB `on_change` でスキーマ選択を未選択へリセット）。
-- [ ] `components/user_search.py`：ユーザー sidebar。ログインユーザーのみ表示トグル（`IS_VISIBLE_ONLY_SELF_USER=True` で ON 固定）＋フリーワード。
-- [ ] `components/result_table.py`：`st.dataframe(selection_mode="single-cell", on_select="rerun")` による全件表示。選択 ID を session_state へ。
-- [ ] `components/asset_detail.py`：資産 detail pane。ヘッダ（名前/説明/階層/種別 badge/タグ badge/PUBLIC badge）＋タブ（カラム / 連絡先 / 統計 / ユーザー）。カラム / 連絡先 / 統計は `st.dataframe` 表示。ユーザータブは行選択と明示ボタンでロール継承グラフページへ遷移。
-- [ ] `components/user_detail.py`：ユーザー detail pane。ヘッダ（名前/表示名/タイプ/ステータス）＋付与ロール／閲覧可能資産ペア＋ロール継承グラフページへの導線。
+- [x] `components/assets/search.py`：データ資産 sidebar。4 カテゴリ＋カテゴリ間 AND/OR トグル（初期 AND）。DB→スキーマ連動プルダウン（DB `on_change` でスキーマ選択を未選択へリセット）。
+- [x] `components/users/search.py`：ユーザー sidebar。ログインユーザーのみ表示トグル（`IS_VISIBLE_ONLY_SELF_USER=True` で ON 固定）＋フリーワード。
+- [x] `components/assets/table.py`：`st.dataframe(selection_mode="single-cell", on_select="rerun")` によるデータ資産全件表示。選択 ID を session_state へ。
+- [x] `components/assets/detail.py` + `components/assets/tab_*.py`：資産 detail pane。ヘッダ（名前/説明/階層/種別 badge/タグ badge/PUBLIC badge）＋タブ（カラム / 連絡先 / 統計 / ユーザー）。各タブは `tab_` prefix のファイルへ分離。
+- [x] `components/users/table.py`：`st.dataframe(selection_mode="single-cell", on_select="rerun")` によるユーザー全件表示。選択 ID を session_state へ。
+- [x] `components/users/detail.py`：ユーザー detail pane。ヘッダ（名前/表示名/タイプ/ステータス）＋付与ロール／閲覧可能資産ペア＋ロール継承グラフページへの導線。
+- [x] `components/shared/styles/`：CSS 本体を `.css` ファイルに分離し、loader 経由で Streamlit に適用。
 
 ## Phase 3. views 層／エントリ
 

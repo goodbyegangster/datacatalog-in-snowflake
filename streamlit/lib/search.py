@@ -2,7 +2,7 @@
 
 design-search.md の「page：データ資産」「page：ユーザー」の検索仕様を、Streamlit へ依存
 しない純関数として実装する（ウィジェットや session_state は views 側が扱う）。DataFrame を
-入力に受け、フィルタ済み DataFrame を返す。列参照は ``lib.schema`` の StrEnum を用いる。
+入力に受け、フィルタ済み DataFrame を返す。列参照は ``catalog.schema`` の StrEnum を用いる。
 
 仕様上の解釈（design-implementation の確定事項）:
 - フリーワードは ` OR ` があれば OR、無ければ ` AND ` で分割（部分一致・大小無視・リテラル）。
@@ -20,7 +20,7 @@ from dataclasses import dataclass, field
 
 import pandas as pd
 
-from lib import schema
+from catalog import schema
 from settings import DISPLAY_SCOPES
 
 # --- フリーワード ---------------------------------------------------------

@@ -7,7 +7,8 @@ from pathlib import Path
 import pytest
 from streamlit.testing.v1 import AppTest
 
-from lib import catalog_fake, state
+from catalog.providers import fake as catalog_fake
+from lib import state
 
 GRAPH_PAGE = Path(__file__).resolve().parents[1] / "views" / "graph.py"
 

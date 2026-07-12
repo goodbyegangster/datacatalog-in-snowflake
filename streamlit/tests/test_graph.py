@@ -4,7 +4,8 @@ from __future__ import annotations
 
 import pandas as pd
 
-from lib import graph, schema
+from catalog import schema
+from lib import graph
 
 
 def edge(source: str, target: str, relation_type: str, privilege: str | None = None) -> dict:

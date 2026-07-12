@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import pandas as pd
 
-from lib import schema
+from catalog import schema
 
 DB = "hogehoge"
 TAG_SCHEMA = "TAG"

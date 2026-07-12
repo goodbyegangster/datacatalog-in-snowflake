@@ -4,6 +4,7 @@ __pycache__
 .env
 .packages/
 .pytest_cache/
+.ruff_cache
 .sqruff
 .venv/
 .vscode/

@@ -7,7 +7,7 @@ from dataclasses import dataclass
 
 import pandas as pd
 
-from lib import schema
+from catalog import schema
 
 GRAPH_RELATION_TYPES = {"USER_TO_ROLE", "ROLE_TO_ROLE", "ROLE_TO_ASSET"}
 

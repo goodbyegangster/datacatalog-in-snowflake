@@ -24,13 +24,13 @@ def data_mode() -> CatalogDataMode:
 
 def _provider():
     if data_mode() == "fake":
-        from lib import catalog_fake
+        from catalog.providers import fake
 
-        return catalog_fake
+        return fake
 
-    from lib import catalog_snowflake
+    from catalog.providers import snowflake
 
-    return catalog_snowflake
+    return snowflake
 
 
 def load_assets() -> pd.DataFrame:

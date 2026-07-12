@@ -2,7 +2,8 @@
 
 from __future__ import annotations
 
-from lib import schema, search
+from catalog import schema
+from lib import search
 from lib.search import AssetSearchCriteria, FreewordQuery, TagSelection, UserFreewordQuery
 from tests.fixtures import catalog_data
 

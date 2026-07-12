@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import pandas as pd
 
-from lib import catalog_fake
+from catalog.providers import fake as catalog_fake
 
 DB = catalog_fake.DB
 TAG_SCHEMA = catalog_fake.TAG_SCHEMA

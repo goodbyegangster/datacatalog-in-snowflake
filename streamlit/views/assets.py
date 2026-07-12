@@ -12,355 +12,18 @@ from __future__ import annotations
 import pandas as pd
 import streamlit as st
 
-from lib import catalog, schema, search, state, ui, user_context
-from lib.search import AssetSearchCriteria, FreewordQuery, TagSelection
-from settings import IS_VISIBLE_ONLY_SELF_USER, SELECTABLE_TAG_KEYS
-
-ASSET_TYPE_BADGE_COLORS = {
-    "BASE TABLE": "blue",
-    "VIEW": "green",
-    "MATERIALIZED VIEW": "violet",
-    "DYNAMIC TABLE": "orange",
-    "ICEBERG TABLE": "blue",
-    "HYBRID TABLE": "yellow",
-    "EXTERNAL TABLE": "gray",
-    "EVENT TABLE": "red",
-    "TEMPORARY TABLE": "gray",
-}
-TAG_BADGE_COLOR_PALETTE = ("blue", "green", "orange", "violet", "red", "gray")
-
-# 一覧テーブルの行選択ウィジェットの key（閉じる際に選択状態も解除するため定数化）。
-_ASSET_TABLE_KEY = "asset_table"
-_ASSET_USERS_TABLE_KEY = "asset_users_table"
-CURRENT_USER_UNAVAILABLE_MESSAGE = (
-    "ログインユーザー名を取得できないため、ログインユーザーのみ表示を適用できません。"
-)
-
-# 一覧の列表示設定（列幅）。キーは表示用 DataFrame の列名と一致させる。
-_ASSET_COLUMN_CONFIG = {
-    "データベース": st.column_config.TextColumn(width="small"),
-    "スキーマ": st.column_config.TextColumn(width="small"),
-    "名前": st.column_config.TextColumn(width="medium"),
-    "オブジェクト種別": st.column_config.TextColumn(width="small"),
-    "説明": st.column_config.TextColumn(width="large"),
-}
-_ASSET_COMPACT_COLUMN_CONFIG = {
-    "名前": st.column_config.TextColumn(width="medium"),
-}
+from components.assets import detail as asset_detail
+from components.assets import search as asset_search
+from components.assets import table as asset_table
+from components.shared.styles import loader as styles
+from catalog import provider as catalog
+from catalog import schema
+from lib import search, state
 
 
-def _search_defaults() -> dict[str, object]:
-    """検索ウィジェットの初期値。"""
-    return {
-        state.SEARCH_ASSET_FREEWORD: "",
-        state.SEARCH_ASSET_TARGET_ASSET_NAME: True,
-        state.SEARCH_ASSET_TARGET_ASSET_DESC: True,
-        state.SEARCH_ASSET_TARGET_COLUMN_NAME: True,
-        state.SEARCH_ASSET_TARGET_COLUMN_DESC: True,
-        state.SEARCH_ASSET_DATABASES: [],
-        state.SEARCH_ASSET_SCHEMAS: [],
-        state.SEARCH_ASSET_TYPES: [],
-        state.SEARCH_ASSET_OP_HIERARCHY: "AND",
-        state.SEARCH_ASSET_OP_TYPE: "AND",
-        state.SEARCH_ASSET_OP_TAG: "AND",
-    }
-
-
-def _render_asset_page_css() -> None:
-    """データ資産ページ用の CSS を適用する。"""
-    ui.render_page_spacing_css()
-
-
-def _fmt_tags(tags: list[dict]) -> str:
-    """TAGS 列（object の list）を表示用の文字列へ整形する。"""
-    if not isinstance(tags, list) or not tags:
-        return ""
-    return ", ".join(f"{t['TAG_NAME']}={t['TAG_VALUE']}" for t in tags)
-
-
-def _fmt_roles(roles: object) -> str:
-    """ロール配列を dataframe 表示向けに整形する。"""
-    if not isinstance(roles, list) or not roles:
-        return ""
-    return ", ".join(str(role) for role in roles)
-
-
-def _fmt_foreign_keys(foreign_keys: object) -> str:
-    """FOREIGN_KEYS 列（object の list）を表示用の文字列へ整形する。"""
-    if not isinstance(foreign_keys, list) or not foreign_keys:
-        return ""
-    return ", ".join(
-        ".".join(
-            [
-                str(fk["REFERENCED_DATABASE"]),
-                str(fk["REFERENCED_SCHEMA"]),
-                str(fk["REFERENCED_TABLE"]),
-                str(fk["REFERENCED_COLUMN"]),
-            ]
-        )
-        for fk in foreign_keys
-    )
-
-
-def _asset_type_badge_color(asset_type: str) -> str:
-    """ASSET_TYPE に応じた badge 色を返す。"""
-    return ASSET_TYPE_BADGE_COLORS.get(asset_type, "gray")
-
-
-def _tag_badge_color(tag_name: str) -> str:
-    """タグキー名から安定した badge 色を返す。"""
-    index = sum(ord(char) for char in tag_name) % len(TAG_BADGE_COLOR_PALETTE)
-    return TAG_BADGE_COLOR_PALETTE[index]
-
-
-def _tag_allowed_values(tags: pd.DataFrame, tag_key: dict) -> list[str]:
-    """TAGS マスターから、指定タグの allowed_values を取得する。"""
-    T = schema.Tags
-    mask = (
-        (tags[T.TAG_DATABASE] == tag_key["DATABASE_NAME"])
-        & (tags[T.TAG_SCHEMA] == tag_key["SCHEMA_NAME"])
-        & (tags[T.TAG_NAME] == tag_key["TAG_NAME"])
-    )
-    return sorted(tags.loc[mask, T.TAG_VALUE].tolist())
-
-
-def _tag_widget_key(tag_key: dict) -> str:
-    return state.search_asset_tag_key(
-        tag_key["DATABASE_NAME"], tag_key["SCHEMA_NAME"], tag_key["TAG_NAME"]
-    )
-
-
-def _init_search_state() -> None:
-    """検索ウィジェットの初期値を session_state に寄せる。"""
-    for key, value in _search_defaults().items():
-        st.session_state.setdefault(key, value)
-    for tag_key in SELECTABLE_TAG_KEYS:
-        st.session_state.setdefault(_tag_widget_key(tag_key), [])
-
-
-def _on_database_change() -> None:
-    """DB 選択変更時、（親に依存する）スキーマ選択を未選択へリセットする。"""
-    st.session_state[state.SEARCH_ASSET_SCHEMAS] = []
-
-
-def _clear_search() -> None:
-    """検索入力を全クリアする。"""
-    for key, value in _search_defaults().items():
-        st.session_state[key] = value
-    for tag_key in SELECTABLE_TAG_KEYS:
-        st.session_state[_tag_widget_key(tag_key)] = []
-    st.session_state.pop(state.ASSET_SELECTED_TABLE_ID, None)
-    st.session_state.pop(_ASSET_TABLE_KEY, None)
-
-
-def _clear_selection() -> None:
-    """検索条件と整合しなくなった一覧/詳細の選択状態を解除する。"""
-    st.session_state.pop(state.ASSET_SELECTED_TABLE_ID, None)
-    st.session_state.pop(_ASSET_TABLE_KEY, None)
-
-
-def _render_combine_control(key: str) -> None:
-    """カテゴリ間の結合（AND=必須 / OR=いずれか）を選ぶセグメントコントロール。"""
-    st.segmented_control(
-        "その他検索との結合条件",
-        ["AND", "OR"],
-        key=key,
-    )
-
-
-def _op_is_or(key: str) -> bool:
-    return st.session_state.get(key) == "OR"
-
-
-def has_search_condition(criteria: AssetSearchCriteria) -> bool:
-    """いずれかの検索条件が入力/選択されているか（初期空欄判定に用いる）。"""
-    return bool(
-        criteria.freeword.text.strip()
-        or criteria.selected_databases
-        or criteria.selected_schemas
-        or criteria.selected_types
-        or any(t.selected for t in criteria.tag_selections)
-    )
-
-
-def _search_fingerprint(criteria: AssetSearchCriteria) -> tuple[object, ...]:
-    """現在の検索条件を、変更検知しやすい不変値へ正規化する。"""
-    tags = tuple(
-        (
-            tag.tag_database,
-            tag.tag_schema,
-            tag.tag_name,
-            tuple(sorted(tag.selected)),
-        )
-        for tag in criteria.tag_selections
-        if tag.selected
-    )
-    return (
-        criteria.freeword.text.strip(),
-        criteria.freeword.target_asset_name,
-        criteria.freeword.target_asset_desc,
-        criteria.freeword.target_column_name,
-        criteria.freeword.target_column_desc,
-        tuple(sorted(criteria.selected_databases)),
-        tuple(sorted(criteria.selected_schemas)),
-        tuple(sorted(criteria.selected_types)),
-        tags,
-        criteria.hierarchy_or,
-        criteria.type_or,
-        criteria.tag_or,
-    )
-
-
-def render_search(assets: pd.DataFrame, tags: pd.DataFrame) -> AssetSearchCriteria:
-    """sidebar：検索 UI。ウィジェットを描画し、現在の検索条件を返す。"""
-    _init_search_state()
-    st.button("入力をクリア", on_click=_clear_search, width="stretch")
-
-    # カテゴリ1：フリーワード
-    with st.container(border=True):
-        st.markdown("**フリーワード**")
-        st.text_input(
-            "キーワード",
-            key=state.SEARCH_ASSET_FREEWORD,
-            placeholder="名前 / 説明 で検索",
-            label_visibility="collapsed",
-        )
-        st.caption("単語間に ` OR ` / ` AND ` を入れると組み合わせ検索ができます")
-        cols = st.columns(2)
-        with cols[0]:
-            st.checkbox("オブジェクトの名前", key=state.SEARCH_ASSET_TARGET_ASSET_NAME)
-            st.checkbox("カラムの名前", key=state.SEARCH_ASSET_TARGET_COLUMN_NAME)
-        with cols[1]:
-            st.checkbox("オブジェクトの説明", key=state.SEARCH_ASSET_TARGET_ASSET_DESC)
-            st.checkbox("カラムの説明", key=state.SEARCH_ASSET_TARGET_COLUMN_DESC)
-
-    # カテゴリ2：階層（DB → スキーマ連動）
-    dbs_now = st.session_state.get(state.SEARCH_ASSET_DATABASES, [])
-    schemas_now = st.session_state.get(state.SEARCH_ASSET_SCHEMAS, [])
-    with st.expander("データベース / スキーマ", expanded=bool(dbs_now or schemas_now)):
-        _render_combine_control(state.SEARCH_ASSET_OP_HIERARCHY)
-        db_options = search.scope_databases()
-        st.multiselect(
-            "データベース",
-            db_options,
-            key=state.SEARCH_ASSET_DATABASES,
-            on_change=_on_database_change,
-        )
-        selected_dbs = st.session_state.get(state.SEARCH_ASSET_DATABASES, [])
-        schema_options = search.scope_schemas(selected_dbs)
-        st.multiselect(
-            "スキーマ",
-            schema_options,
-            key=state.SEARCH_ASSET_SCHEMAS,
-            help="データベースを選択すると候補が表示されます",
-        )
-
-    # カテゴリ3：オブジェクト種別
-    types_now = st.session_state.get(state.SEARCH_ASSET_TYPES, [])
-    with st.expander("オブジェクト種別", expanded=bool(types_now)):
-        _render_combine_control(state.SEARCH_ASSET_OP_TYPE)
-        type_options = sorted(assets[schema.Assets.ASSET_TYPE].dropna().unique().tolist())
-        st.multiselect(
-            "種別",
-            type_options,
-            key=state.SEARCH_ASSET_TYPES,
-            label_visibility="collapsed",
-        )
-
-    # カテゴリ4：タグ
-    tag_selections: list[TagSelection] = []
-    tag_widget_keys = [_tag_widget_key(t) for t in SELECTABLE_TAG_KEYS]
-    any_tag = any(st.session_state.get(k, []) for k in tag_widget_keys)
-    with st.expander("タグ", expanded=any_tag):
-        _render_combine_control(state.SEARCH_ASSET_OP_TAG)
-        for tag_key, widget_key in zip(SELECTABLE_TAG_KEYS, tag_widget_keys, strict=True):
-            allowed = _tag_allowed_values(tags, tag_key)
-            st.multiselect(tag_key["TAG_NAME"], allowed, key=widget_key)
-            tag_selections.append(
-                TagSelection(
-                    tag_database=tag_key["DATABASE_NAME"],
-                    tag_schema=tag_key["SCHEMA_NAME"],
-                    tag_name=tag_key["TAG_NAME"],
-                    selected=st.session_state.get(widget_key, []),
-                    allowed=allowed,
-                )
-            )
-
-    return AssetSearchCriteria(
-        freeword=FreewordQuery(
-            text=st.session_state.get(state.SEARCH_ASSET_FREEWORD, ""),
-            target_asset_name=st.session_state.get(state.SEARCH_ASSET_TARGET_ASSET_NAME, True),
-            target_asset_desc=st.session_state.get(state.SEARCH_ASSET_TARGET_ASSET_DESC, True),
-            target_column_name=st.session_state.get(state.SEARCH_ASSET_TARGET_COLUMN_NAME, True),
-            target_column_desc=st.session_state.get(state.SEARCH_ASSET_TARGET_COLUMN_DESC, True),
-        ),
-        selected_databases=st.session_state.get(state.SEARCH_ASSET_DATABASES, []),
-        selected_schemas=st.session_state.get(state.SEARCH_ASSET_SCHEMAS, []),
-        selected_types=st.session_state.get(state.SEARCH_ASSET_TYPES, []),
-        tag_selections=tag_selections,
-        hierarchy_or=_op_is_or(state.SEARCH_ASSET_OP_HIERARCHY),
-        type_or=_op_is_or(state.SEARCH_ASSET_OP_TYPE),
-        tag_or=_op_is_or(state.SEARCH_ASSET_OP_TAG),
-    )
-
-
-def render_table(assets: pd.DataFrame, *, compact: bool = False) -> int | None:
-    """main pane：一覧（st.dataframe）。選択中の TABLE_ID を返す。"""
-    A = schema.Assets
-    ordered = assets.sort_values([A.DATABASE_NAME, A.SCHEMA_NAME, A.ASSET_NAME]).reset_index(
-        drop=True
-    )
-
-    if compact:
-        display = pd.DataFrame({"名前": ordered[A.ASSET_NAME]}).reset_index(drop=True)
-        column_config = _ASSET_COMPACT_COLUMN_CONFIG
-    else:
-        display = pd.DataFrame(
-            {
-                "データベース": ordered[A.DATABASE_NAME],
-                "スキーマ": ordered[A.SCHEMA_NAME],
-                "名前": ordered[A.ASSET_NAME],
-                "オブジェクト種別": ordered[A.ASSET_TYPE],
-                "説明": ordered[A.DESCRIPTION],
-            }
-        ).reset_index(drop=True)
-        column_config = _ASSET_COLUMN_CONFIG
-
-    event = st.dataframe(
-        display,
-        column_config=column_config,
-        hide_index=True,
-        height="stretch",
-        width="stretch",
-        selection_mode="single-cell",
-        on_select="rerun",
-        key=_ASSET_TABLE_KEY,
-    )
-
-    cells = event.selection.cells
-    if cells and cells[0][0] < len(ordered):
-        return int(ordered.iloc[cells[0][0]][A.TABLE_ID])
-    return None
-
-
-def _close_detail() -> None:
-    """詳細ペインを閉じる。行選択ウィジェットの選択状態も解除する。"""
-    st.session_state.pop(state.ASSET_SELECTED_TABLE_ID, None)
-    st.session_state.pop(_ASSET_TABLE_KEY, None)
-    st.session_state.pop(state.NAV_TO_TABLE_ID, None)
-
-
-def _set_user_page_navigation(user_name: str) -> None:
-    """ユーザーページへ遷移するための状態を積む。"""
-    st.session_state[state.NAV_TO_USER_NAME] = user_name
-    st.session_state.pop(state.USER_SELECTED_NAME, None)
-
-
-def _set_graph_page_navigation(*, user_name: str, table_id: int, asset_fqn: str) -> None:
-    """ロール継承グラフページへ遷移するための状態を積む。"""
-    st.session_state[state.NAV_GRAPH_USER_NAME] = user_name
-    st.session_state[state.NAV_GRAPH_TABLE_ID] = int(table_id)
-    st.session_state[state.NAV_GRAPH_ASSET_FQN] = asset_fqn
+def _render_base_css() -> None:
+    """全ページ共通 CSS を適用する。"""
+    styles.render_base_css()
 
 
 def _consume_nav_to_table_id(assets: pd.DataFrame) -> int | None:
@@ -380,272 +43,9 @@ def _consume_nav_to_table_id(assets: pd.DataFrame) -> int | None:
     return None
 
 
-def render_detail(
-    table_id: int,
-    assets: pd.DataFrame,
-    columns: pd.DataFrame,
-    visibility: pd.DataFrame,
-) -> None:
-    """右カラム：シングル：データ資産の詳細ペイン。"""
-    A = schema.Assets
-    match = assets[assets[A.TABLE_ID] == table_id]
-    if match.empty:
-        st.error("選択されたデータ資産が見つかりませんでした")
-        return
-    asset = match.iloc[0]
-
-    with st.container(key="asset-summary"):
-        title_col, close_col = st.columns([1, 0.12], vertical_alignment="center")
-        with title_col:
-            st.subheader(asset[A.ASSET_NAME], anchor=False)
-        with close_col:
-            st.button(
-                "",
-                icon=":material/close:",
-                help="詳細を閉じる",
-                on_click=_close_detail,
-                key="asset_detail_close",
-                type="primary",
-            )
-
-        if asset[A.DESCRIPTION]:
-            st.markdown(f"**{asset[A.DESCRIPTION]}**")
-
-        col1, col2, col3, col4 = st.columns(4)
-        with col1:
-            st.caption("データベース")
-            st.markdown(f"**{asset[A.DATABASE_NAME]}**")
-        with col2:
-            st.caption("スキーマ")
-            st.markdown(f"**{asset[A.SCHEMA_NAME]}**")
-        with col3:
-            st.caption("オブジェクト種別")
-            st.badge(
-                asset[A.ASSET_TYPE],
-                color=_asset_type_badge_color(asset[A.ASSET_TYPE]),
-            )
-        with col4:
-            is_public = bool(asset[A.IS_PUBLIC_VISIBILITY])
-            st.caption("PUBLIC")
-            st.badge(
-                "参照可能" if is_public else "参照不可",
-                color="primary" if is_public else "gray",
-            )
-
-        st.caption("タグ")
-        tags = asset[A.TAGS]
-        if isinstance(tags, list) and tags:
-            tag_cols = st.columns(3)
-            for index, tag in enumerate(tags):
-                with tag_cols[index % len(tag_cols)]:
-                    tag_name = str(tag["TAG_NAME"])
-                    st.badge(
-                        f"{tag_name}: {tag['TAG_VALUE']}",
-                        icon=":material/sell:",
-                        color=_tag_badge_color(tag_name),
-                    )
-        else:
-            st.caption("タグはありません")
-
-    # --- 詳細ペイン下部（タブ）---
-    tab_cols, tab_contact, tab_stats, tab_users = st.tabs(
-        ["カラム", "連絡先", "統計情報", "ユーザー"]
-    )
-    with tab_cols:
-        _render_columns_tab(table_id, columns)
-    with tab_contact:
-        _render_contact_tab(asset)
-    with tab_stats:
-        _render_stats_tab(asset)
-    with tab_users:
-        _render_users_tab(asset, visibility)
-
-
-def _render_columns_tab(table_id: int, columns: pd.DataFrame) -> None:
-    C = schema.Columns
-    cols = columns[columns[C.TABLE_ID] == table_id].sort_values(C.ORDINAL_POSITION)
-    if cols.empty:
-        st.caption("カラム情報がありません")
-        return
-    st.caption("詳細な確認は Fullscreen モード（表選択時に右上出現）を利用してください")
-    display = pd.DataFrame(
-        {
-            "位置": cols[C.ORDINAL_POSITION],
-            "名前": cols[C.COLUMN_NAME],
-            "説明": cols[C.DESCRIPTION].fillna(""),
-            "型": cols[C.DATA_TYPE],
-            "PKEY": cols[C.IS_PRIMARY_KEY],
-            "NOT NULL": cols[C.IS_NULLABLE],
-            "UNIQUE": cols[C.IS_UNIQUE_KEY],
-            "外部 KEY": cols[C.FOREIGN_KEYS].map(_fmt_foreign_keys),
-            "マスキングポリシー": cols[C.MASKING_POLICY_NAME].fillna("").astype(bool),
-            "タグ": cols[C.TAGS].map(_fmt_tags),
-        }
-    )
-    st.dataframe(
-        display,
-        hide_index=True,
-        height="stretch",
-        width="stretch",
-        column_config={
-            "位置": st.column_config.NumberColumn(width="small"),
-            "名前": st.column_config.TextColumn(width="medium"),
-            "説明": st.column_config.TextColumn(width="large"),
-            "型": st.column_config.TextColumn(width="small"),
-            "PKEY": st.column_config.CheckboxColumn(width="small"),
-            "NOT NULL": st.column_config.CheckboxColumn(width="small"),
-            "UNIQUE": st.column_config.CheckboxColumn(width="small"),
-            "外部 KEY": st.column_config.TextColumn(width="large"),
-            "マスキングポリシー": st.column_config.CheckboxColumn(width="small"),
-            "タグ": st.column_config.TextColumn(width="medium"),
-        },
-    )
-
-
-def _render_contact_tab(asset: pd.Series) -> None:
-    A = schema.Assets
-    display = pd.DataFrame(
-        [
-            {"項目": "スチュワード", "ロール": asset[A.CONTACT_STEWARD] or ""},
-            {"項目": "サポート", "ロール": asset[A.CONTACT_SUPPORT] or ""},
-            {"項目": "承認者", "ロール": asset[A.CONTACT_ACCESS_APPROVAL] or ""},
-            {
-                "項目": "セキュリティとコンプライアンス",
-                "ロール": asset[A.CONTACT_SECURITY_COMPLIANCE] or "",
-            },
-        ]
-    )
-    st.dataframe(
-        display,
-        hide_index=True,
-        width="stretch",
-        column_config={
-            "項目": st.column_config.TextColumn(width="medium"),
-            "ロール": st.column_config.TextColumn(width="large"),
-        },
-    )
-
-
-def _render_stats_tab(asset: pd.Series) -> None:
-    A = schema.Assets
-    row_count = asset[A.ROW_COUNT]
-    n_bytes = asset[A.BYTES]
-    display = pd.DataFrame(
-        [
-            {"項目": "行数", "値": f"{int(row_count):,}" if pd.notna(row_count) else "-"},
-            {
-                "項目": "データサイズ (bytes)",
-                "値": f"{int(n_bytes):,}" if pd.notna(n_bytes) else "-",
-            },
-        ]
-    )
-    st.dataframe(
-        display,
-        hide_index=True,
-        width="stretch",
-        column_config={
-            "項目": st.column_config.TextColumn(width="medium"),
-            "値": st.column_config.TextColumn(width="medium"),
-        },
-    )
-
-
-def _selected_user_row(event: object, display: pd.DataFrame) -> int | None:
-    """ユーザータブで選択されたセルの行位置を返す。"""
-    cells = event.selection.cells
-    if not cells:
-        return None
-
-    cell = cells[0]
-    row_index = cell["row"] if isinstance(cell, dict) else cell[0]
-    if row_index >= len(display):
-        return None
-    return int(row_index)
-
-
-def _render_users_tab(asset: pd.Series, visibility: pd.DataFrame) -> None:
-    A = schema.Assets
-    V = schema.AssetVisibility
-    table_id = int(asset[A.TABLE_ID])
-    vis = visibility[visibility[V.TABLE_ID] == table_id]
-    if IS_VISIBLE_ONLY_SELF_USER:
-        current_user_name = user_context.current_user_name()
-        if current_user_name is None:
-            st.warning(CURRENT_USER_UNAVAILABLE_MESSAGE)
-            return
-        vis = vis[vis[V.USER_NAME] == current_user_name]
-
-    if vis.empty:
-        st.caption("閲覧可能なユーザーがいません")
-        return
-
-    vis = vis.sort_values(V.USER_NAME).reset_index(drop=True)
-    display = pd.DataFrame(
-        {
-            "ユーザー": vis[V.USER_NAME],
-            "ユーザー付与ロール": vis[V.USER_ROLES].map(_fmt_roles),
-            "データ資産付与ロール": vis[V.ASSET_ROLES].map(_fmt_roles),
-        }
-    ).reset_index(drop=True)
-    action_slot = st.container()
-    event = st.dataframe(
-        display,
-        hide_index=True,
-        height="stretch",
-        width="stretch",
-        selection_mode="single-cell",
-        on_select="rerun",
-        key=f"{_ASSET_USERS_TABLE_KEY}_{table_id}",
-        column_config={
-            "ユーザー": st.column_config.TextColumn(width="medium"),
-            "ユーザー付与ロール": st.column_config.TextColumn(width="medium"),
-            "データ資産付与ロール": st.column_config.TextColumn(width="medium"),
-        },
-    )
-
-    selected_user_row = _selected_user_row(event, display)
-    selected_user_name = (
-        None if selected_user_row is None else str(display.iloc[selected_user_row]["ユーザー"])
-    )
-    asset_fqn = ".".join(
-        [
-            str(asset[A.DATABASE_NAME]),
-            str(asset[A.SCHEMA_NAME]),
-            str(asset[A.ASSET_NAME]),
-        ]
-    )
-    with action_slot:
-        open_col, graph_col = st.columns(2)
-        with open_col:
-            if st.button(
-                "選択ユーザーを開く",
-                icon=":material/person_search:",
-                disabled=selected_user_name is None,
-                key=f"asset_user_open_button_{table_id}",
-                width="stretch",
-            ):
-                _set_user_page_navigation(selected_user_name or "")
-                st.switch_page("views/users.py")
-        with graph_col:
-            if st.button(
-                "ロール継承グラフを表示",
-                icon=":material/account_tree:",
-                disabled=selected_user_name is None,
-                key=f"asset_user_graph_button_{table_id}",
-                width="stretch",
-            ):
-                _set_graph_page_navigation(
-                    user_name=selected_user_name or "",
-                    table_id=table_id,
-                    asset_fqn=asset_fqn,
-                )
-                st.switch_page("views/graph.py")
-        st.caption("行を選択してから、必要な操作ボタンを押してください")
-
-
 def main() -> None:
     st.title("🗂️ データ資産", anchor=False)
-    _render_asset_page_css()
+    _render_base_css()
 
     main_pane = st.container()
 
@@ -666,10 +66,10 @@ def main() -> None:
     nav_table_id = _consume_nav_to_table_id(assets)
 
     with st.sidebar:
-        criteria = render_search(assets, tags)
+        criteria = asset_search.render(assets, tags)
 
     with main_pane:
-        if not has_search_condition(criteria):
+        if not asset_search.has_condition(criteria):
             previous_search = st.session_state.get(state.ASSET_SEARCH_FINGERPRINT) is not None
             selected_table_id = st.session_state.get(state.ASSET_SELECTED_TABLE_ID)
             if nav_table_id is not None:
@@ -683,33 +83,33 @@ def main() -> None:
                 with list_col:
                     st.info("検索条件が未指定のため、一覧は非表示です。")
                 with detail_col:
-                    render_detail(selected_table_id, assets, columns, visibility)
+                    asset_detail.render(selected_table_id, assets, columns, visibility)
             else:
-                _clear_selection()
+                asset_table.clear_selection()
                 st.session_state.pop(state.ASSET_SEARCH_FINGERPRINT, None)
                 st.info("サイドバーの検索条件を指定すると、一覧が表示されます。")
             return
 
-        search_fingerprint = _search_fingerprint(criteria)
+        search_fingerprint = asset_search.fingerprint(criteria)
         if st.session_state.get(state.ASSET_SEARCH_FINGERPRINT) != search_fingerprint:
-            _clear_selection()
+            asset_table.clear_selection()
             st.session_state[state.ASSET_SEARCH_FINGERPRINT] = search_fingerprint
 
         filtered = search.filter_assets(assets, columns, criteria)
         if filtered.empty:
-            _clear_selection()
+            asset_table.clear_selection()
             st.info("該当するデータ資産がありません。検索条件を変更してください。")
             return
 
         prior = st.session_state.get(state.ASSET_SELECTED_TABLE_ID)
         if prior is None:
-            selected_now = render_table(filtered)
+            selected_now = asset_table.render(filtered)
         else:
             list_col, detail_col = st.columns([1, 3])
             with list_col:
-                selected_now = render_table(filtered, compact=True)
+                selected_now = asset_table.render(filtered, compact=True)
             with detail_col:
-                render_detail(prior, assets, columns, visibility)
+                asset_detail.render(prior, assets, columns, visibility)
 
         # 選択セルがない rerun は、詳細ペイン内の操作でも発生するため既存詳細を維持する。
         if selected_now is not None and selected_now != prior:

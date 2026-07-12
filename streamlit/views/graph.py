@@ -9,18 +9,9 @@ from __future__ import annotations
 
 import streamlit as st
 
-from lib import catalog, graph, state, ui
-
-GRAPH_PAGE_CSS = """
-<style>
-[data-testid="stSidebar"] {
-    display: none;
-}
-[data-testid="stSidebarCollapsedControl"] {
-    display: none;
-}
-</style>
-"""
+from components.shared.styles import loader as styles
+from catalog import provider as catalog
+from lib import graph, state
 
 
 def _graph_target() -> tuple[str | None, int | None, str | None]:
@@ -54,8 +45,8 @@ def _render_navigation_buttons(user_name: str, table_id: int) -> None:
 
 def main() -> None:
     st.title("🌐 ロール継承グラフ", anchor=False)
-    ui.render_page_spacing_css()
-    st.markdown(GRAPH_PAGE_CSS, unsafe_allow_html=True)
+    styles.render_base_css()
+    styles.render_page_css("hide_sidebar.css")
 
     user_name, table_id, asset_fqn = _graph_target()
     if user_name is None or table_id is None or asset_fqn is None:

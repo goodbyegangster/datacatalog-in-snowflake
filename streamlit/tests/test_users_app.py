@@ -8,7 +8,9 @@ import pandas as pd
 import pytest
 from streamlit.testing.v1 import AppTest
 
-from lib import catalog_fake, schema, state
+from catalog import schema
+from catalog.providers import fake as catalog_fake
+from lib import state
 from tests.fixtures import catalog_data
 
 USERS_PAGE = Path(__file__).resolve().parents[1] / "views" / "users.py"
@@ -236,7 +238,7 @@ def test_users_page_hides_traceback_outside_fake_mode(monkeypatch: pytest.Monkey
     def load_users() -> pd.DataFrame:
         raise RuntimeError("snowflake users exploded")
 
-    monkeypatch.setattr("lib.catalog_snowflake.load_users", load_users)
+    monkeypatch.setattr("catalog.providers.snowflake.load_users", load_users)
     app = AppTest.from_file(USERS_PAGE).run()
 
     assert [error.value for error in app.error] == [

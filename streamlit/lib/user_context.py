@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import streamlit as st
 
-from lib import catalog
+from catalog import provider as catalog
 
 FAKE_CURRENT_USER_NAME = "ALICE"
 

@@ -9,8 +9,8 @@ import pandas as pd
 import streamlit as st
 from snowflake.snowpark import Session
 
-from lib import schema
-from lib.connection import get_session
+from catalog import schema
+from infrastructure.snowflake import get_session
 from settings import CATALOG_LOCATION, DISPLAY_SCOPES
 
 CACHE_TTL = 3600
