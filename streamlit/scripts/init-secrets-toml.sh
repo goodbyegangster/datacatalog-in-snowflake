@@ -43,6 +43,8 @@ readonly SUBST_VARS='
 '
 
 # template ファイルから secrets.toml を生成する
+umask 077
 envsubst "$SUBST_VARS" <"$TEMPLATE" >"$OUTPUT"
+chmod 600 "$OUTPUT"
 
 echo "Generated: ${OUTPUT}"
