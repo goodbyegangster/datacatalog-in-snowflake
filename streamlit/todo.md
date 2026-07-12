@@ -35,7 +35,7 @@
     - graph 表示ボタンを、どの行・どの選択単位（ユーザー / 資産 / 起点ロール）に紐づけるか。
   - 一覧は単なる参照表ではなく、ロール継承グラフページの起点選択 UI として扱う。
 - [x] **Step 5. 仕上げ**：ページ間遷移・エラー表示・空状態・ソート/一覧表示の詰め。
-- [ ] **Step 6. テスト**：純関数（search/graph）の pytest ＋ スモーク。行選択 e2e は後続。
+- [x] **Step 6. テスト**：純関数（search/graph）の pytest ＋ AppTest スモーク。行選択 e2e は後続。
 
 各 Step で対応する成果物は下部 Phase 一覧を参照（進捗はこの Step 側で管理）。
 
@@ -87,9 +87,9 @@
 
 ## Phase 4. テスト／確認
 
-- [ ] `tests/test_search.py`：フリーワード AND/OR・階層/種別/タグ・カテゴリ間 AND/OR トグル。
-- [ ] `tests/test_graph.py`：経路抽出（多段継承・DB ロール・PUBLIC 除外）。
-- [ ] スモーク：`streamlit run` 起動確認 or `streamlit.testing.v1.AppTest`。
+- [x] `tests/unit/test_search.py`：フリーワード AND/OR・階層/種別/タグ・カテゴリ間 AND/OR トグル。
+- [x] `tests/unit/test_graph_logic.py`：経路抽出（多段継承・DB ロール・PUBLIC 除外）。
+- [x] `tests/app/`：`streamlit.testing.v1.AppTest` によるデータ資産 / ユーザー / グラフページのスモーク。
 - [ ] （後続）行選択 `on_select` の実描画は Playwright でクリティカルフローのみ。
 
 ## 未確定・要議論の論点
@@ -97,10 +97,19 @@
 この後の議論で確定する項目（決まり次第、必要なら `docs/design-implementation.md` に切り出す）。
 
 - ~~ナビゲーション実装~~：**確定済み** — `st.navigation` + `st.Page`（`views/` に ASCII 名、タイトルは日本語）。
-- カタログ表のロード単位とキャッシュキー設計（資産の DISPLAY_SCOPES 事前絞り込みを SQL/Python どちらで行うか）。
-- 検索ロジックの厳密仕様（フリーワードのトークン分割規則、カラムヒット時の資産包含、空選択時の扱い）。
-- グラフ経路抽出アルゴリズムの詳細（`ASSET_VISIBILITY` と `ACCESS_EDGES` の使い分け、経路探索の実装）。
-- テスト戦略の粒度（pytest 中心・AppTest/Playwright の範囲）。
+- ~~カタログ表のロード単位とキャッシュキー設計~~：**確定済み** —
+  カタログ表ごとに `load_*()` で読み込み、`st.cache_data(ttl=3600)` でキャッシュする。
+  `DISPLAY_SCOPES` は `ASSETS` / `COLUMNS` / `ASSET_VISIBILITY` 読み込み後に Python 側で絞る。
+  大規模化して転送量が問題になった場合のみ SQL pushdown を検討する。
+- ~~検索ロジックの厳密仕様~~：**確定済み** —
+  `docs/design-search.md` と `logic/search.py` を正とする。フリーワード分割、カラムヒット時の資産包含、
+  未選択 = 無制約は `tests/unit/test_search.py` で検証する。
+- ~~グラフ経路抽出アルゴリズムの詳細~~：**確定済み** —
+  一覧表示は `ASSET_VISIBILITY`、ロール継承グラフは `ACCESS_EDGES` を使う。
+  graph は user→asset の全単純経路を探索し、経路上限超過時は描画しない。
+- ~~テスト戦略の粒度~~：**確定済み** —
+  純関数は `tests/unit/` の pytest、ページスモークは `tests/app/` の AppTest で担保する。
+  Playwright は AppTest が苦手な実ブラウザ行選択などのクリティカルフローに限定する。
 
 ## 既知の制約 / 保留メモ
 

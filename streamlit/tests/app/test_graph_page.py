@@ -2,19 +2,12 @@
 
 from __future__ import annotations
 
-from pathlib import Path
-
 import pytest
 from streamlit.testing.v1 import AppTest
 
 from catalog.providers import fake as catalog_fake
 from runtime import state
-
-GRAPH_PAGE = Path(__file__).resolve().parents[1] / "views" / "graph.py"
-
-
-def assert_no_exception(app: AppTest) -> None:
-    assert not app.exception
+from tests.app.conftest import GRAPH_PAGE, assert_no_exception
 
 
 def test_graph_page_requires_selected_target(monkeypatch: pytest.MonkeyPatch) -> None:

@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-from pathlib import Path
-
 import pandas as pd
 import pytest
 from streamlit.testing.v1 import AppTest
@@ -11,27 +9,10 @@ from streamlit.testing.v1 import AppTest
 from catalog import schema
 from catalog.providers import fake as catalog_fake
 from runtime import state
+from tests.app.conftest import USERS_PAGE, assert_no_exception, dataframe_value
 from tests.fixtures import catalog_data
 
-USERS_PAGE = Path(__file__).resolve().parents[1] / "views" / "users.py"
 BASE_USER = catalog_data.users().iloc[0].to_dict()
-
-
-@pytest.fixture
-def users_app(monkeypatch: pytest.MonkeyPatch) -> AppTest:
-    monkeypatch.setenv("CATALOG_DATA_MODE", "fake")
-
-    return AppTest.from_file(USERS_PAGE)
-
-
-def assert_no_exception(app: AppTest) -> None:
-    assert not app.exception
-
-
-def dataframe_value(app: AppTest, index: int = 0) -> pd.DataFrame:
-    value = app.dataframe[index].value
-    assert isinstance(value, pd.DataFrame)
-    return value
 
 
 def many_users(count: int) -> pd.DataFrame:

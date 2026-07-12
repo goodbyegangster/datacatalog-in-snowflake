@@ -2,9 +2,6 @@
 
 from __future__ import annotations
 
-from pathlib import Path
-from typing import Any
-
 import pandas as pd
 import pytest
 from streamlit.testing.v1 import AppTest
@@ -12,34 +9,15 @@ from streamlit.testing.v1 import AppTest
 from catalog import schema
 from catalog.providers import fake as catalog_fake
 from runtime import state
+from tests.app.conftest import (
+    ASSETS_PAGE,
+    assert_no_exception,
+    dataframe_value,
+    multiselect_by_label,
+)
 from tests.fixtures import catalog_data
 
-ASSETS_PAGE = Path(__file__).resolve().parents[1] / "views" / "assets.py"
 BASE_ASSET = catalog_data.assets().iloc[0].to_dict()
-
-
-@pytest.fixture
-def assets_app(monkeypatch: pytest.MonkeyPatch) -> AppTest:
-    monkeypatch.setenv("CATALOG_DATA_MODE", "fake")
-
-    return AppTest.from_file(ASSETS_PAGE)
-
-
-def assert_no_exception(app: AppTest) -> None:
-    assert not app.exception
-
-
-def dataframe_value(app: AppTest, index: int = 0) -> pd.DataFrame:
-    value = app.dataframe[index].value
-    assert isinstance(value, pd.DataFrame)
-    return value
-
-
-def multiselect_by_label(app: AppTest, label: str) -> Any:
-    for widget in app.multiselect:
-        if widget.label == label:
-            return widget
-    raise AssertionError(f"multiselect not found: {label}")
 
 
 def many_assets(count: int) -> pd.DataFrame:
