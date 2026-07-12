@@ -1,10 +1,6 @@
--- noqa: disable=LT02
-
 -- 「承認者」向けには紐づく Snowflake ユーザー情報を設定
-create or replace contact <% sis_database_name %>.CONTACT."山田太郎"
-    users = (
-        '<% SNOWFLAKE_MY_USER_NAME %>'
-    )
+create or replace contact <% sis_database_name %>.CONTACT."山田太郎"  -- noqa: LT02
+    users = ('<% SNOWFLAKE_MY_USER_NAME %>')
     comment = '承認者'
 ;
 
