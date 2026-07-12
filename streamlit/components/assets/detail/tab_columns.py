@@ -58,7 +58,7 @@ def render(table_id: int, columns: pd.DataFrame) -> None:
     st.dataframe(
         display,
         hide_index=True,
-        height="stretch",
+        height="auto",
         width="stretch",
         column_config={
             "位置": st.column_config.NumberColumn(width="small"),

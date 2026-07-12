@@ -50,7 +50,7 @@ def render(users: pd.DataFrame, *, compact: bool = False) -> str | None:
         display,
         column_config=column_config,
         hide_index=True,
-        height="stretch",
+        height="auto",
         width="stretch",
         selection_mode="single-cell",
         on_select="rerun",

@@ -21,7 +21,7 @@ ASSET_TYPE_BADGE_COLORS = {
     "EVENT TABLE": "red",
     "TEMPORARY TABLE": "gray",
 }
-TAG_BADGE_COLOR_PALETTE = ("blue", "green", "orange", "violet", "red", "gray")
+TAG_BADGE_COLOR_PALETTE = ("blue", "green", "orange", "violet", "red", "pink", "gray")
 
 
 def _asset_type_badge_color(asset_type: str) -> str:

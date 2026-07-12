@@ -127,7 +127,7 @@ def render(user_name: str, users: pd.DataFrame, visibility: pd.DataFrame) -> Non
     event = st.dataframe(
         display,
         hide_index=True,
-        height="stretch",
+        height="auto",
         width="stretch",
         selection_mode="single-cell",
         on_select="rerun",

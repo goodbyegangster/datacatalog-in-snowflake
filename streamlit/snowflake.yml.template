@@ -21,10 +21,16 @@ entities:
       - ${EXTERNAL_ACCESS_PYPI_NAME}
     main_file: streamlit_app.py
     artifacts:
-      - .streamlit/config.toml
+      # directory
+      - catalog
       - components
-      - lib
+      - infrastructure
+      - logic
+      - runtime
+      - styles
       - views
+      # file
+      - .streamlit/config.toml
       - pyproject.toml
       - settings.py
       - streamlit_app.py

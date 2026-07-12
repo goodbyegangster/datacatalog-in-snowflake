@@ -641,6 +641,56 @@
       "title": "ComputePoolEntityModel",
       "type": "object"
     },
+    "ComputePoolReference": {
+      "additionalProperties": false,
+      "description": "Reference to a compute pool.",
+      "properties": {
+        "database": {
+          "anyOf": [
+            {
+              "maxLength": 254,
+              "pattern": "((?:\"[^\"]*(?:\"\"[^\"]*)*\")|(?:[A-Za-z_][\\w$]*))",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Database of the compute pool"
+        },
+        "name": {
+          "anyOf": [
+            {
+              "maxLength": 254,
+              "pattern": "((?:\"[^\"]*(?:\"\"[^\"]*)*\")|(?:[A-Za-z_][\\w$]*))",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Name of the compute pool"
+        },
+        "schema": {
+          "anyOf": [
+            {
+              "maxLength": 254,
+              "pattern": "((?:\"[^\"]*(?:\"\"[^\"]*)*\")|(?:[A-Za-z_][\\w$]*))",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Schema of the compute pool"
+        }
+      },
+      "title": "ComputePoolReference",
+      "type": "object"
+    },
     "EnsureUsableByField": {
       "additionalProperties": false,
       "properties": {
@@ -703,8 +753,22 @@
     },
     "ExternalAccessReference": {
       "additionalProperties": false,
-      "description": "Reference to an external access integration.\n\nExternal access integrations are account-level objects, so only a name is\naccepted (no database/schema qualification).",
+      "description": "Reference to an external access integration.",
       "properties": {
+        "database": {
+          "anyOf": [
+            {
+              "maxLength": 254,
+              "pattern": "((?:\"[^\"]*(?:\"\"[^\"]*)*\")|(?:[A-Za-z_][\\w$]*))",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Database of the external access integration"
+        },
         "name": {
           "anyOf": [
             {
@@ -718,6 +782,20 @@
           ],
           "default": null,
           "title": "Name of the external access integration"
+        },
+        "schema": {
+          "anyOf": [
+            {
+              "maxLength": 254,
+              "pattern": "((?:\"[^\"]*(?:\"\"[^\"]*)*\")|(?:[A-Za-z_][\\w$]*))",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Schema of the external access integration"
         }
       },
       "title": "ExternalAccessReference",
@@ -1039,6 +1117,51 @@
         "type"
       ],
       "title": "ImageRepositoryEntityModel",
+      "type": "object"
+    },
+    "ImageRepositoryReference": {
+      "additionalProperties": false,
+      "description": "Reference to an image repository used for container image storage.",
+      "properties": {
+        "database": {
+          "anyOf": [
+            {
+              "maxLength": 254,
+              "pattern": "((?:\"[^\"]*(?:\"\"[^\"]*)*\")|(?:[A-Za-z_][\\w$]*))",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Database of the image repository"
+        },
+        "name": {
+          "maxLength": 254,
+          "pattern": "((?:\"[^\"]*(?:\"\"[^\"]*)*\")|(?:[A-Za-z_][\\w$]*))",
+          "title": "Name of the image repository",
+          "type": "string"
+        },
+        "schema": {
+          "anyOf": [
+            {
+              "maxLength": 254,
+              "pattern": "((?:\"[^\"]*(?:\"\"[^\"]*)*\")|(?:[A-Za-z_][\\w$]*))",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Schema of the image repository"
+        }
+      },
+      "required": [
+        "name"
+      ],
+      "title": "ImageRepositoryReference",
       "type": "object"
     },
     "MetaField": {
@@ -1799,6 +1922,11 @@
       "additionalProperties": false,
       "description": "Entity model for Snowflake App Runtime (snowflake-app) type.",
       "properties": {
+        "app_port": {
+          "default": 3000,
+          "title": "Port the app listens on",
+          "type": "integer"
+        },
         "artifact_repository": {
           "anyOf": [
             {
@@ -1825,6 +1953,18 @@
           "title": "List of paths or file source/destination pairs to add to the deploy root",
           "type": "array"
         },
+        "build_compute_pool": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/ComputePoolReference"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Compute pool for building the app"
+        },
         "build_eai": {
           "anyOf": [
             {
@@ -1836,6 +1976,18 @@
           ],
           "default": null,
           "title": "External access integration for build"
+        },
+        "build_image": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Custom container image for building the app"
         },
         "code_stage": {
           "anyOf": [
@@ -1873,6 +2025,26 @@
           "default": "output/deploy/",
           "title": "Folder at the root of your project where the build step copies the artifacts"
         },
+        "dev_roles": {
+          "anyOf": [
+            {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Development roles for the app"
+        },
+        "execute_as_caller": {
+          "default": true,
+          "title": "Whether the service runs with caller privileges",
+          "type": "boolean"
+        },
         "identifier": {
           "anyOf": [
             {
@@ -1887,6 +2059,18 @@
           ],
           "default": null,
           "title": "Entity identifier"
+        },
+        "image_repository": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/ImageRepositoryReference"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Image repository for container images"
         },
         "meta": {
           "anyOf": [
@@ -1919,6 +2103,18 @@
           "title": "Runtime image used by SPCS artifact repo build/run",
           "type": "string"
         },
+        "service_compute_pool": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/ComputePoolReference"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Compute pool for running the app service"
+        },
         "service_eai": {
           "anyOf": [
             {
@@ -1929,7 +2125,7 @@
             }
           ],
           "default": null,
-          "title": "External access integration for the application service"
+          "title": "External access integration for service"
         },
         "spcs_test_project_type": {
           "anyOf": [
@@ -2314,21 +2510,6 @@
           ],
           "default": "streamlit",
           "title": "Stage in which the app\u2019s artifacts will be stored"
-        },
-        "tags": {
-          "anyOf": [
-            {
-              "items": {
-                "$ref": "#/$defs/Tag"
-              },
-              "type": "array"
-            },
-            {
-              "type": "null"
-            }
-          ],
-          "default": null,
-          "title": "Tags for the Streamlit app"
         },
         "title": {
           "anyOf": [

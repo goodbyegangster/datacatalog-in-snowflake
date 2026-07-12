@@ -77,7 +77,7 @@ def render(asset: pd.Series, visibility: pd.DataFrame) -> None:
     event = st.dataframe(
         display,
         hide_index=True,
-        height="stretch",
+        height="auto",
         width="stretch",
         selection_mode="single-cell",
         on_select="rerun",
