@@ -1,7 +1,7 @@
 """page：データ資産。
 
 design-view.md の「page：データ資産」に対応。検索 UI は sidebar に配置し、本文側に
-一覧 / 詳細を表示する。検索仕様は design-search.md、検索ロジックは ``lib.search`` を参照。
+一覧 / 詳細を表示する。検索仕様は design-search.md、検索ロジックは ``logic.search`` を参照。
 
 初期状態は一覧を空欄表示とし、検索入力に応じてインタラクティブに結果を表示する。
 ユーザータブでは、行選択後のボタン操作でロール継承グラフを表示する。
@@ -12,13 +12,14 @@ from __future__ import annotations
 import pandas as pd
 import streamlit as st
 
-from components.assets import detail as asset_detail
-from components.assets import search as asset_search
-from components.assets import table as asset_table
-from components.shared.styles import loader as styles
+import styles
 from catalog import provider as catalog
 from catalog import schema
-from lib import search, state
+from components.assets import detail as asset_detail
+from components.assets import results as asset_results
+from components.assets import search as asset_search
+from logic import search
+from runtime import state
 
 
 def _render_base_css() -> None:
@@ -85,29 +86,29 @@ def main() -> None:
                 with detail_col:
                     asset_detail.render(selected_table_id, assets, columns, visibility)
             else:
-                asset_table.clear_selection()
+                asset_results.clear_selection()
                 st.session_state.pop(state.ASSET_SEARCH_FINGERPRINT, None)
                 st.info("サイドバーの検索条件を指定すると、一覧が表示されます。")
             return
 
         search_fingerprint = asset_search.fingerprint(criteria)
         if st.session_state.get(state.ASSET_SEARCH_FINGERPRINT) != search_fingerprint:
-            asset_table.clear_selection()
+            asset_results.clear_selection()
             st.session_state[state.ASSET_SEARCH_FINGERPRINT] = search_fingerprint
 
         filtered = search.filter_assets(assets, columns, criteria)
         if filtered.empty:
-            asset_table.clear_selection()
+            asset_results.clear_selection()
             st.info("該当するデータ資産がありません。検索条件を変更してください。")
             return
 
         prior = st.session_state.get(state.ASSET_SELECTED_TABLE_ID)
         if prior is None:
-            selected_now = asset_table.render(filtered)
+            selected_now = asset_results.render(filtered)
         else:
             list_col, detail_col = st.columns([1, 3])
             with list_col:
-                selected_now = asset_table.render(filtered, compact=True)
+                selected_now = asset_results.render(filtered, compact=True)
             with detail_col:
                 asset_detail.render(prior, assets, columns, visibility)
 

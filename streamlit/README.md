@@ -34,10 +34,14 @@ streamlit/
 ├── .config/                  # snowflake.yml 用の JSON スキーマ
 ├── .streamlit/
 │   └── secrets.toml.template # ローカル接続情報のテンプレート
+├── catalog/                  # カタログ DataFrame の schema / provider
 ├── components/               # 再利用 UI（left / detail pane、行選択テーブル等）
-├── lib/                      # ロジック（connection / catalog / schema / search / graph 等）
-├── views/                    # マルチページの各ページ（データ資産 / ユーザー）
+├── infrastructure/           # Snowflake 接続など外部基盤との接続
+├── logic/                    # 検索 / グラフ生成などの純粋な業務ロジック
+├── runtime/                  # session_state / ログインユーザーなど実行時状態
 ├── scripts/                  # .env から設定ファイルを生成するスクリプト
+├── styles/                   # 全ページ共通 / ページ固有 CSS と loader
+├── views/                    # マルチページの各ページ（データ資産 / ユーザー / グラフ）
 ├── Makefile
 ├── pyproject.toml            # 依存定義（streamlit[snowflake]）
 ├── settings.py.template      # 表示 / 検索スコープ定義のテンプレート

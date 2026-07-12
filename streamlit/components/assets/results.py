@@ -6,9 +6,9 @@ import pandas as pd
 import streamlit as st
 
 from catalog import schema
-from lib import state
+from runtime import state
 
-TABLE_KEY = "asset_table"
+RESULTS_KEY = "asset_table"
 
 _COLUMN_CONFIG = {
     "データベース": st.column_config.TextColumn(width="small"),
@@ -25,7 +25,7 @@ _COMPACT_COLUMN_CONFIG = {
 def clear_selection() -> None:
     """検索条件と整合しなくなった一覧/詳細の選択状態を解除する。"""
     st.session_state.pop(state.ASSET_SELECTED_TABLE_ID, None)
-    st.session_state.pop(TABLE_KEY, None)
+    st.session_state.pop(RESULTS_KEY, None)
 
 
 def render(assets: pd.DataFrame, *, compact: bool = False) -> int | None:
@@ -58,7 +58,7 @@ def render(assets: pd.DataFrame, *, compact: bool = False) -> int | None:
         width="stretch",
         selection_mode="single-cell",
         on_select="rerun",
-        key=TABLE_KEY,
+        key=RESULTS_KEY,
     )
 
     cells = event.selection.cells

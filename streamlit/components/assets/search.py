@@ -5,10 +5,11 @@ from __future__ import annotations
 import pandas as pd
 import streamlit as st
 
-from components.assets import table
 from catalog import schema
-from lib import search, state
-from lib.search import AssetSearchCriteria, FreewordQuery, TagSelection
+from components.assets import results
+from logic import search
+from logic.search import AssetSearchCriteria, FreewordQuery, TagSelection
+from runtime import state
 from settings import SELECTABLE_TAG_KEYS
 
 
@@ -65,7 +66,7 @@ def _clear() -> None:
         st.session_state[key] = value
     for tag_key in SELECTABLE_TAG_KEYS:
         st.session_state[_tag_widget_key(tag_key)] = []
-    table.clear_selection()
+    results.clear_selection()
 
 
 def _render_combine_control(key: str) -> None:

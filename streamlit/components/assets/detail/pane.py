@@ -5,9 +5,10 @@ from __future__ import annotations
 import pandas as pd
 import streamlit as st
 
-from components.assets import tab_columns, tab_contact, tab_stats, tab_users, table
 from catalog import schema
-from lib import state
+from components.assets import results
+from components.assets.detail import tab_columns, tab_contact, tab_stats, tab_users
+from runtime import state
 
 ASSET_TYPE_BADGE_COLORS = {
     "BASE TABLE": "blue",
@@ -37,7 +38,7 @@ def _tag_badge_color(tag_name: str) -> str:
 def _close() -> None:
     """詳細ペインを閉じる。行選択ウィジェットの選択状態も解除する。"""
     st.session_state.pop(state.ASSET_SELECTED_TABLE_ID, None)
-    st.session_state.pop(table.TABLE_KEY, None)
+    st.session_state.pop(results.RESULTS_KEY, None)
     st.session_state.pop(state.NAV_TO_TABLE_ID, None)
 
 

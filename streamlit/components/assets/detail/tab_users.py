@@ -7,7 +7,7 @@ import streamlit as st
 
 import settings
 from catalog import schema
-from lib import state, user_context
+from runtime import state, user_context
 
 TABLE_KEY = "asset_users_table"
 CURRENT_USER_UNAVAILABLE_MESSAGE = (

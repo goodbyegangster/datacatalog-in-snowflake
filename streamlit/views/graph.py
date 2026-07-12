@@ -8,10 +8,11 @@
 from __future__ import annotations
 
 import streamlit as st
+import styles
 
-from components.shared.styles import loader as styles
 from catalog import provider as catalog
-from lib import graph, state
+from logic import graph
+from runtime import state
 
 
 def _graph_target() -> tuple[str | None, int | None, str | None]:

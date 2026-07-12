@@ -10,7 +10,7 @@ from streamlit.testing.v1 import AppTest
 
 from catalog import schema
 from catalog.providers import fake as catalog_fake
-from lib import state
+from runtime import state
 from tests.fixtures import catalog_data
 
 USERS_PAGE = Path(__file__).resolve().parents[1] / "views" / "users.py"

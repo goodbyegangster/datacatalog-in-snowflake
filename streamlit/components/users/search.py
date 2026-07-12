@@ -5,9 +5,9 @@ from __future__ import annotations
 import streamlit as st
 
 import settings
-from components.users import table
-from lib import state, user_context
-from lib.search import UserFreewordQuery
+from components.users import results
+from logic.search import UserFreewordQuery
+from runtime import state, user_context
 
 CURRENT_USER_UNAVAILABLE_MESSAGE = (
     "ログインユーザー名を取得できないため、ログインユーザーのみ表示を適用できません。"
@@ -38,7 +38,7 @@ def _clear() -> None:
         st.session_state[key] = value
     if settings.IS_VISIBLE_ONLY_SELF_USER:
         st.session_state[state.SEARCH_USER_ONLY_SELF] = True
-    table.clear_selection()
+    results.clear_selection()
 
 
 def fingerprint(freeword: UserFreewordQuery, only_user_name: str | None) -> tuple[object, ...]:

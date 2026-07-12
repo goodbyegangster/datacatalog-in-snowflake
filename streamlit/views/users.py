@@ -11,14 +11,15 @@ from __future__ import annotations
 
 import pandas as pd
 import streamlit as st
+import styles
 
-from components.users import detail as user_detail
-from components.users import search as user_search
-from components.users import table as user_table
-from components.shared.styles import loader as styles
 from catalog import provider as catalog
 from catalog import schema
-from lib import search, state
+from components.users import detail as user_detail
+from components.users import results as user_results
+from components.users import search as user_search
+from logic import search
+from runtime import state
 
 
 def _render_base_css() -> None:
@@ -50,7 +51,7 @@ def main() -> None:
 
     with main_pane:
         if only_self and only_user_name is None:
-            user_table.clear_selection()
+            user_results.clear_selection()
             st.warning(user_search.CURRENT_USER_UNAVAILABLE_MESSAGE)
             return
 
@@ -67,29 +68,29 @@ def main() -> None:
 
         search_fingerprint = user_search.fingerprint(freeword, only_user_name)
         if st.session_state.get(state.USER_SEARCH_FINGERPRINT) != search_fingerprint:
-            user_table.clear_selection()
+            user_results.clear_selection()
             st.session_state[state.USER_SEARCH_FINGERPRINT] = search_fingerprint
 
         _consume_nav_to_user_name(users)
 
         filtered = search.filter_users(users, freeword, only_user_name=only_user_name)
         if filtered.empty:
-            user_table.clear_selection()
+            user_results.clear_selection()
             st.info("該当するユーザーがいません。検索条件を変更してください。")
             return
 
         prior = st.session_state.get(state.USER_SELECTED_NAME)
         U = schema.Users
         if prior is not None and prior not in set(filtered[U.USER_NAME].astype(str).tolist()):
-            user_table.clear_selection()
+            user_results.clear_selection()
             prior = None
 
         if prior is None:
-            selected_now = user_table.render(filtered)
+            selected_now = user_results.render(filtered)
         else:
             list_col, detail_col = st.columns([1, 3])
             with list_col:
-                selected_now = user_table.render(filtered, compact=True)
+                selected_now = user_results.render(filtered, compact=True)
             with detail_col:
                 user_detail.render(prior, users, visibility)
 

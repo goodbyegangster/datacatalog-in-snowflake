@@ -5,9 +5,9 @@ from __future__ import annotations
 import pandas as pd
 import streamlit as st
 
-from components.users import table
 from catalog import schema
-from lib import state
+from components.users import results
+from runtime import state
 
 ASSETS_TABLE_KEY = "user_assets_table"
 USER_TYPE_BADGE_COLORS = {
@@ -38,7 +38,7 @@ def _user_type_badge_color(user_type: str) -> str:
 
 def _close() -> None:
     """詳細ペインを閉じる。行選択ウィジェットの選択状態も解除する。"""
-    table.clear_selection()
+    results.clear_selection()
     st.session_state.pop(state.NAV_TO_USER_NAME, None)
 
 

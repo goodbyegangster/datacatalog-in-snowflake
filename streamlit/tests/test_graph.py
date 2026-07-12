@@ -5,7 +5,7 @@ from __future__ import annotations
 import pandas as pd
 
 from catalog import schema
-from lib import graph
+from logic import graph
 
 
 def edge(source: str, target: str, relation_type: str, privilege: str | None = None) -> dict:

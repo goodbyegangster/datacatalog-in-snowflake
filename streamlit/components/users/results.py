@@ -6,9 +6,9 @@ import pandas as pd
 import streamlit as st
 
 from catalog import schema
-from lib import state
+from runtime import state
 
-TABLE_KEY = "user_table"
+RESULTS_KEY = "user_table"
 
 _COLUMN_CONFIG = {
     "名前": st.column_config.TextColumn(width="medium"),
@@ -24,7 +24,7 @@ _COMPACT_COLUMN_CONFIG = {
 def clear_selection() -> None:
     """一覧/詳細の選択状態を解除する。"""
     st.session_state.pop(state.USER_SELECTED_NAME, None)
-    st.session_state.pop(TABLE_KEY, None)
+    st.session_state.pop(RESULTS_KEY, None)
 
 
 def render(users: pd.DataFrame, *, compact: bool = False) -> str | None:
@@ -54,7 +54,7 @@ def render(users: pd.DataFrame, *, compact: bool = False) -> str | None:
         width="stretch",
         selection_mode="single-cell",
         on_select="rerun",
-        key=TABLE_KEY,
+        key=RESULTS_KEY,
     )
 
     cells = event.selection.cells
