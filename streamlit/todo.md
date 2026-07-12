@@ -19,7 +19,7 @@
 ### 開発 Step（この順で進める）
 
 - [x] **Step 1. 骨組みを画面に通す**：`streamlit_app.py` ＋ `views/` 2 枚を **モックデータ**で描画。
-  1:3 レイアウト・`st.dataframe`・行選択・タブが出る状態にする。`lib/connection` `lib/catalog`
+  sidebar 検索・`st.dataframe`・行選択・タブが出る状態にする。`lib/connection` `lib/catalog`
   はダミー（固定 DataFrame）で可。→ AppTest でスモーク済み。
 - [x] **Step 2. モックを本物へ差し替え**：`lib/connection`（ローカル secrets.toml 接続）→
   `lib/catalog`（実カタログ表ロード）を実装し差し替え。`make run_local` で実データ表示を確認済み
@@ -27,13 +27,13 @@
 - [x] **Step 3. 検索を肉付け**：`lib/search` → 検索 UI を機能追加。
   - [x] Step 3a. データ資産検索（フリーワード / 階層 / 種別 / タグ / AND・OR トグル / 初期空欄＋インタラクティブ検索）。AppTest 検証済み。
   - [x] Step 3b. ユーザー検索（ログインユーザーのみ表示トグル＋フリーワード）。AppTest 検証済み。
-- [x] **Step 4. 詳細・グラフを肉付け**：`lib/graph` → detail pane の `st.dialog` グラフを追加。
+- [x] **Step 4. 詳細・グラフを肉付け**：`lib/graph` → ロール継承グラフ専用ページを追加。
   - Step 4 開始時に、グラフ導線と合わせて以下の表示形式を再設計する。
     - `assets.py` 詳細ペインの「ユーザー」タブ。
     - `users.py` 詳細ペインの「閲覧可能なデータ資産」一覧。
     - 直接付与ロールと可視性一覧を、どの粒度でペア表示するか。
     - graph 表示ボタンを、どの行・どの選択単位（ユーザー / 資産 / 起点ロール）に紐づけるか。
-  - 一覧は単なる参照表ではなく、`st.dialog` で表示するロール継承 graph の起点選択 UI として扱う。
+  - 一覧は単なる参照表ではなく、ロール継承グラフページの起点選択 UI として扱う。
 - [x] **Step 5. 仕上げ**：ページ間遷移・エラー表示・空状態・ソート/一覧表示の詰め。
 - [ ] **Step 6. テスト**：純関数（search/graph）の pytest ＋ スモーク。行選択 e2e は後続。
 
@@ -59,16 +59,17 @@
 
 ## Phase 2. components 層（再利用 UI）
 
-- [ ] `components/asset_search.py`：データ資産 left pane。4 カテゴリ＋カテゴリ間 AND/OR トグル（初期 AND）。DB→スキーマ連動プルダウン（DB `on_change` でスキーマ選択を未選択へリセット）。
-- [ ] `components/user_search.py`：ユーザー left pane。ログインユーザーのみ表示トグル（`IS_VISIBLE_ONLY_SELF_USER=True` で ON 固定）＋フリーワード。
+- [ ] `components/asset_search.py`：データ資産 sidebar。4 カテゴリ＋カテゴリ間 AND/OR トグル（初期 AND）。DB→スキーマ連動プルダウン（DB `on_change` でスキーマ選択を未選択へリセット）。
+- [ ] `components/user_search.py`：ユーザー sidebar。ログインユーザーのみ表示トグル（`IS_VISIBLE_ONLY_SELF_USER=True` で ON 固定）＋フリーワード。
 - [ ] `components/result_table.py`：`st.dataframe(selection_mode="single-cell", on_select="rerun")` による全件表示。選択 ID を session_state へ。
-- [ ] `components/asset_detail.py`：資産 detail pane。ヘッダ（名前/説明/階層/種別 badge/タグ badge/PUBLIC badge）＋タブ（カラム / 連絡先 / 統計 / ユーザー）。カラム / 連絡先 / 統計は `st.dataframe` 表示。ユーザータブはロール選択で `st.dialog`＋`st.graphviz_chart`。
-- [ ] `components/user_detail.py`：ユーザー detail pane。ヘッダ（名前/表示名/タイプ/ステータス）＋付与ロール／閲覧可能資産ペア＋`st.dialog` グラフ。
+- [ ] `components/asset_detail.py`：資産 detail pane。ヘッダ（名前/説明/階層/種別 badge/タグ badge/PUBLIC badge）＋タブ（カラム / 連絡先 / 統計 / ユーザー）。カラム / 連絡先 / 統計は `st.dataframe` 表示。ユーザータブは行選択と明示ボタンでロール継承グラフページへ遷移。
+- [ ] `components/user_detail.py`：ユーザー detail pane。ヘッダ（名前/表示名/タイプ/ステータス）＋付与ロール／閲覧可能資産ペア＋ロール継承グラフページへの導線。
 
 ## Phase 3. views 層／エントリ
 
-- [x] `views/assets.py`：1:3 レイアウト、行選択で main を 1:2 分割。ソート DB→スキーマ→名前。初期一覧は空欄。検索条件ありで 0 件の場合は空状態メッセージを表示。
-- [x] `views/users.py`：1:3 レイアウト、行選択で 1:2 分割。ソート 名前。初期は全ユーザー表示。
+- [x] `views/assets.py`：検索 UI は sidebar、行選択で main を 1:3 分割。ソート DB→スキーマ→名前。初期一覧は空欄。検索条件ありで 0 件の場合は空状態メッセージを表示。
+- [x] `views/users.py`：検索 UI は sidebar、行選択で main を 1:3 分割。ソート 名前。初期は全ユーザー表示。
+- [x] `views/graph.py`：対象ユーザー→対象データ資産のロール継承 graph を全幅で表示。
 - [x] `streamlit_app.py`：`st.set_page_config`・`st.navigation` + `st.Page`（ASCII ファイル名・日本語タイトル）。
 - [x] ページ間遷移：`st.session_state` に選択 ID を積み `st.switch_page`（`asset_selected_table_id` / `user_selected_name`）。
   - ブラウザの「戻る」ボタンによる状態復元は保証しない。

@@ -60,8 +60,9 @@ def test_assets_page_initial_state_is_empty_until_search_condition(
 
     assert_no_exception(app)
     assert [title.value for title in app.title] == ["🗂️ データ資産"]
-    assert any("検索結果" in md.value and ">-<" in md.value for md in app.markdown)
-    assert [info.value for info in app.info] == ["左の検索条件を指定すると、一覧が表示されます。"]
+    assert [info.value for info in app.info] == [
+        "サイドバーの検索条件を指定すると、一覧が表示されます。"
+    ]
     assert len(app.dataframe) == 0
 
 
@@ -73,10 +74,7 @@ def test_assets_page_opens_detail_from_navigation_state(assets_app: AppTest) -> 
 
     assert_no_exception(app)
     assert [subheader.value for subheader in app.subheader] == ["ORDERS"]
-    assert [
-        "検索条件が未指定のため、一覧は表示していません。"
-        "左の検索条件を指定すると一覧が表示されます。"
-    ] == [info.value for info in app.info]
+    assert [info.value for info in app.info] == ["検索条件が未指定のため、一覧は非表示です。"]
     assert state.NAV_TO_TABLE_ID not in app.session_state
 
     app.run()
@@ -91,7 +89,6 @@ def test_assets_page_filters_by_freeword(assets_app: AppTest) -> None:
     app.text_input[0].set_value("orders").run()
 
     assert_no_exception(app)
-    assert any("検索結果" in md.value and ">1 件<" in md.value for md in app.markdown)
     result = dataframe_value(app)
     assert result["名前"].tolist() == ["ORDERS"]
     assert result["説明"].tolist() == ["Sales order facts"]
@@ -130,7 +127,6 @@ def test_assets_page_shows_empty_message_when_no_asset_matches(
     app.text_input[0].set_value("not-found").run()
 
     assert_no_exception(app)
-    assert any("検索結果" in md.value and ">0 件<" in md.value for md in app.markdown)
     assert [info.value for info in app.info] == [
         "該当するデータ資産がありません。検索条件を変更してください。"
     ]
@@ -171,7 +167,9 @@ def test_assets_page_clear_button_resets_search_widgets(assets_app: AppTest) -> 
     assert app.segmented_control[0].value == "AND"
     assert app.segmented_control[1].value == "AND"
     assert app.segmented_control[2].value == "AND"
-    assert [info.value for info in app.info] == ["左の検索条件を指定すると、一覧が表示されます。"]
+    assert [info.value for info in app.info] == [
+        "サイドバーの検索条件を指定すると、一覧が表示されます。"
+    ]
     assert len(app.dataframe) == 0
 
 
@@ -188,7 +186,9 @@ def test_assets_page_clears_selection_when_search_condition_becomes_empty(
 
     assert_no_exception(app)
     assert state.ASSET_SELECTED_TABLE_ID not in app.session_state
-    assert [info.value for info in app.info] == ["左の検索条件を指定すると、一覧が表示されます。"]
+    assert [info.value for info in app.info] == [
+        "サイドバーの検索条件を指定すると、一覧が表示されます。"
+    ]
     assert len(app.dataframe) == 0
 
 
@@ -218,7 +218,6 @@ def test_assets_page_shows_large_results_without_pagination(
     multiselect_by_label(app, "データベース").set_value([catalog_data.DB]).run()
 
     assert_no_exception(app)
-    assert any("検索結果" in md.value and ">105 件<" in md.value for md in app.markdown)
     assert len(app.number_input) == 0
     assert len(dataframe_value(app)) == 105
 

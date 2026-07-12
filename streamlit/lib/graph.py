@@ -115,9 +115,7 @@ def paths_to_dot(
         for _, row in edges.iterrows()
     }
     graph_edges = {
-        (path[index], path[index + 1])
-        for path in paths
-        for index in range(len(path) - 1)
+        (path[index], path[index + 1]) for path in paths for index in range(len(path) - 1)
     }
     graph_nodes = {node for path in paths for node in path} | {user_name, asset_fqn}
 

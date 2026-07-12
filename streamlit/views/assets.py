@@ -1,8 +1,7 @@
 """page：データ資産。
 
-design-view.md の「page：データ資産」に対応。left pane（検索）と main pane（一覧 / 詳細）を
-1:3 で配置し、行選択で main を 1:2 に分割して詳細ペインを表示する。検索仕様は
-design-search.md、検索ロジックは ``lib.search`` を参照。
+design-view.md の「page：データ資産」に対応。検索 UI は sidebar に配置し、本文側に
+一覧 / 詳細を表示する。検索仕様は design-search.md、検索ロジックは ``lib.search`` を参照。
 
 初期状態は一覧を空欄表示とし、検索入力に応じてインタラクティブに結果を表示する。
 ユーザータブでは、行選択後のボタン操作でロール継承グラフを表示する。
@@ -13,7 +12,7 @@ from __future__ import annotations
 import pandas as pd
 import streamlit as st
 
-from lib import catalog, graph, schema, search, state, ui, user_context
+from lib import catalog, schema, search, state, ui, user_context
 from lib.search import AssetSearchCriteria, FreewordQuery, TagSelection
 from settings import IS_VISIBLE_ONLY_SELF_USER, SELECTABLE_TAG_KEYS
 
@@ -29,36 +28,6 @@ ASSET_TYPE_BADGE_COLORS = {
     "TEMPORARY TABLE": "gray",
 }
 TAG_BADGE_COLOR_PALETTE = ("blue", "green", "orange", "violet", "red", "gray")
-ASSET_PAGE_CSS = """
-<style>
-.asset-result-count {
-    position: fixed;
-    top: 72px;
-    right: 32px;
-    z-index: 999;
-    min-width: 120px;
-    padding: 10px 12px;
-    border: 1px solid rgba(49, 51, 63, 0.18);
-    border-radius: 6px;
-    background: rgba(255, 255, 255, 0.96);
-    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
-    text-align: right;
-}
-.asset-result-count__label {
-    margin: 0;
-    color: rgba(49, 51, 63, 0.68);
-    font-size: 12px;
-    line-height: 1.2;
-}
-.asset-result-count__value {
-    margin: 2px 0 0;
-    color: rgb(49, 51, 63);
-    font-size: 18px;
-    font-weight: 700;
-    line-height: 1.2;
-}
-</style>
-"""
 
 # 一覧テーブルの行選択ウィジェットの key（閉じる際に選択状態も解除するため定数化）。
 _ASSET_TABLE_KEY = "asset_table"
@@ -72,6 +41,7 @@ _ASSET_COLUMN_CONFIG = {
     "データベース": st.column_config.TextColumn(width="small"),
     "スキーマ": st.column_config.TextColumn(width="small"),
     "名前": st.column_config.TextColumn(width="medium"),
+    "オブジェクト種別": st.column_config.TextColumn(width="small"),
     "説明": st.column_config.TextColumn(width="large"),
 }
 _ASSET_COMPACT_COLUMN_CONFIG = {
@@ -99,7 +69,6 @@ def _search_defaults() -> dict[str, object]:
 def _render_asset_page_css() -> None:
     """データ資産ページ用の CSS を適用する。"""
     ui.render_page_spacing_css()
-    st.markdown(ASSET_PAGE_CSS, unsafe_allow_html=True)
 
 
 def _fmt_tags(tags: list[dict]) -> str:
@@ -243,7 +212,7 @@ def _search_fingerprint(criteria: AssetSearchCriteria) -> tuple[object, ...]:
 
 
 def render_search(assets: pd.DataFrame, tags: pd.DataFrame) -> AssetSearchCriteria:
-    """left pane：検索 UI。ウィジェットを描画し、現在の検索条件を返す。"""
+    """sidebar：検索 UI。ウィジェットを描画し、現在の検索条件を返す。"""
     _init_search_state()
     st.button("入力をクリア", on_click=_clear_search, width="stretch")
 
@@ -351,6 +320,7 @@ def render_table(assets: pd.DataFrame, *, compact: bool = False) -> int | None:
                 "データベース": ordered[A.DATABASE_NAME],
                 "スキーマ": ordered[A.SCHEMA_NAME],
                 "名前": ordered[A.ASSET_NAME],
+                "オブジェクト種別": ordered[A.ASSET_TYPE],
                 "説明": ordered[A.DESCRIPTION],
             }
         ).reset_index(drop=True)
@@ -373,20 +343,6 @@ def render_table(assets: pd.DataFrame, *, compact: bool = False) -> int | None:
     return None
 
 
-def render_result_count(total: int | None = None) -> None:
-    """スクロール中も見える検索結果件数のサマリー。"""
-    value = "-" if total is None else f"{total} 件"
-    st.markdown(
-        f"""
-        <div class="asset-result-count">
-            <p class="asset-result-count__label">検索結果</p>
-            <p class="asset-result-count__value">{value}</p>
-        </div>
-        """,
-        unsafe_allow_html=True,
-    )
-
-
 def _close_detail() -> None:
     """詳細ペインを閉じる。行選択ウィジェットの選択状態も解除する。"""
     st.session_state.pop(state.ASSET_SELECTED_TABLE_ID, None)
@@ -398,6 +354,13 @@ def _set_user_page_navigation(user_name: str) -> None:
     """ユーザーページへ遷移するための状態を積む。"""
     st.session_state[state.NAV_TO_USER_NAME] = user_name
     st.session_state.pop(state.USER_SELECTED_NAME, None)
+
+
+def _set_graph_page_navigation(*, user_name: str, table_id: int, asset_fqn: str) -> None:
+    """ロール継承グラフページへ遷移するための状態を積む。"""
+    st.session_state[state.NAV_GRAPH_USER_NAME] = user_name
+    st.session_state[state.NAV_GRAPH_TABLE_ID] = int(table_id)
+    st.session_state[state.NAV_GRAPH_ASSET_FQN] = asset_fqn
 
 
 def _consume_nav_to_table_id(assets: pd.DataFrame) -> int | None:
@@ -422,7 +385,6 @@ def render_detail(
     assets: pd.DataFrame,
     columns: pd.DataFrame,
     visibility: pd.DataFrame,
-    edges: pd.DataFrame,
 ) -> None:
     """右カラム：シングル：データ資産の詳細ペイン。"""
     A = schema.Assets
@@ -496,7 +458,7 @@ def render_detail(
     with tab_stats:
         _render_stats_tab(asset)
     with tab_users:
-        _render_users_tab(asset, visibility, edges)
+        _render_users_tab(asset, visibility)
 
 
 def _render_columns_tab(table_id: int, columns: pd.DataFrame) -> None:
@@ -588,21 +550,6 @@ def _render_stats_tab(asset: pd.Series) -> None:
     )
 
 
-@st.dialog("ロール継承グラフ", width="large")
-def _render_asset_user_graph_dialog(user_name: str, asset_fqn: str, edges: pd.DataFrame) -> None:
-    """選択ユーザーから表示中資産までの graph を表示する。"""
-    result = graph.build_user_asset_graph(edges, user_name=user_name, asset_fqn=asset_fqn)
-    st.markdown(f"**{user_name}** から **{asset_fqn}** までのロール継承")
-    if result.path_limit_exceeded:
-        st.warning("経路が多すぎるため表示できません。")
-        return
-    if not result.paths:
-        st.warning("ロール継承 graph の経路が見つかりませんでした。")
-        return
-    st.caption(f"{len(result.paths)} 経路")
-    st.graphviz_chart(result.dot, width="stretch")
-
-
 def _selected_user_row(event: object, display: pd.DataFrame) -> int | None:
     """ユーザータブで選択されたセルの行位置を返す。"""
     cells = event.selection.cells
@@ -616,7 +563,7 @@ def _selected_user_row(event: object, display: pd.DataFrame) -> int | None:
     return int(row_index)
 
 
-def _render_users_tab(asset: pd.Series, visibility: pd.DataFrame, edges: pd.DataFrame) -> None:
+def _render_users_tab(asset: pd.Series, visibility: pd.DataFrame) -> None:
     A = schema.Assets
     V = schema.AssetVisibility
     table_id = int(asset[A.TABLE_ID])
@@ -660,6 +607,13 @@ def _render_users_tab(asset: pd.Series, visibility: pd.DataFrame, edges: pd.Data
     selected_user_name = (
         None if selected_user_row is None else str(display.iloc[selected_user_row]["ユーザー"])
     )
+    asset_fqn = ".".join(
+        [
+            str(asset[A.DATABASE_NAME]),
+            str(asset[A.SCHEMA_NAME]),
+            str(asset[A.ASSET_NAME]),
+        ]
+    )
     with action_slot:
         open_col, graph_col = st.columns(2)
         with open_col:
@@ -680,33 +634,26 @@ def _render_users_tab(asset: pd.Series, visibility: pd.DataFrame, edges: pd.Data
                 key=f"asset_user_graph_button_{table_id}",
                 width="stretch",
             ):
-                _render_asset_user_graph_dialog(
+                _set_graph_page_navigation(
                     user_name=selected_user_name or "",
-                    asset_fqn=".".join(
-                        [
-                            str(asset[A.DATABASE_NAME]),
-                            str(asset[A.SCHEMA_NAME]),
-                            str(asset[A.ASSET_NAME]),
-                        ]
-                    ),
-                    edges=edges,
+                    table_id=table_id,
+                    asset_fqn=asset_fqn,
                 )
+                st.switch_page("views/graph.py")
         st.caption("行を選択してから、必要な操作ボタンを押してください")
 
 
 def main() -> None:
     st.title("🗂️ データ資産", anchor=False)
     _render_asset_page_css()
-    result_count = st.empty()
 
-    left, main_pane = st.columns([1, 3])
+    main_pane = st.container()
 
     try:
         assets = catalog.load_assets()
         columns = catalog.load_columns()
         tags = catalog.load_tags()
         visibility = catalog.load_asset_visibility()
-        edges = catalog.load_access_edges()
     except Exception as exc:
         with main_pane:
             st.error(
@@ -718,13 +665,11 @@ def main() -> None:
 
     nav_table_id = _consume_nav_to_table_id(assets)
 
-    with left:
+    with st.sidebar:
         criteria = render_search(assets, tags)
 
     with main_pane:
         if not has_search_condition(criteria):
-            with result_count:
-                render_result_count()
             previous_search = st.session_state.get(state.ASSET_SEARCH_FINGERPRINT) is not None
             selected_table_id = st.session_state.get(state.ASSET_SELECTED_TABLE_ID)
             if nav_table_id is not None:
@@ -738,11 +683,11 @@ def main() -> None:
                 with list_col:
                     st.info("検索条件が未指定のため、一覧は非表示です。")
                 with detail_col:
-                    render_detail(selected_table_id, assets, columns, visibility, edges)
+                    render_detail(selected_table_id, assets, columns, visibility)
             else:
                 _clear_selection()
                 st.session_state.pop(state.ASSET_SEARCH_FINGERPRINT, None)
-                st.info("左の検索条件を指定すると、一覧が表示されます。")
+                st.info("サイドバーの検索条件を指定すると、一覧が表示されます。")
             return
 
         search_fingerprint = _search_fingerprint(criteria)
@@ -751,8 +696,6 @@ def main() -> None:
             st.session_state[state.ASSET_SEARCH_FINGERPRINT] = search_fingerprint
 
         filtered = search.filter_assets(assets, columns, criteria)
-        with result_count:
-            render_result_count(len(filtered))
         if filtered.empty:
             _clear_selection()
             st.info("該当するデータ資産がありません。検索条件を変更してください。")
@@ -766,7 +709,7 @@ def main() -> None:
             with list_col:
                 selected_now = render_table(filtered, compact=True)
             with detail_col:
-                render_detail(prior, assets, columns, visibility, edges)
+                render_detail(prior, assets, columns, visibility)
 
         # 選択セルがない rerun は、詳細ペイン内の操作でも発生するため既存詳細を維持する。
         if selected_now is not None and selected_now != prior:

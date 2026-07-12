@@ -12,7 +12,6 @@ PAGE_SPACING_CSS = """
 </style>
 """
 
-
 def render_page_spacing_css() -> None:
     """Streamlit 既定の本文下余白を抑える。"""
     st.markdown(PAGE_SPACING_CSS, unsafe_allow_html=True)

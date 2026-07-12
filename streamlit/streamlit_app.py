@@ -12,6 +12,7 @@ st.set_page_config(page_title="データカタログ", page_icon="📚", layout=
 pages = [
     st.Page("views/assets.py", title="データ資産", icon="🗂️", default=True),
     st.Page("views/users.py", title="ユーザー", icon="👤"),
+    st.Page("views/graph.py", title="ロール継承グラフ", icon="🌐", visibility="hidden"),
 ]
 
-st.navigation(pages).run()
+st.navigation(pages, position="top").run()

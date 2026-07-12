@@ -48,3 +48,7 @@ def search_asset_tag_key(tag_database: str, tag_schema: str, tag_name: str) -> s
 NAV_TO_USER_NAME = "nav_to_user_name"
 # ユーザーページの閲覧可能資産一覧から遷移する際に対象 TABLE_ID を積む。
 NAV_TO_TABLE_ID = "nav_to_table_id"
+# ロール継承グラフページへ遷移する際に対象ユーザー名・資産 ID / FQN を積む。
+NAV_GRAPH_USER_NAME = "nav_graph_user_name"
+NAV_GRAPH_TABLE_ID = "nav_graph_table_id"
+NAV_GRAPH_ASSET_FQN = "nav_graph_asset_fqn"

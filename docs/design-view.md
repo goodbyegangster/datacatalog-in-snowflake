@@ -78,7 +78,7 @@ classDiagram
 
   class データ資産{
     名前
-    オブジェクト種類
+    オブジェクト種別
     説明
     階層_データベース
     階層_スキーマ
@@ -148,6 +148,7 @@ flowchart TD
 ## ルートナビゲーション項目の配置先
 
 - `st.navigation` + `st.Page` によるナビゲーションに配置する
+  - ルートナビゲーションは `st.navigation(pages, position="top")` で画面上部に配置する
   - ページ本体は `streamlit/views/`（ASCII 名のファイル）に置き、表示名（日本語）は
     エントリポイント（`streamlit_app.py`）の `st.Page(..., title=...)` で与える
   - `pages/` ディレクトリの自動ナビゲーションは用いない（ファイル名から日本語を排すため）
@@ -165,17 +166,18 @@ flowchart TD
 
 #### 画面レイアウト
 
-- 画面を left pane / main pane に分けて配置する
-- 比率は `st.columns([1, 3])` とする
+- 検索 UI は `st.sidebar` に配置する
+- ページ本文は full width の main pane として扱う
 
 #### 初期画面
 
-- left pane
+- sidebar
   - `コレクション：データ資産` 検索向け画面
     - 設置する検索機能については [docs/design-search](design-search.md) を参照
 - main pane
   - `コレクション：データ資産` 検索結果の一覧画面
     - `st.dataframe`
+    - 表示列は「データベース」「スキーマ」「名前」「オブジェクト種別」「説明」とする
   - 初期状態では空欄表示（検索条件が未入力の間は一覧を出さない）
     - 検索は入力に応じてインタラクティブに反映する（明示の「検索」ボタンは設けない）
     - 検索入力を一括初期化する「入力をクリア」ボタンを設ける
@@ -189,7 +191,7 @@ flowchart TD
 #### 詳細画面
 
 - 表示「データ資産」のセルクリックにて、main pane を左右分割し、右側カラムにクリックした「データ資産」の詳細ペインを表示する
-  - 左右分割の比率は  `st.columns([1, 2])` とする
+  - 左右分割の比率は  `st.columns([1, 3])` とする
   - `st.dataframe(df, selection_mode="single-cell", on_select="rerun")` を標準とする
     - `single-row`（左端チェック列）ではセル本文クリックで選択できないため、`single-cell` を採用し
       `event.selection.cells`（`[(行位置, 列名)]`）の行位置から選択行 ID（`TABLE_ID` / `USER_NAME`）を得る
@@ -202,7 +204,7 @@ flowchart TD
   - `シングル：データ資産` の名前
   - `シングル：データ資産` の説明
   - `シングル：データ資産` の階層
-  - `シングル：データ資産` のオブジェクト種類（badge 表示）
+  - `シングル：データ資産` のオブジェクト種別（badge 表示）
   - `シングル：データ資産` のタグ（タグキーごとに安定した色の badge 表示）
   - `シングル：データ資産` の PUBLIC 参照可否（badge 表示）
 - 詳細ペイン下部
@@ -224,27 +226,25 @@ flowchart TD
              - 列名を「ユーザー付与ロール」に変更し、配列を `aaa, bbb` と文字列表現
           3. `ASSET_ROLES` 列
              - 列名を「データ資産付与ロール」に変更し、配列を `aaa, bbb` と文字列表現
-      - `st.dataframe` の行を選択してから「ロール継承グラフを表示」ボタンを押した場合、以下をポップアップ (`st.dialog`) にて表示
-        - 選択行の `USER_NAME` から表示中データ資産までを辿ったロール継承 graph (選択行の USER_NAME から表示中データ資産までの全経路 graph)
-        - graph 描画は `st.graphviz_chart` を利用
-        - 経路数が多すぎる場合は graph を描画せず、「経路が多すぎるため表示できません。」を表示する
+      - `st.dataframe` の行を選択してから「ロール継承グラフを表示」ボタンを押した場合、ロール継承グラフページへ遷移する
+        - 選択行の `USER_NAME` から表示中データ資産までを辿ったロール継承 graph (選択行の USER_NAME から表示中データ資産までの全経路 graph) を表示する
       - ユーザーページへの遷移は、dataframe のセル選択ではなく「選択ユーザーを開く」ボタンで行う
       - 操作ボタンは dataframe の上に 2 つ横並びで表示し、「ロール継承グラフを表示」は右側に配置する
       - なお、[streamlit/settings.py](../streamlit/settings.py) の `IS_VISIBLE_ONLY_SELF_USER` が True の場合、表示ユーザーを Snowflake ログインユーザーのみに絞って表示する
         - Snowflake ログインユーザー名を取得できない場合は一覧を表示しない
   - ユーザーページから遷移した場合、検索条件が未指定でも詳細ペインを表示する
-    - この場合も `st.columns([1, 2])` の左右分割を使い、左側には一覧の代わりに「検索条件が未指定のため、一覧は表示していません。左の検索条件を指定すると一覧が表示されます。」を表示する
+    - この場合も `st.columns([1, 3])` の左右分割を使い、左側には一覧の代わりに「検索条件が未指定のため、一覧は非表示です。」を表示する
 
 ### page：ユーザー
 
 #### 画面レイアウト
 
-- 画面を left pane / main pane に分けて配置する
-- 比率は `st.columns([1, 3])` とする
+- 検索 UI は `st.sidebar` に配置する
+- ページ本文は full width の main pane として扱う
 
 #### 初期画面
 
-- left pane
+- sidebar
   - `コレクション：ユーザー` 検索向け画面
     - 設置する検索機能については [docs/design-search](design-search.md) を参照
 - main pane
@@ -257,7 +257,7 @@ flowchart TD
 #### 詳細画面
 
 - 表示「ユーザー」のセルクリックにて、main pane を左右分割し、右側カラムにクリックした「ユーザー」の詳細ペインを表示する
-  - 左右分割の比率は  `st.columns([1, 2])` とする
+  - 左右分割の比率は  `st.columns([1, 3])` とする
   - データ資産ページと同様に `st.dataframe(df, selection_mode="single-cell", on_select="rerun")` を標準とし、
     `event.selection.cells` の行位置から選択行 ID（`USER_NAME`）を得て `st.session_state` に保存してから詳細ペインを描画する
   - `event.selection.cells` が空の rerun は「詳細を閉じる」意思とは扱わず、既存の選択 state を維持する
@@ -282,12 +282,32 @@ flowchart TD
          - 列名を「ユーザー付与ロール」に変更し、配列を `aaa, bbb` と文字列表現
       5. `ASSET_ROLES` 列
          - 列名を「データ資産付与ロール」に変更し、配列を `aaa, bbb` と文字列表現
-  - `st.dataframe` の行を選択してから「ロール継承グラフを表示」ボタンを押した場合、以下をポップアップ (`st.dialog`) にて表示
-    - 表示中ユーザーから選択行データ資産までを辿ったロール継承 graph
-    - graph 描画は `st.graphviz_chart` を利用
-    - 経路数が多すぎる場合は graph を描画せず、「経路が多すぎるため表示できません。」を表示する
+  - `st.dataframe` の行を選択してから「ロール継承グラフを表示」ボタンを押した場合、ロール継承グラフページへ遷移する
+    - 表示中ユーザーから選択行データ資産までを辿ったロール継承 graph を表示する
   - データ資産ページへの遷移は、dataframe のセル選択ではなく「選択データ資産を開く」ボタンで行う
   - 操作ボタンは dataframe の上に 2 つ横並びで表示し、「ロール継承グラフを表示」は右側に配置する
+
+### page：ロール継承グラフ
+
+#### 画面レイアウト
+
+- `st.navigation` の 1 ページとして配置する
+  - `st.Page(..., visibility="hidden")` とし、root navigation には表示しない
+- assets / users 画面から `session_state` に以下を積んで `st.switch_page("views/graph.py")` で遷移する
+  - `nav_graph_user_name`
+  - `nav_graph_table_id`
+  - `nav_graph_asset_fqn`
+- query parameter は利用しない
+- graph ページでは検索 UI を持たないため、ページ限定 CSS で空の `st.sidebar` を非表示にする
+
+#### 表示内容
+
+- 表示中の対象ユーザー・対象データ資産を上部に表示する
+- 「ユーザーを開く」「データ資産を開く」ボタンを設け、それぞれの詳細ページへ戻れるようにする
+- `ACCESS_EDGES` から対象ユーザー -> 対象データ資産の全経路を探索する
+- graph 描画は `st.graphviz_chart` を利用する
+- 経路数が多すぎる場合は graph を描画せず、「経路が多すぎるため表示できません。」を表示する
+- 経路が見つからない場合は、「ロール継承 graph の経路が見つかりませんでした。」を表示する
 
 ## 画面遷移図
 
@@ -296,14 +316,19 @@ flowchart LR
 
   asset["データ資産"]
   user["ユーザー"]
+  graph["ロール継承グラフ"]
 
-  asset --閲覧可能なユーザー一覧より選択時--> user
-  user --閲覧可能データ資産一覧より選択時--> asset
+  asset --行選択後「選択ユーザーを開く」--> user
+  user --行選択後「選択データ資産を開く」--> asset
+  asset --行選択後「ロール継承グラフを表示」--> graph
+  user --行選択後「ロール継承グラフを表示」--> graph
+  graph --ユーザーを開く--> user
+  graph --データ資産を開く--> asset
 ```
 
 - `st.session_state` に「遷移先で選択させたい ID」を積んで `st.switch_page()` で移動する
 - `st.session_state` のキーは接頭辞で名前空間を分ける
-  - 例：`asset_selected_table_id` / `user_selected_name` / `search_*` / `nav_to_table_id` / `nav_to_user_name`
+  - 例：`asset_selected_table_id` / `user_selected_name` / `search_*` / `nav_to_table_id` / `nav_to_user_name` / `nav_graph_*`
 - ブラウザの「戻る」ボタンによる状態復元は保証しない
 - URL query params はページ間状態管理に利用しない
 - ページ間遷移は dataframe の暗黙的なセルクリックではなく、明示的なボタン操作で行う

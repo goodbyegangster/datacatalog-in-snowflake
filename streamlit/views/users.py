@@ -1,7 +1,7 @@
 """page：ユーザー。
 
-design-view.md の「page：ユーザー」に対応。left pane（検索）と main pane（一覧 / 詳細）を
-1:3 で配置し、ユーザー検索・一覧・詳細ペインを表示する。初期は全ユーザー表示。
+design-view.md の「page：ユーザー」に対応。検索 UI は sidebar に配置し、本文側に
+ユーザー一覧・詳細ペインを表示する。初期は全ユーザー表示。
 
 詳細ペインでは、選択ユーザーの基本情報と閲覧可能なデータ資産を表示する。
 閲覧可能データ資産一覧では、行選択後のボタン操作でロール継承グラフを表示する。
@@ -12,7 +12,7 @@ from __future__ import annotations
 import pandas as pd
 import streamlit as st
 
-from lib import catalog, graph, schema, search, state, ui, user_context
+from lib import catalog, schema, search, state, ui, user_context
 from lib.search import UserFreewordQuery
 from settings import IS_VISIBLE_ONLY_SELF_USER
 
@@ -108,6 +108,13 @@ def _set_asset_page_navigation(table_id: int) -> None:
     st.session_state.pop(state.ASSET_SELECTED_TABLE_ID, None)
 
 
+def _set_graph_page_navigation(*, user_name: str, table_id: int, asset_fqn: str) -> None:
+    """ロール継承グラフページへ遷移するための状態を積む。"""
+    st.session_state[state.NAV_GRAPH_USER_NAME] = user_name
+    st.session_state[state.NAV_GRAPH_TABLE_ID] = int(table_id)
+    st.session_state[state.NAV_GRAPH_ASSET_FQN] = asset_fqn
+
+
 def _consume_nav_to_user_name(users: pd.DataFrame) -> str | None:
     """ページ間遷移で指定されたユーザー名を取り出し、存在する場合のみ返す。"""
     user_name = st.session_state.pop(state.NAV_TO_USER_NAME, None)
@@ -135,7 +142,7 @@ def _user_search_fingerprint(
 
 
 def render_search() -> tuple[UserFreewordQuery, str | None, bool]:
-    """left pane：検索 UI。ウィジェットを描画し、現在の検索条件を返す。"""
+    """sidebar：検索 UI。ウィジェットを描画し、現在の検索条件を返す。"""
     _init_search_state()
     st.button("入力をクリア", on_click=_clear_search, width="stretch")
 
@@ -221,21 +228,6 @@ def render_table(users: pd.DataFrame, *, compact: bool = False) -> str | None:
     return None
 
 
-@st.dialog("ロール継承グラフ", width="large")
-def _render_user_asset_graph_dialog(user_name: str, asset_fqn: str, edges: pd.DataFrame) -> None:
-    """選択ユーザーから選択資産までの graph を表示する。"""
-    result = graph.build_user_asset_graph(edges, user_name=user_name, asset_fqn=asset_fqn)
-    st.markdown(f"**{user_name}** から **{asset_fqn}** までのロール継承")
-    if result.path_limit_exceeded:
-        st.warning("経路が多すぎるため表示できません。")
-        return
-    if not result.paths:
-        st.warning("ロール継承 graph の経路が見つかりませんでした。")
-        return
-    st.caption(f"{len(result.paths)} 経路")
-    st.graphviz_chart(result.dot, width="stretch")
-
-
 def _selected_asset_row(event: object, display: pd.DataFrame) -> int | None:
     """閲覧可能データ資産一覧で選択されたセルの行位置を返す。"""
     cells = event.selection.cells
@@ -249,9 +241,7 @@ def _selected_asset_row(event: object, display: pd.DataFrame) -> int | None:
     return int(row_index)
 
 
-def render_detail(
-    user_name: str, users: pd.DataFrame, visibility: pd.DataFrame, edges: pd.DataFrame
-) -> None:
+def render_detail(user_name: str, users: pd.DataFrame, visibility: pd.DataFrame) -> None:
     """右カラム：シングル：ユーザーの詳細ペイン。"""
     U = schema.Users
     match = users[users[U.USER_NAME] == user_name]
@@ -350,17 +340,19 @@ def render_detail(
                     key=f"user_asset_graph_button_{user_name}",
                     width="stretch",
                 ):
-                    _render_user_asset_graph_dialog(
-                        user_name=user_name,
-                        asset_fqn=".".join(
-                            [
-                                str(display.iloc[selected_asset_row]["データベース"]),
-                                str(display.iloc[selected_asset_row]["スキーマ"]),
-                                str(display.iloc[selected_asset_row]["名前"]),
-                            ]
-                        ),
-                        edges=edges,
+                    asset_fqn = ".".join(
+                        [
+                            str(display.iloc[selected_asset_row]["データベース"]),
+                            str(display.iloc[selected_asset_row]["スキーマ"]),
+                            str(display.iloc[selected_asset_row]["名前"]),
+                        ]
                     )
+                    _set_graph_page_navigation(
+                        user_name=user_name,
+                        table_id=selected_table_id or 0,
+                        asset_fqn=asset_fqn,
+                    )
+                    st.switch_page("views/graph.py")
             st.caption("行を選択してから、必要な操作ボタンを押してください")
 
 
@@ -368,8 +360,8 @@ def main() -> None:
     st.title("👤 ユーザー", anchor=False)
     _render_user_page_css()
 
-    left, main_pane = st.columns([1, 3])
-    with left:
+    main_pane = st.container()
+    with st.sidebar:
         freeword, only_user_name, only_self = render_search()
 
     with main_pane:
@@ -381,7 +373,6 @@ def main() -> None:
         try:
             users = catalog.load_users()
             visibility = catalog.load_asset_visibility()
-            edges = catalog.load_access_edges()
         except Exception as exc:
             st.error(
                 "データの取得に失敗しました。接続設定やカタログテーブルの生成状況をご確認ください。"
@@ -416,7 +407,7 @@ def main() -> None:
             with list_col:
                 selected_now = render_table(filtered, compact=True)
             with detail_col:
-                render_detail(prior, users, visibility, edges)
+                render_detail(prior, users, visibility)
 
         # 選択セルがない rerun は、詳細ペイン内の操作でも発生するため既存詳細を維持する。
         if selected_now is not None and selected_now != prior:
