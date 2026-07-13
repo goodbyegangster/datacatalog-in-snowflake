@@ -39,3 +39,9 @@ ACCOUNTADMIN で実行ができるようにする。
 ## search.py のリファクタリング
 
 [search.py](/home/kawata/educ/datacatalog-in-snowflake/streamlit/logic/search.py) を表示ページ毎に整理できないか。
+
+## assets の検索結果テーブルに、一致理由列を設ける
+
+フリーワード由来だけ。
+
+> 一致 = 資産名 / 資産説明 / カラム名 / カラム説明
