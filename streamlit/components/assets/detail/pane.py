@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import hashlib
+
 import pandas as pd
 import streamlit as st
 
@@ -21,7 +23,16 @@ ASSET_TYPE_BADGE_COLORS = {
     "EVENT TABLE": "red",
     "TEMPORARY TABLE": "gray",
 }
-TAG_BADGE_COLOR_PALETTE = ("blue", "green", "orange", "violet", "red", "pink", "gray")
+TAG_BADGE_COLOR_PALETTE = (
+    "blue",
+    "green",
+    "orange",
+    "violet",
+    "red",
+    "yellow",
+    "gray",
+    "primary",
+)
 
 
 def _asset_type_badge_color(asset_type: str) -> str:
@@ -31,7 +42,8 @@ def _asset_type_badge_color(asset_type: str) -> str:
 
 def _tag_badge_color(tag_name: str) -> str:
     """タグキー名から安定した badge 色を返す。"""
-    index = sum(ord(char) for char in tag_name) % len(TAG_BADGE_COLOR_PALETTE)
+    digest = hashlib.sha256(tag_name.encode("utf-8")).digest()
+    index = digest[0] % len(TAG_BADGE_COLOR_PALETTE)
     return TAG_BADGE_COLOR_PALETTE[index]
 
 

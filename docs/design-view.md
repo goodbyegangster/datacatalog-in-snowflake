@@ -103,7 +103,7 @@ classDiagram
     制約_UNIQUE
     制約_FOREIGN_KEY
     制約_NOT_NULL
-    マスキングポリシー
+    masking policy
   }
 
   class ユーザー{
@@ -212,8 +212,8 @@ flowchart TD
     - タブ: カラム
       - `st.dataframe` で `コレクション：カラム` を表示する
       - 通常表示では「位置」「名前」「説明」が見えることを優先し、詳細確認は dataframe の fullscreen 表示に委ねる
-      - 表示列は「位置」「名前」「説明」「型」「PKEY」「NOT NULL」「UNIQUE」「外部 KEY」「マスキングポリシー」「タグ」とする
-      - `マスキングポリシー` はポリシー名ではなく有無を boolean で表示する
+      - 表示列は「位置」「名前」「説明」「型」「PKEY」「NOT NULL」「UNIQUE」「外部 KEY」「masking policy」「タグ」とする
+      - `masking policy` はポリシー名ではなく有無を boolean で表示する
     - タブ: 連絡先
       - `st.dataframe` で `シングル：データ資産` の各連絡先を表示する
     - タブ: 統計情報
@@ -305,7 +305,7 @@ flowchart TD
 - 表示中の対象ユーザー・対象データ資産を上部に表示する
 - 「ユーザーを開く」「データ資産を開く」ボタンを設け、それぞれの詳細ページへ戻れるようにする
 - `ACCESS_EDGES` から対象ユーザー -> 対象データ資産の全経路を探索する
-- graph 描画は `st.graphviz_chart` を利用する
+- graph 描画は `st.graphviz_chart` を利用し、User / Role / Asset の凡例を graph 内に表示する
 - 経路数が多すぎる場合は graph を描画せず、「経路が多すぎるため表示できません。」を表示する
 - 経路が見つからない場合は、「ロール継承 graph の経路が見つかりませんでした。」を表示する
 

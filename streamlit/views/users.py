@@ -47,10 +47,10 @@ def main() -> None:
 
     main_pane = st.container()
     with st.sidebar:
-        freeword, only_user_name, only_self = user_search.render()
+        freeword, only_user_name, only_self_enabled = user_search.render()
 
     with main_pane:
-        if only_self and only_user_name is None:
+        if only_self_enabled and only_user_name is None:
             user_results.clear_selection()
             st.warning(user_search.CURRENT_USER_UNAVAILABLE_MESSAGE)
             return

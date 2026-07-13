@@ -1,4 +1,4 @@
-"""ロール継承 graph の経路探索と DOT 生成。"""
+"""ACCESS_EDGES から user -> asset のロール継承経路を探索する。"""
 
 from __future__ import annotations
 
@@ -8,6 +8,7 @@ from dataclasses import dataclass
 import pandas as pd
 
 from catalog import schema
+from logic.graph import dot_renderer
 
 GRAPH_RELATION_TYPES = {"USER_TO_ROLE", "ROLE_TO_ROLE", "ROLE_TO_ASSET"}
 
@@ -97,53 +98,6 @@ def build_user_asset_graph(
     )
     return UserAssetGraph(
         paths=paths,
-        dot=paths_to_dot(paths, user_name, asset_fqn, edges),
+        dot=dot_renderer.paths_to_dot(paths, user_name, asset_fqn, edges),
         path_limit_exceeded=path_limit_exceeded,
     )
-
-
-def paths_to_dot(
-    paths: list[list[str]],
-    user_name: str,
-    asset_fqn: str,
-    edges: pd.DataFrame,
-) -> str:
-    """探索経路を Graphviz DOT へ変換する。"""
-    E = schema.AccessEdges
-    edge_labels = {
-        (str(row[E.SOURCE_NODE]), str(row[E.TARGET_NODE])): str(row[E.PRIVILEGE] or "")
-        for _, row in edges.iterrows()
-    }
-    graph_edges = {
-        (path[index], path[index + 1]) for path in paths for index in range(len(path) - 1)
-    }
-    graph_nodes = {node for path in paths for node in path} | {user_name, asset_fqn}
-
-    lines = [
-        "digraph G {",
-        "  rankdir=LR;",
-        '  graph [fontname="sans-serif"];',
-        '  node [shape=box, style="rounded,filled", fontname="sans-serif", fillcolor="white"];',
-        '  edge [fontname="sans-serif"];',
-    ]
-    for node in sorted(graph_nodes):
-        attrs = []
-        if node == user_name:
-            attrs.extend(["shape=oval", 'fillcolor="#E3F2FD"'])
-        elif node == asset_fqn:
-            attrs.extend(['fillcolor="#FFF3E0"'])
-        attr_text = f" [{', '.join(attrs)}]" if attrs else ""
-        lines.append(f'  "{_dot_escape(node)}"{attr_text};')
-
-    for source, target in sorted(graph_edges):
-        label = edge_labels.get((source, target), "")
-        label_text = f' [label="{_dot_escape(label)}"]' if label else ""
-        lines.append(f'  "{_dot_escape(source)}" -> "{_dot_escape(target)}"{label_text};')
-
-    lines.append("}")
-    return "\n".join(lines)
-
-
-def _dot_escape(value: str) -> str:
-    """DOT の quoted string 用に最低限のエスケープを行う。"""
-    return value.replace("\\", "\\\\").replace('"', '\\"')

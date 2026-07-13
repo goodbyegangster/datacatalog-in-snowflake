@@ -24,28 +24,10 @@ ACCOUNTADMIN で実行ができるようにする。
 
 - タスク実行ロールに `grant manage grants on account to role <% dcm_project_owner_role_name %>` を付与すればOK
 
-## フリーワード検索
-
-全てのチェックボックスを外した場合、入力不可にする。
-
-## assets のタグのカラー配色
-
-- タグの文字数に依存したロジックでは、容易に同一色が生まれてしまう
-  - 色のパターン数を増やして、配色ロジックを変えたい
-
 ## 既に detail 表示時に、table の fullscreen より行を選択した際、選択行のdetailまで画面遷移しない件
 
 - assets および users のどちらでも、この動作になる
 - 画面遷移させたい
-
-## assets の カラムタブの列ヘッダー位置
-
-以下の列ヘッダーを「中央より」にする。
-
-- PKEY
-- NOT NULL
-- UNIQUE
-- マスキングポリシー => masking policy に値を変更
 
 ## assets の ユーザータブの「ユーザー付与ロール」と「データ資産付与ロール」
 

@@ -12,6 +12,13 @@ from logic.search import AssetSearchCriteria, FreewordQuery, TagSelection
 from runtime import state
 from settings import SELECTABLE_TAG_KEYS
 
+FREEWORD_TARGET_KEYS = (
+    state.SEARCH_ASSET_TARGET_ASSET_NAME,
+    state.SEARCH_ASSET_TARGET_ASSET_DESC,
+    state.SEARCH_ASSET_TARGET_COLUMN_NAME,
+    state.SEARCH_ASSET_TARGET_COLUMN_DESC,
+)
+
 
 def _defaults() -> dict[str, object]:
     """検索ウィジェットの初期値。"""
@@ -67,6 +74,11 @@ def _clear() -> None:
     for tag_key in SELECTABLE_TAG_KEYS:
         st.session_state[_tag_widget_key(tag_key)] = []
     results.clear_selection()
+
+
+def _freeword_disabled() -> bool:
+    """フリーワード検索対象が 1 つも選択されていないか。"""
+    return not any(st.session_state.get(key, True) for key in FREEWORD_TARGET_KEYS)
 
 
 def _render_combine_control(key: str) -> None:
@@ -128,11 +140,15 @@ def render(assets: pd.DataFrame, tags: pd.DataFrame) -> AssetSearchCriteria:
 
     with st.container(border=True):
         st.markdown("**フリーワード**")
+        freeword_disabled = _freeword_disabled()
+        if freeword_disabled:
+            st.session_state[state.SEARCH_ASSET_FREEWORD] = ""
         st.text_input(
             "キーワード",
             key=state.SEARCH_ASSET_FREEWORD,
             placeholder="名前 / 説明 で検索",
             label_visibility="collapsed",
+            disabled=freeword_disabled,
         )
         st.caption("単語間に ` OR ` / ` AND ` を入れると組み合わせ検索ができます")
         cols = st.columns(2)

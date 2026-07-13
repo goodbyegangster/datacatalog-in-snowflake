@@ -77,6 +77,7 @@ def main() -> None:
 
     st.caption(f"{len(result.paths)} 経路")
     st.graphviz_chart(result.dot, width="stretch")
+    st.graphviz_chart(graph.legend_dot())
 
 
 main()

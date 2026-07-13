@@ -9,7 +9,7 @@ from streamlit.testing.v1 import AppTest
 from catalog import schema
 from catalog.providers import fake as catalog_fake
 from runtime import state
-from tests.app.conftest import USERS_PAGE, assert_no_exception, dataframe_value
+from tests.app.conftest import USERS_PAGE, assert_no_exception, checkbox_by_label, dataframe_value
 from tests.fixtures import catalog_data
 
 BASE_USER = catalog_data.users().iloc[0].to_dict()
@@ -65,6 +65,28 @@ def test_users_page_filters_by_freeword(users_app: AppTest) -> None:
     result = dataframe_value(app)
     assert result["名前"].tolist() == ["SVC_ETL"]
     assert result["表示名"].tolist() == ["ETL Service"]
+
+
+def test_users_page_disables_freeword_when_all_targets_are_off(
+    users_app: AppTest,
+) -> None:
+    app = users_app.run()
+
+    app.text_input[0].set_value("service").run()
+    checkbox_by_label(app, "ユーザーの名前").set_value(False).run()
+    checkbox_by_label(app, "ユーザーの表示名").set_value(False).run()
+
+    assert_no_exception(app)
+    assert app.text_input[0].disabled
+    assert app.text_input[0].value == ""
+    assert not checkbox_by_label(app, "ユーザーの名前").disabled
+    assert not checkbox_by_label(app, "ユーザーの表示名").disabled
+    assert dataframe_value(app)["名前"].tolist() == ["ALICE", "BOB", "SVC_ETL"]
+
+    checkbox_by_label(app, "ユーザーの名前").set_value(True).run()
+
+    assert_no_exception(app)
+    assert not app.text_input[0].disabled
 
 
 def test_users_page_orders_visible_assets_by_hierarchy(

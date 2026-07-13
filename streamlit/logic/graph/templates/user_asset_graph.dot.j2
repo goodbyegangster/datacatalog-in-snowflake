@@ -1,0 +1,12 @@
+digraph G {
+  rankdir=LR;
+  graph [fontname="sans-serif"];
+  node [shape=box, style="rounded,filled", fontname="sans-serif", fillcolor="white"];
+  edge [fontname="sans-serif"];
+{% for node in nodes %}
+  {{ node.id | dot_quote }}{% if node.attrs %} [{{ node.attrs }}]{% endif %};
+{% endfor %}
+{% for edge in edges %}
+  {{ edge.source | dot_quote }} -> {{ edge.target | dot_quote }}{% if edge.attrs %} [{{ edge.attrs }}]{% endif %};
+{% endfor %}
+}

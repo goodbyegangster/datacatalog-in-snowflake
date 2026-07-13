@@ -39,6 +39,16 @@ def test_build_user_asset_graph_returns_dot_for_reachable_asset() -> None:
     assert result.paths == [["ALICE", "ANALYST", "SALES_READER", "DB.SCHEMA.ORDERS"]]
     assert '"ALICE" -> "ANALYST"' in result.dot
     assert '"SALES_READER" -> "DB.SCHEMA.ORDERS" [label="SELECT"]' in result.dot
+    assert 'label="凡例"' not in result.dot
+
+
+def test_legend_dot_returns_node_legend() -> None:
+    result = graph.legend_dot()
+
+    assert 'label="凡例"' in result
+    assert '"__legend_user__" [label="User", shape=oval' in result
+    assert '"__legend_role__" [label="Role", shape=box' in result
+    assert '"__legend_asset__" [label="Asset", shape=box' in result
 
 
 def test_find_user_asset_paths_keeps_multiple_diamond_paths() -> None:

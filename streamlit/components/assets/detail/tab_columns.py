@@ -51,7 +51,7 @@ def render(table_id: int, columns: pd.DataFrame) -> None:
             "NOT NULL": cols[C.IS_NULLABLE],
             "UNIQUE": cols[C.IS_UNIQUE_KEY],
             "外部 KEY": cols[C.FOREIGN_KEYS].map(_fmt_foreign_keys),
-            "マスキングポリシー": cols[C.MASKING_POLICY_NAME].fillna("").astype(bool),
+            "masking policy": cols[C.MASKING_POLICY_NAME].fillna("").astype(bool),
             "タグ": cols[C.TAGS].map(_fmt_tags),
         }
     )
@@ -69,7 +69,7 @@ def render(table_id: int, columns: pd.DataFrame) -> None:
             "NOT NULL": st.column_config.CheckboxColumn(width="small"),
             "UNIQUE": st.column_config.CheckboxColumn(width="small"),
             "外部 KEY": st.column_config.TextColumn(width="large"),
-            "マスキングポリシー": st.column_config.CheckboxColumn(width="small"),
+            "masking policy": st.column_config.CheckboxColumn(width="small"),
             "タグ": st.column_config.TextColumn(width="medium"),
         },
     )

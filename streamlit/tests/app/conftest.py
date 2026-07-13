@@ -41,6 +41,14 @@ def dataframe_value(app: AppTest, index: int = 0) -> pd.DataFrame:
     return value
 
 
+def checkbox_by_label(app: AppTest, label: str) -> Any:
+    """label から checkbox widget を探す。"""
+    for widget in app.checkbox:
+        if widget.label == label:
+            return widget
+    raise AssertionError(f"checkbox not found: {label}")
+
+
 def multiselect_by_label(app: AppTest, label: str) -> Any:
     """label から multiselect widget を探す。"""
     for widget in app.multiselect:

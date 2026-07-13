@@ -27,7 +27,7 @@
 - [x] **Step 3. 検索を肉付け**：`logic/search.py` → 検索 UI を機能追加。
   - [x] Step 3a. データ資産検索（フリーワード / 階層 / 種別 / タグ / AND・OR トグル / 初期空欄＋インタラクティブ検索）。AppTest 検証済み。
   - [x] Step 3b. ユーザー検索（ログインユーザーのみ表示トグル＋フリーワード）。AppTest 検証済み。
-- [x] **Step 4. 詳細・グラフを肉付け**：`logic/graph.py` → ロール継承グラフ専用ページを追加。
+- [x] **Step 4. 詳細・グラフを肉付け**：`logic/graph/` → ロール継承グラフ専用ページを追加。
   - Step 4 開始時に、グラフ導線と合わせて以下の表示形式を再設計する。
     - `assets.py` 詳細ペインの「ユーザー」タブ。
     - `users.py` 詳細ペインの「閲覧可能なデータ資産」一覧。
@@ -57,7 +57,7 @@
   - 対象：ASSETS / COLUMNS / USERS / TAGS / ACCESS_EDGES / ASSET_VISIBILITY。資産は `DISPLAY_SCOPES` で絞る。`SNOWFLAKE.ACCOUNT_USAGE` や本体には触れない。
 - [x] `infrastructure/snowflake.py`：`get_session()`。SiS は `get_active_session()`、ローカルは secrets.toml。UI から接続処理を書かず 1 箇所に集約。
 - [x] `logic/search.py`：純関数。フリーワード解析（部分一致・大小無視・` OR `/` AND `）、資産フィルタ（カテゴリ1 AND (2 <トグル> 3 <トグル> 4)）、ユーザーフィルタ。
-- [x] `logic/graph.py`：`ACCESS_EDGES` から user↔asset の経路のみを抽出し DOT 生成（多段継承・DB ロール修飾・PUBLIC 除外）。
+- [x] `logic/graph/`：`ACCESS_EDGES` から user↔asset の経路のみを抽出し DOT 生成（多段継承・DB ロール修飾・PUBLIC 除外）。
 - [x] `runtime/state.py`：`st.session_state` キー定数・名前空間ヘルパ（`asset_` / `user_` / `search_`）。
 - [x] `runtime/user_context.py`：Streamlit ログインユーザー名を取得する。fake mode では固定ユーザーを返す。
 - [x] `lib/`：上記 package への移行完了後、`from lib...` import が残っていないことを確認して削除する。

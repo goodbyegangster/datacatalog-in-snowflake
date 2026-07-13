@@ -12,6 +12,7 @@ from runtime import state
 from tests.app.conftest import (
     ASSETS_PAGE,
     assert_no_exception,
+    checkbox_by_label,
     dataframe_value,
     multiselect_by_label,
 )
@@ -72,6 +73,28 @@ def test_assets_page_filters_by_freeword(assets_app: AppTest) -> None:
     result = dataframe_value(app)
     assert result["名前"].tolist() == ["ORDERS"]
     assert result["説明"].tolist() == ["Sales order facts"]
+
+
+def test_assets_page_disables_freeword_when_all_targets_are_off(
+    assets_app: AppTest,
+) -> None:
+    app = assets_app.run()
+
+    app.text_input[0].set_value("orders").run()
+    for label in (
+        "オブジェクトの名前",
+        "オブジェクトの説明",
+        "カラムの名前",
+        "カラムの説明",
+    ):
+        checkbox_by_label(app, label).set_value(False).run()
+
+    assert_no_exception(app)
+    assert app.text_input[0].disabled
+    assert app.text_input[0].value == ""
+    assert [info.value for info in app.info] == [
+        "サイドバーの検索条件を指定すると、一覧が表示されます。"
+    ]
 
 
 def test_assets_page_orders_visible_users_by_user_name(
