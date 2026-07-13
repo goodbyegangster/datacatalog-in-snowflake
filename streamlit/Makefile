@@ -43,4 +43,4 @@ run_fake_headless: ## fake catalog でローカルサーバーを起動 (headles
 deploy: ## Snowflake へデプロイ
 	snow streamlit deploy --replace \
 	  -c $(SNOWFLAKE_CLI_CONNECTION_NAME) \
-	  --role $(SIS_ROLE_PREFIX)_FUNC_SIS_OWNER
+	  --role $(sis_role_name_prefix)_FUNC_SIS_OWNER

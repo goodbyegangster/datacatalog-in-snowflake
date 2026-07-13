@@ -1,5 +1,5 @@
 -- compute pool 向け access role 削除
-drop role if exists <% sis_role_prefix %>_ACCESS__CP__SIS__USAGE
+drop role if exists <% sis_role_name_prefix %>_ACCESS__CP__SIS__USAGE
 ;
 
 -- compute pool 削除

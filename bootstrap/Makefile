@@ -10,7 +10,7 @@ help:
 .PHONY: setup
 setup: ## DCM プロジェクト実行用のオブジェクトを作成する
 	snow sql -f sql/setup.sql \
-	  -D "SNOWFLAKE_MY_USER_NAME=$(SNOWFLAKE_MY_USER_NAME)" \
+	  -D "snowflake_my_user_name=$(SNOWFLAKE_MY_USER_NAME)" \
 	  -D "dcm_project_owner_role_name=$(DCM_PROJECT_OWNER_ROLE_NAME)" \
 	  -D "dcm_database_name=$(DCM_DATABASE_NAME)" \
 	  -D "external_access_pypi_name=$(EXTERNAL_ACCESS_PYPI_NAME)" \

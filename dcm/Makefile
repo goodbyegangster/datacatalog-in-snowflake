@@ -39,7 +39,7 @@ dcm-drop: ## DCM プロジェクトを削除する
 manual-deploy: ## DCM で管理できないオブジェクトをデプロイする
 	snow sql -f manual/deploy/compute_pool.sql \
 	  -D "sis_compute_pool_name=$(SIS_COMPUTE_POOL_NAME)" \
-	  -D "sis_role_prefix=$(SIS_ROLE_PREFIX)" \
+	  -D "sis_role_name_prefix=$(sis_role_name_prefix)" \
 	  -c $(SNOWFLAKE_CLI_CONNECTION_NAME) \
 	  --role $(DCM_PROJECT_OWNER_ROLE_NAME)
 
