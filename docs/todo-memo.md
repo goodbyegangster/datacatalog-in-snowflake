@@ -12,6 +12,7 @@
 ## サンプルオブジェクト用の専用データベースを用意
 
 datacatalog 向けとサンプルデータ向けを、データベース単位で分ける。
+=> これは sample であることが分かるスキーマ名にすれば良し。データベース単位ではわけない。
 
 ## サンプルオブジェクト追加
 
@@ -20,6 +21,8 @@ dynamic table を追加。
 ## Snowflake タスクの実行ロール
 
 ACCOUNTADMIN で実行ができるようにする。
+
+- タスク実行ロールに `grant manage grants on account to role <% dcm_project_owner_role_name %>` を付与すればOK
 
 ## フリーワード検索
 

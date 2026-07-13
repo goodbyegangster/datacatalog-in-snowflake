@@ -7,3 +7,7 @@ define task {{ sis_database_name }}.TASK.REFRESH_CATALOG
 as
     call {{ sis_database_name }}.PROCEDURE.REFRESH_CATALOG()
 ;
+
+grant ownership on task {{ sis_database_name }}.TASK.REFRESH_CATALOG
+    to role ACCOUNTADMIN
+;

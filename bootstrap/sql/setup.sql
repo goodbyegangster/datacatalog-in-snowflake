@@ -20,6 +20,9 @@ grant database role SNOWFLAKE.OBJECT_VIEWER
 grant database role SNOWFLAKE.GOVERNANCE_VIEWER
     to role <% dcm_project_owner_role_name %>
 ;
+grant execute task on account
+    to role <% dcm_project_owner_role_name %>
+;
 
 use role SYSADMIN ;
 grant create database on account
