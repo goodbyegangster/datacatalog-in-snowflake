@@ -1,7 +1,7 @@
 """``st.session_state`` のキー定数。
 
 Streamlit は再実行のたびにスクリプトを再評価するため、選択状態や検索条件は
-session_state に永続させる。キーは接頭辞で名前空間を分ける（design-view.md 参照）。
+session_state の key を明示して扱う。キーは接頭辞で名前空間を分ける（design-view.md 参照）。
 
 - ``asset_`` : データ資産ページの状態
 - ``user_``  : ユーザーページの状態
@@ -52,3 +52,4 @@ NAV_TO_TABLE_ID = "nav_to_table_id"
 NAV_GRAPH_USER_NAME = "nav_graph_user_name"
 NAV_GRAPH_TABLE_ID = "nav_graph_table_id"
 NAV_GRAPH_ASSET_FQN = "nav_graph_asset_fqn"
+NAV_GRAPH_RETURN_PAGE = "nav_graph_return_page"

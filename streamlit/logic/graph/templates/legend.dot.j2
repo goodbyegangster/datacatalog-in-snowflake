@@ -1,8 +1,15 @@
 digraph G {
   rankdir=LR;
-  graph [fontname="sans-serif", margin=0];
-  node [fontname="sans-serif"];
-  edge [style=invis];
+
+  graph [
+    fontname="sans-serif",
+    margin=0
+  ];
+
+  node [
+    fontname="sans-serif"
+  ];
+
   subgraph cluster_legend {
     label="凡例";
     fontsize=10;
@@ -10,10 +17,36 @@ digraph G {
     color="#D0D7DE";
     style="rounded,dashed";
     margin=6;
-    "__legend_user__" [label="User", shape=oval, style="filled", fillcolor="#E3F2FD", fontsize=10, width=0.5, height=0.25, margin=0.04];
-    "__legend_role__" [label="Role", shape=box, style="rounded,filled", fillcolor="white", fontsize=10, width=0.5, height=0.25, margin=0.04];
-    "__legend_asset__" [label="Asset", shape=box, style="rounded,filled", fillcolor="#FFF3E0", fontsize=10, width=0.5, height=0.25, margin=0.04];
-    "__legend_user__" -> "__legend_role__";
-    "__legend_role__" -> "__legend_asset__";
+
+    node [
+      fontsize=10,
+      width=0.5,
+      height=0.25,
+      margin=0.04
+    ];
+
+    legend_user [
+      label="User",
+      shape=oval,
+      style=filled,
+      fillcolor="#E3F2FD"
+    ];
+
+    legend_role [
+      label="Role",
+      shape=box,
+      style="rounded,filled",
+      fillcolor="white"
+    ];
+
+    legend_asset [
+      label="Asset",
+      shape=box,
+      style="rounded,filled",
+      fillcolor="#FFF3E0"
+    ];
+
+    legend_user -> legend_role [style=invis];
+    legend_role -> legend_asset [style=invis];
   }
 }

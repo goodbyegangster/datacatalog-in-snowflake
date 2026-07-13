@@ -40,9 +40,13 @@ Streamlit in Snowflake（SiS）実装規則を定義する。
 ## 検索の実装
 
 - ウィジェット：`st.text_input` / `st.checkbox` / `st.multiselect` / `st.segmented_control`（カテゴリー間の AND/OR）/ `st.expander`（カテゴリーのアコーディオン）
-- 検索ウィジェットの選択値は `st.session_state` で保持する（Streamlit は再実行のたびにスクリプトを再評価するため、状態は session_state に永続させる）。特にカテゴリー2（階層）の DB / スキーマ選択値は、[design-search.md](design-search.md) の連動仕様を成立させるため session_state 管理が必須:
+- 検索ウィジェットの選択値は `st.session_state` の key を明示して保持する。特にカテゴリー2（階層）の DB / スキーマ選択値は、[design-search.md](design-search.md) の連動仕様を成立させるため session_state 管理が必須:
   - スキーマの選択肢は、選択中の DB に**連動**して算出する（子プルダウンが親に依存）
   - DB プルダウンの `on_change` コールバックで、スキーマの選択 session_state をクリアし**未選択へリセット**する（未選択 = 無制約）
+- ただし、`st.text_input(..., key=...)` など widget に紐づく session_state は widget の lifecycle に従う
+  - 該当 widget が描画されないページへ遷移した場合、Streamlit の widget cleanup により値が消える可能性がある
+  - 検索条件はページを離れても保持したいため、`streamlit_app.py` で検索 widget key を再代入し、Streamlit の widget cleanup を interrupt する
+  - この横断ルールにより、graph ページから「データ資産に戻る」/「ユーザーに戻る」場合も検索結果一覧を維持する
 - 「入力をクリア」は、ウィジェットキーを安定させたまま `session_state` へ初期値を明示代入して初期化する
   - `session_state` とフロント側ウィジェット値の同期に問題が出る場合のみ、キー世代（nonce）を進めてウィジェットを再生成する方式を fallback として検討する
 - ログインユーザーのみ表示を適用する場合、`st.user` からユーザー名を取得できなければ fail-closed とする
@@ -61,6 +65,7 @@ Streamlit in Snowflake（SiS）実装規則を定義する。
 - ページ / 状態層
   - `streamlit.testing.v1.AppTest` を利用
   - ブラウザ不要・CI 高速。検索ウィジェットの状態変化、検索結果、一覧表示、空状態 / エラー表示をカバー
+  - ページをまたぐ検索 widget state 保持は、cleanup interrupt の対象 key を unit test で検証する
   - production 相当のエラーでは traceback を出さない。`CATALOG_DATA_MODE=fake` のローカル検証時のみ、原因調査のため `st.exception` を表示してよい
   - `st.dataframe` は pagination せず、`width="stretch"` と dataframe 側のスクロール / fullscreen 表示に委ねる
   - `st.dataframe` の selection が空の rerun は「詳細を閉じる」意思とは扱わず、既存の選択 state を維持する

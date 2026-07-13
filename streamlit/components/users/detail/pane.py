@@ -21,7 +21,7 @@ def _fmt_roles(roles: object) -> str:
     """ロール配列を dataframe 表示向けに整形する。"""
     if not isinstance(roles, list) or not roles:
         return ""
-    return ", ".join(str(role) for role in roles)
+    return ", ".join(sorted(str(role) for role in roles))
 
 
 def _display_user_type(user_type: object) -> str:
@@ -53,6 +53,7 @@ def _set_graph_page_navigation(*, user_name: str, table_id: int, asset_fqn: str)
     st.session_state[state.NAV_GRAPH_USER_NAME] = user_name
     st.session_state[state.NAV_GRAPH_TABLE_ID] = int(table_id)
     st.session_state[state.NAV_GRAPH_ASSET_FQN] = asset_fqn
+    st.session_state[state.NAV_GRAPH_RETURN_PAGE] = "users"
 
 
 def _selected_asset_row(event: object, display: pd.DataFrame) -> int | None:

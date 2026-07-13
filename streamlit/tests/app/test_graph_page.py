@@ -25,15 +25,47 @@ def test_graph_page_shows_graph_target_and_paths(monkeypatch: pytest.MonkeyPatch
     app.session_state[state.NAV_GRAPH_USER_NAME] = "ALICE"
     app.session_state[state.NAV_GRAPH_TABLE_ID] = 1
     app.session_state[state.NAV_GRAPH_ASSET_FQN] = "hogehoge.DATA_SALES.ORDERS"
+    app.session_state[state.NAV_GRAPH_RETURN_PAGE] = "assets"
 
     app.run()
 
     assert_no_exception(app)
     assert [title.value for title in app.title] == ["🌐 ロール継承グラフ"]
     assert any("**ALICE** から **hogehoge.DATA_SALES.ORDERS**" in md.value for md in app.markdown)
-    assert [button.label for button in app.button] == ["ユーザーを開く", "データ資産を開く"]
+    assert [button.label for button in app.button] == ["データ資産に戻る", "ユーザーを開く"]
     assert [caption.value for caption in app.caption] == ["1 経路"]
     assert len(app.dataframe) == 0
+
+
+def test_graph_page_shows_user_return_button_from_users(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("CATALOG_DATA_MODE", "fake")
+    app = AppTest.from_file(GRAPH_PAGE)
+    app.session_state[state.NAV_GRAPH_USER_NAME] = "ALICE"
+    app.session_state[state.NAV_GRAPH_TABLE_ID] = 1
+    app.session_state[state.NAV_GRAPH_ASSET_FQN] = "hogehoge.DATA_SALES.ORDERS"
+    app.session_state[state.NAV_GRAPH_RETURN_PAGE] = "users"
+
+    app.run()
+
+    assert_no_exception(app)
+    assert [button.label for button in app.button] == ["ユーザーに戻る", "データ資産を開く"]
+
+
+def test_graph_page_shows_open_buttons_without_return_page(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("CATALOG_DATA_MODE", "fake")
+    app = AppTest.from_file(GRAPH_PAGE)
+    app.session_state[state.NAV_GRAPH_USER_NAME] = "ALICE"
+    app.session_state[state.NAV_GRAPH_TABLE_ID] = 1
+    app.session_state[state.NAV_GRAPH_ASSET_FQN] = "hogehoge.DATA_SALES.ORDERS"
+
+    app.run()
+
+    assert_no_exception(app)
+    assert [button.label for button in app.button] == ["ユーザーを開く", "データ資産を開く"]
 
 
 def test_graph_page_shows_traceback_in_fake_mode(monkeypatch: pytest.MonkeyPatch) -> None:

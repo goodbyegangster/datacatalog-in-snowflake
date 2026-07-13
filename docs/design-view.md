@@ -297,15 +297,20 @@ flowchart TD
   - `nav_graph_user_name`
   - `nav_graph_table_id`
   - `nav_graph_asset_fqn`
+  - `nav_graph_return_page`
 - query parameter は利用しない
 - graph ページでは検索 UI を持たないため、ページ限定 CSS で空の `st.sidebar` を非表示にする
 
 #### 表示内容
 
 - 表示中の対象ユーザー・対象データ資産を上部に表示する
-- 「ユーザーを開く」「データ資産を開く」ボタンを設け、それぞれの詳細ページへ戻れるようにする
+- `nav_graph_return_page` により、遷移元に応じて操作ボタンの文言を変える
+  - assets から遷移した場合: 「データ資産に戻る」「ユーザーを開く」
+  - users から遷移した場合: 「ユーザーに戻る」「データ資産を開く」
+  - 直接 graph ページを開いた場合など、遷移元が不明な場合: 「ユーザーを開く」「データ資産を開く」
+- 「戻る」系ボタンは、検索条件・検索結果一覧・選択中詳細を維持したまま graph 表示元ページへ戻る
 - `ACCESS_EDGES` から対象ユーザー -> 対象データ資産の全経路を探索する
-- graph 描画は `st.graphviz_chart` を利用し、User / Role / Asset の凡例を graph 内に表示する
+- graph 描画は `st.graphviz_chart` を利用し、User / Role / Asset の凡例を graph 下に表示する
 - 経路数が多すぎる場合は graph を描画せず、「経路が多すぎるため表示できません。」を表示する
 - 経路が見つからない場合は、「ロール継承 graph の経路が見つかりませんでした。」を表示する
 
@@ -322,11 +327,16 @@ flowchart LR
   user --行選択後「選択データ資産を開く」--> asset
   asset --行選択後「ロール継承グラフを表示」--> graph
   user --行選択後「ロール継承グラフを表示」--> graph
+  graph --データ資産に戻る--> asset
+  graph --ユーザーに戻る--> user
   graph --ユーザーを開く--> user
   graph --データ資産を開く--> asset
 ```
 
 - `st.session_state` に「遷移先で選択させたい ID」を積んで `st.switch_page()` で移動する
+- graph ページからの「戻る」系ボタンは、遷移元ページ名を `st.session_state` に保持して実現する
+  - `st.text_input` 等の widget key に紐づく state は、該当 widget が描画されないページへ移ると cleanup 対象になり得る
+  - 検索条件は `streamlit_app.py` で widget cleanup を interrupt し、ページをまたいで保持する
 - `st.session_state` のキーは接頭辞で名前空間を分ける
   - 例：`asset_selected_table_id` / `user_selected_name` / `search_*` / `nav_to_table_id` / `nav_to_user_name` / `nav_graph_*`
 - ブラウザの「戻る」ボタンによる状態復元は保証しない

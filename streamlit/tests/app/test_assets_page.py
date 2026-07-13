@@ -105,8 +105,8 @@ def test_assets_page_orders_visible_users_by_user_name(
     visibility = catalog_data.asset_visibility()
     bob_visibility = visibility.iloc[0].copy()
     bob_visibility[V.USER_NAME] = "BOB"
-    bob_visibility[V.USER_ROLES] = ["ANALYST"]
-    bob_visibility[V.ASSET_ROLES] = ["SALES_READER"]
+    bob_visibility[V.USER_ROLES] = ["MARKETER", "ANALYST"]
+    bob_visibility[V.ASSET_ROLES] = ["SALES_READER", "AD_READER"]
     visibility = pd.concat([visibility, bob_visibility.to_frame().T], ignore_index=True)
     monkeypatch.setattr(
         catalog_fake,
@@ -119,7 +119,10 @@ def test_assets_page_orders_visible_users_by_user_name(
     app.run()
 
     assert_no_exception(app)
-    assert dataframe_value(app, index=3)["ユーザー"].tolist() == ["ALICE", "BOB"]
+    result = dataframe_value(app, index=3)
+    assert result["ユーザー"].tolist() == ["ALICE", "BOB"]
+    assert result["ユーザー付与ロール"].tolist()[1] == "ANALYST, MARKETER"
+    assert result["データ資産付与ロール"].tolist()[1] == "AD_READER, SALES_READER"
 
 
 def test_assets_page_shows_empty_message_when_no_asset_matches(

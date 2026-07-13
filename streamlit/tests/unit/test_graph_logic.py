@@ -46,9 +46,16 @@ def test_legend_dot_returns_node_legend() -> None:
     result = graph.legend_dot()
 
     assert 'label="凡例"' in result
-    assert '"__legend_user__" [label="User", shape=oval' in result
-    assert '"__legend_role__" [label="Role", shape=box' in result
-    assert '"__legend_asset__" [label="Asset", shape=box' in result
+    assert "legend_user" in result
+    assert 'label="User"' in result
+    assert "shape=oval" in result
+    assert 'fillcolor="#E3F2FD"' in result
+    assert "legend_role" in result
+    assert 'label="Role"' in result
+    assert 'fillcolor="white"' in result
+    assert "legend_asset" in result
+    assert 'label="Asset"' in result
+    assert 'fillcolor="#FFF3E0"' in result
 
 
 def test_find_user_asset_paths_keeps_multiple_diamond_paths() -> None:

@@ -97,6 +97,8 @@ def test_users_page_orders_visible_assets_by_hierarchy(
     visibility = catalog_data.asset_visibility()
     campaign_visibility = visibility.iloc[1].copy()
     campaign_visibility[V.USER_NAME] = "ALICE"
+    campaign_visibility[V.USER_ROLES] = ["MARKETER", "ANALYST"]
+    campaign_visibility[V.ASSET_ROLES] = ["SALES_READER", "AD_READER"]
     visibility = pd.concat([visibility, campaign_visibility.to_frame().T], ignore_index=True)
     monkeypatch.setattr(
         catalog_fake,
@@ -117,6 +119,8 @@ def test_users_page_orders_visible_assets_by_hierarchy(
         [catalog_data.DB, "DATA_AD", "CAMPAIGN_LEADS"],
         [catalog_data.DB, "DATA_SALES", "ORDERS"],
     ]
+    assert result["ユーザー付与ロール"].tolist()[0] == "ANALYST, MARKETER"
+    assert result["データ資産付与ロール"].tolist()[0] == "AD_READER, SALES_READER"
 
 
 def test_users_page_filters_only_self_in_fake_mode(users_app: AppTest) -> None:

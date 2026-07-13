@@ -7,6 +7,9 @@
 
 import streamlit as st
 
+import settings
+from runtime import widget_state
+
 st.set_page_config(page_title="データカタログ", page_icon="📚", layout="wide")
 
 pages = [
@@ -15,4 +18,5 @@ pages = [
     st.Page("views/graph.py", title="ロール継承グラフ", icon="🌐", visibility="hidden"),
 ]
 
+widget_state.preserve_widget_state(widget_state.search_widget_keys(settings.SELECTABLE_TAG_KEYS))
 st.navigation(pages, position="top").run()

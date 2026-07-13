@@ -8,11 +8,16 @@
 from __future__ import annotations
 
 import streamlit as st
-import styles
 
+import styles
 from catalog import provider as catalog
 from logic import graph
 from runtime import state
+
+RETURN_PAGE_PATHS = {
+    "assets": "views/assets.py",
+    "users": "views/users.py",
+}
 
 
 def _graph_target() -> tuple[str | None, int | None, str | None]:
@@ -31,14 +36,52 @@ def _graph_target() -> tuple[str | None, int | None, str | None]:
     )
 
 
+def _return_page() -> str | None:
+    """session_state から graph 表示元ページを取得する。"""
+    value = st.session_state.get(state.NAV_GRAPH_RETURN_PAGE)
+    if value not in RETURN_PAGE_PATHS:
+        return None
+    return str(value)
+
+
+def _return_to_source(return_page: str, *, user_name: str, table_id: int) -> None:
+    """graph 表示元ページへ戻る。"""
+    if return_page == "assets":
+        st.session_state[state.ASSET_SELECTED_TABLE_ID] = table_id
+    elif return_page == "users":
+        st.session_state[state.USER_SELECTED_NAME] = user_name
+    st.switch_page(RETURN_PAGE_PATHS[return_page])
+
+
 def _render_navigation_buttons(user_name: str, table_id: int) -> None:
     """対象の詳細ページへ戻るためのボタンを表示する。"""
-    user_col, asset_col = st.columns(2)
-    with user_col:
+    return_page = _return_page()
+    left_col, right_col = st.columns(2)
+    if return_page == "assets":
+        with left_col:
+            if st.button("データ資産に戻る", icon=":material/arrow_back:", width="stretch"):
+                _return_to_source("assets", user_name=user_name, table_id=table_id)
+        with right_col:
+            if st.button("ユーザーを開く", icon=":material/person_search:", width="stretch"):
+                st.session_state[state.NAV_TO_USER_NAME] = user_name
+                st.switch_page("views/users.py")
+        return
+
+    if return_page == "users":
+        with left_col:
+            if st.button("ユーザーに戻る", icon=":material/arrow_back:", width="stretch"):
+                _return_to_source("users", user_name=user_name, table_id=table_id)
+        with right_col:
+            if st.button("データ資産を開く", icon=":material/table_view:", width="stretch"):
+                st.session_state[state.NAV_TO_TABLE_ID] = table_id
+                st.switch_page("views/assets.py")
+        return
+
+    with left_col:
         if st.button("ユーザーを開く", icon=":material/person_search:", width="stretch"):
             st.session_state[state.NAV_TO_USER_NAME] = user_name
             st.switch_page("views/users.py")
-    with asset_col:
+    with right_col:
         if st.button("データ資産を開く", icon=":material/table_view:", width="stretch"):
             st.session_state[state.NAV_TO_TABLE_ID] = table_id
             st.switch_page("views/assets.py")

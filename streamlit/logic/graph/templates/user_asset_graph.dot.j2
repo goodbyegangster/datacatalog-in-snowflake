@@ -1,12 +1,25 @@
 digraph G {
-  rankdir=LR;
-  graph [fontname="sans-serif"];
-  node [shape=box, style="rounded,filled", fontname="sans-serif", fillcolor="white"];
-  edge [fontname="sans-serif"];
-{% for node in nodes %}
-  {{ node.id | dot_quote }}{% if node.attrs %} [{{ node.attrs }}]{% endif %};
+  graph [
+    rankdir=LR,
+    fontname="sans-serif"
+  ];
+
+  node [
+    shape=box,
+    style="rounded,filled",
+    fontname="sans-serif",
+    fillcolor="white"
+  ];
+
+  edge [
+    fontname="sans-serif"
+  ];
+
+{% for graph_node in nodes %}
+  {{ graph_node.id | dot_quote }}{% if graph_node.attrs %} [{{ graph_node.attrs }}]{% endif %};
 {% endfor %}
-{% for edge in edges %}
-  {{ edge.source | dot_quote }} -> {{ edge.target | dot_quote }}{% if edge.attrs %} [{{ edge.attrs }}]{% endif %};
+
+{% for graph_edge in edges %}
+  {{ graph_edge.source | dot_quote }} -> {{ graph_edge.target | dot_quote }}{% if graph_edge.attrs %} [{{ graph_edge.attrs }}]{% endif %};
 {% endfor %}
 }

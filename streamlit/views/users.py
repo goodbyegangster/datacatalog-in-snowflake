@@ -11,8 +11,8 @@ from __future__ import annotations
 
 import pandas as pd
 import streamlit as st
-import styles
 
+import styles
 from catalog import provider as catalog
 from catalog import schema
 from components.users import detail as user_detail
