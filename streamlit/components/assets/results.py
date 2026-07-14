@@ -50,6 +50,7 @@ def render(assets: pd.DataFrame, *, compact: bool = False) -> int | None:
         ).reset_index(drop=True)
         column_config = _COLUMN_CONFIG
 
+    st.caption(f"検索結果: {len(display)}")
     event = st.dataframe(
         display,
         column_config=column_config,
