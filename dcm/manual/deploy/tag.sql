@@ -1,44 +1,44 @@
 -- CAMPAIGN_LEADS テーブルに tag を付与
-alter table <% sis_database_name %>.DATA_AD.CAMPAIGN_LEADS set tag
-    <% sis_database_name %>.TAG.DATA_DOMAIN = 'marketing',
-    <% sis_database_name %>.TAG.DATA_CATEGORY = 'transaction',
-    <% sis_database_name %>.TAG.SENSITIVITY = 'restricted'
+alter table <% datacatalog_database_name %>.DATA_AD.CAMPAIGN_LEADS set tag
+    <% datacatalog_database_name %>.TAG.DATA_DOMAIN = 'marketing',
+    <% datacatalog_database_name %>.TAG.DATA_CATEGORY = 'transaction',
+    <% datacatalog_database_name %>.TAG.SENSITIVITY = 'restricted'
 ;
 
 -- CAMPAIGN_LEADS テーブルの FULL_NAME 列に tag を付与
-alter table <% sis_database_name %>.DATA_AD.CAMPAIGN_LEADS modify column FULL_NAME set tag
-    <% sis_database_name %>.TAG.PII = 'true'
+alter table <% datacatalog_database_name %>.DATA_AD.CAMPAIGN_LEADS modify column FULL_NAME set tag
+    <% datacatalog_database_name %>.TAG.PII = 'true'
 ;
 
 -- CAMPAIGN_LEADS テーブルの EMAIL 列に tag を付与
-alter table <% sis_database_name %>.DATA_AD.CAMPAIGN_LEADS modify column EMAIL set tag
-    <% sis_database_name %>.TAG.PII = 'true'
+alter table <% datacatalog_database_name %>.DATA_AD.CAMPAIGN_LEADS modify column EMAIL set tag
+    <% datacatalog_database_name %>.TAG.PII = 'true'
 ;
 
 -- D_CAMPAIGN_LEADS テーブルに tag を付与
-alter table <% sis_database_name %>.DATA_AD.D_CAMPAIGN_LEADS set tag
-    <% sis_database_name %>.TAG.DATA_DOMAIN = 'marketing',
-    <% sis_database_name %>.TAG.DATA_CATEGORY = 'transaction',
-    <% sis_database_name %>.TAG.SENSITIVITY = 'internal'
+alter table <% datacatalog_database_name %>.DATA_AD.D_CAMPAIGN_LEADS set tag
+    <% datacatalog_database_name %>.TAG.DATA_DOMAIN = 'marketing',
+    <% datacatalog_database_name %>.TAG.DATA_CATEGORY = 'transaction',
+    <% datacatalog_database_name %>.TAG.SENSITIVITY = 'internal'
 ;
 
 -- PRODUCTS テーブルに tag を付与
-alter table <% sis_database_name %>.DATA_SALES.PRODUCTS set tag
-    <% sis_database_name %>.TAG.DATA_DOMAIN = 'sales',
-    <% sis_database_name %>.TAG.DATA_CATEGORY = 'master',
-    <% sis_database_name %>.TAG.SENSITIVITY = 'internal'
+alter table <% datacatalog_database_name %>.DATA_SALES.PRODUCTS set tag
+    <% datacatalog_database_name %>.TAG.DATA_DOMAIN = 'sales',
+    <% datacatalog_database_name %>.TAG.DATA_CATEGORY = 'master',
+    <% datacatalog_database_name %>.TAG.SENSITIVITY = 'internal'
 ;
 
 -- PRODUCT_CATEGORIES テーブルに tag を付与
-alter table <% sis_database_name %>.DATA_SALES.PRODUCT_CATEGORIES set tag
-    <% sis_database_name %>.TAG.DATA_DOMAIN = 'sales',
-    <% sis_database_name %>.TAG.DATA_CATEGORY = 'master',
-    <% sis_database_name %>.TAG.SENSITIVITY = 'internal'
+alter table <% datacatalog_database_name %>.DATA_SALES.PRODUCT_CATEGORIES set tag
+    <% datacatalog_database_name %>.TAG.DATA_DOMAIN = 'sales',
+    <% datacatalog_database_name %>.TAG.DATA_CATEGORY = 'master',
+    <% datacatalog_database_name %>.TAG.SENSITIVITY = 'internal'
 ;
 
 -- V_PRODUCTS ビューに tag を付与
-alter view <% sis_database_name %>.DATA_SALES.V_PRODUCTS set tag
-    <% sis_database_name %>.TAG.DATA_DOMAIN = 'sales',
-    <% sis_database_name %>.TAG.DATA_CATEGORY = 'master',
-    <% sis_database_name %>.TAG.SENSITIVITY = 'internal'
+alter view <% datacatalog_database_name %>.DATA_SALES.V_PRODUCTS set tag
+    <% datacatalog_database_name %>.TAG.DATA_DOMAIN = 'sales',
+    <% datacatalog_database_name %>.TAG.DATA_CATEGORY = 'master',
+    <% datacatalog_database_name %>.TAG.SENSITIVITY = 'internal'
 ;

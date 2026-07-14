@@ -1,6 +1,6 @@
 -- noqa: disable=LT02
 
-define table {{ sis_database_name }}.DATA_SALES.PRODUCT_CATEGORIES (
+define table {{ datacatalog_database_name }}.DATA_SALES.PRODUCT_CATEGORIES (
     CATEGORY_ID number comment 'カテゴリID',
     CATEGORY_NAME varchar(100) not null comment 'カテゴリ名',
     DESCRIPTION varchar(255) comment '説明',

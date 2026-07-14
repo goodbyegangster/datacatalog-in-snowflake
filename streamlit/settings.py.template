@@ -12,7 +12,7 @@ class CatalogLocation(TypedDict):
 
 
 CATALOG_LOCATION: CatalogLocation = {
-    "DATABASE_NAME": "${SIS_DATABASE_NAME}",
+    "DATABASE_NAME": "${DATACATALOG_DATABASE_NAME}",
     "SCHEMA_NAME": "CATALOG",
 }
 
@@ -26,11 +26,11 @@ class DisplayScope(TypedDict):
 
 DISPLAY_SCOPES: list[DisplayScope] = [
     {
-        "DATABASE_NAME": "${SIS_DATABASE_NAME}",
+        "DATABASE_NAME": "${DATACATALOG_DATABASE_NAME}",
         "SCHEMA_NAME": "DATA_AD",
     },
     {
-        "DATABASE_NAME": "${SIS_DATABASE_NAME}",
+        "DATABASE_NAME": "${DATACATALOG_DATABASE_NAME}",
         "SCHEMA_NAME": "DATA_SALES",
     },
 ]
@@ -46,22 +46,22 @@ class SelectableTagKey(TypedDict):
 
 SELECTABLE_TAG_KEYS: list[SelectableTagKey] = [
     {
-        "DATABASE_NAME": "${SIS_DATABASE_NAME}",
+        "DATABASE_NAME": "${DATACATALOG_DATABASE_NAME}",
         "SCHEMA_NAME": "TAG",
         "TAG_NAME": "DATA_CATEGORY",
     },
     {
-        "DATABASE_NAME": "${SIS_DATABASE_NAME}",
+        "DATABASE_NAME": "${DATACATALOG_DATABASE_NAME}",
         "SCHEMA_NAME": "TAG",
         "TAG_NAME": "DATA_DOMAIN",
     },
     {
-        "DATABASE_NAME": "${SIS_DATABASE_NAME}",
+        "DATABASE_NAME": "${DATACATALOG_DATABASE_NAME}",
         "SCHEMA_NAME": "TAG",
         "TAG_NAME": "PII",
     },
     {
-        "DATABASE_NAME": "${SIS_DATABASE_NAME}",
+        "DATABASE_NAME": "${DATACATALOG_DATABASE_NAME}",
         "SCHEMA_NAME": "TAG",
         "TAG_NAME": "SENSITIVITY",
     },

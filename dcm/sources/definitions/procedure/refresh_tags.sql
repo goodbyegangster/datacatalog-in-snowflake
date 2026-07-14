@@ -6,14 +6,14 @@
 -- 依存なし（ACCOUNT_USAGE.TAGS のみ）。
 -- NOTE: allowed_values 未定義（自由記述）のタグは値を列挙できないため本マスターには現れない。
 
-define procedure {{ sis_database_name }}.PROCEDURE.REFRESH_TAGS()
+define procedure {{ datacatalog_database_name }}.PROCEDURE.REFRESH_TAGS()
     returns string
     language sql
     execute as owner
 as
 $$
 begin
-    create or replace table {{ sis_database_name }}.CATALOG.TAGS (
+    create or replace table {{ datacatalog_database_name }}.CATALOG.TAGS (
         TAG_DATABASE comment 'タグの DB',
         TAG_SCHEMA   comment 'タグのスキーマ',
         TAG_NAME     comment 'タグ名',

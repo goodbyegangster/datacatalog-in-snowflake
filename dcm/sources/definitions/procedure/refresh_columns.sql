@@ -2,7 +2,7 @@
 
 -- 依存：CATALOG.ASSETS（先に refresh 済みであること）。
 
-define procedure {{ sis_database_name }}.PROCEDURE.REFRESH_COLUMNS()
+define procedure {{ datacatalog_database_name }}.PROCEDURE.REFRESH_COLUMNS()
     returns string
     language sql
     execute as owner
@@ -11,7 +11,7 @@ $$
 begin
     -- 制約情報をアカウント全体の SHOW から一時表へ退避
     show primary keys in account;
-    create or replace temporary table {{ sis_database_name }}.CATALOG.TMP_PK as
+    create or replace temporary table {{ datacatalog_database_name }}.CATALOG.TMP_PK as
         select
             "database_name" as db,
             "schema_name"   as sch,
@@ -20,7 +20,7 @@ begin
         from table(result_scan(last_query_id()));
 
     show unique keys in account;
-    create or replace temporary table {{ sis_database_name }}.CATALOG.TMP_UK as
+    create or replace temporary table {{ datacatalog_database_name }}.CATALOG.TMP_UK as
         select
             "database_name" as db,
             "schema_name"   as sch,
@@ -29,7 +29,7 @@ begin
         from table(result_scan(last_query_id()));
 
     show imported keys in account;
-    create or replace temporary table {{ sis_database_name }}.CATALOG.TMP_FK as
+    create or replace temporary table {{ datacatalog_database_name }}.CATALOG.TMP_FK as
         select
             "fk_database_name" as db,
             "fk_schema_name"   as sch,
@@ -41,7 +41,7 @@ begin
             "pk_column_name"   as ref_col
         from table(result_scan(last_query_id()));
 
-    create or replace table {{ sis_database_name }}.CATALOG.COLUMNS (
+    create or replace table {{ datacatalog_database_name }}.CATALOG.COLUMNS (
         TABLE_ID            comment '所属データ資産のキー',
         DATABASE_NAME       comment '階層_データベース',
         SCHEMA_NAME         comment '階層_スキーマ',
@@ -69,7 +69,7 @@ begin
             c.comment as description,
             c.is_nullable
         from snowflake.account_usage.columns as c
-        inner join {{ sis_database_name }}.CATALOG.ASSETS as a
+        inner join {{ datacatalog_database_name }}.CATALOG.ASSETS as a
             on  a.database_name = c.table_catalog
             and a.schema_name   = c.table_schema
             and a.asset_name    = c.table_name
@@ -124,7 +124,7 @@ begin
                 'REFERENCED_TABLE',    ref_tbl,
                 'REFERENCED_COLUMN',   ref_col
             )) as foreign_keys
-        from {{ sis_database_name }}.CATALOG.TMP_FK
+        from {{ datacatalog_database_name }}.CATALOG.TMP_FK
         group by db, sch, tbl, col
     )
     select
@@ -143,9 +143,9 @@ begin
         (cols.is_nullable = 'YES')::boolean,
         mpol.policy_name::varchar(255)
     from cols
-    left join {{ sis_database_name }}.CATALOG.TMP_PK as pk
+    left join {{ datacatalog_database_name }}.CATALOG.TMP_PK as pk
         on pk.db = cols.table_catalog and pk.sch = cols.table_schema and pk.tbl = cols.table_name and pk.col = cols.column_name
-    left join {{ sis_database_name }}.CATALOG.TMP_UK as uk
+    left join {{ datacatalog_database_name }}.CATALOG.TMP_UK as uk
         on uk.db = cols.table_catalog and uk.sch = cols.table_schema and uk.tbl = cols.table_name and uk.col = cols.column_name
     left join fk
         on fk.db = cols.table_catalog and fk.sch = cols.table_schema and fk.tbl = cols.table_name and fk.col = cols.column_name

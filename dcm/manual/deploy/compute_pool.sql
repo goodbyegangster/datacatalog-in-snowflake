@@ -1,5 +1,5 @@
 -- compute pool を作成
-create compute pool if not exists <% sis_compute_pool_name %>
+create compute pool if not exists <% datacatalog_compute_pool_name %>
     min_nodes = 1
     max_nodes = 1
     instance_family = CPU_X64_XS
@@ -11,10 +11,10 @@ create compute pool if not exists <% sis_compute_pool_name %>
 
 -- compute pool 利用権限向け access role を作成
 create or alter role <% sis_role_name_prefix %>_ACCESS__CP__SIS__USAGE
-    comment = 'コンピュートプール <% sis_compute_pool_name %> 向け利用権限'
+    comment = 'コンピュートプール <% datacatalog_compute_pool_name %> 向け利用権限'
 ;
 
-grant usage on compute pool <% sis_compute_pool_name %>
+grant usage on compute pool <% datacatalog_compute_pool_name %>
     to role <% sis_role_name_prefix %>_ACCESS__CP__SIS__USAGE
 ;
 

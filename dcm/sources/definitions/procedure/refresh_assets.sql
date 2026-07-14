@@ -1,13 +1,13 @@
 -- noqa: disable=LT02
 
-define procedure {{ sis_database_name }}.PROCEDURE.REFRESH_ASSETS()
+define procedure {{ datacatalog_database_name }}.PROCEDURE.REFRESH_ASSETS()
     returns string
     language sql
     execute as owner
 as
 $$
 begin
-    create or replace table {{ sis_database_name }}.CATALOG.ASSETS (
+    create or replace table {{ datacatalog_database_name }}.CATALOG.ASSETS (
         TABLE_ID                    comment 'データ資産の一意キー',
         DATABASE_NAME               comment '階層_データベース',
         SCHEMA_NAME                 comment '階層_スキーマ',

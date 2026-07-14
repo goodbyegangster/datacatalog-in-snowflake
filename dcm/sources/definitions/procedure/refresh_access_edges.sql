@@ -1,13 +1,13 @@
 -- noqa: disable=LT02
 
-define procedure {{ sis_database_name }}.PROCEDURE.REFRESH_ACCESS_EDGES()
+define procedure {{ datacatalog_database_name }}.PROCEDURE.REFRESH_ACCESS_EDGES()
     returns string
     language sql
     execute as owner
 as
 $$
 begin
-    create or replace table {{ sis_database_name }}.CATALOG.ACCESS_EDGES (
+    create or replace table {{ datacatalog_database_name }}.CATALOG.ACCESS_EDGES (
         SOURCE_NODE   comment '接続元ノード名（ユーザー名 / ロール名 / DBロールは DB.ROLE / アセットは FQN）',
         SOURCE_TYPE   comment '接続元タイプ（USER / ROLE / DATABASE_ROLE）',
         TARGET_NODE   comment '接続先ノード名（同上の命名規則）',
@@ -26,7 +26,7 @@ begin
         null::varchar(50)             as privilege,
         'ROLE'::varchar(50)           as granted_on
     from snowflake.account_usage.grants_to_users as gu
-    inner join {{ sis_database_name }}.CATALOG.USERS as u
+    inner join {{ datacatalog_database_name }}.CATALOG.USERS as u
         on u.user_name = gu.grantee_name
     where gu.deleted_on is null
       and gu.role <> 'PUBLIC'
@@ -64,7 +64,7 @@ begin
         gr.privilege::varchar(50),
         gr.granted_on::varchar(50)
     from snowflake.account_usage.grants_to_roles as gr
-    inner join {{ sis_database_name }}.CATALOG.ASSETS as a
+    inner join {{ datacatalog_database_name }}.CATALOG.ASSETS as a
         on  a.database_name = gr.table_catalog
         and a.schema_name   = gr.table_schema
         and a.asset_name    = gr.name

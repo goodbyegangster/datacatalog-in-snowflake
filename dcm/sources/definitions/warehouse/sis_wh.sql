@@ -1,6 +1,6 @@
 -- noqa: disable=LT02
 
-define warehouse {{ sis_warehouse_name }}
+define warehouse {{ datacatalog_warehouse_name }}
     warehouse_type = 'STANDARD'
     warehouse_size = 'XSMALL'
     generation = '2'

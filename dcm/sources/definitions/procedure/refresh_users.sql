@@ -1,13 +1,13 @@
 -- noqa: disable=LT02
 
-define procedure {{ sis_database_name }}.PROCEDURE.REFRESH_USERS()
+define procedure {{ datacatalog_database_name }}.PROCEDURE.REFRESH_USERS()
     returns string
     language sql
     execute as owner
 as
 $$
 begin
-    create or replace table {{ sis_database_name }}.CATALOG.USERS (
+    create or replace table {{ datacatalog_database_name }}.CATALOG.USERS (
         USER_NAME    comment '名前',
         DISPLAY_NAME comment '表示名',
         USER_TYPE    comment 'タイプ',

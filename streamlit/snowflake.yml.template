@@ -10,13 +10,13 @@ entities:
     type: streamlit
     identifier:
       name: datacatalog
-      database: ${SIS_DATABASE_NAME}
+      database: ${DATACATALOG_DATABASE_NAME}
       schema: APP
     title: ${STREAMLIT_TITLE_NAME}
     comment: データカタログ
-    compute_pool: ${SIS_COMPUTE_POOL_NAME}
+    compute_pool: ${DATACATALOG_COMPUTE_POOL_NAME}
     runtime_name: SYSTEM$ST_CONTAINER_RUNTIME_PY3_11
-    query_warehouse: ${SIS_WAREHOUSE_NAME}
+    query_warehouse: ${DATACATALOG_WAREHOUSE_NAME}
     external_access_integrations:
       - ${EXTERNAL_ACCESS_PYPI_NAME}
     main_file: streamlit_app.py

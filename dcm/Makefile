@@ -38,31 +38,31 @@ dcm-drop: ## DCM プロジェクトを削除する
 .PHONY: manual-deploy
 manual-deploy: ## DCM で管理できないオブジェクトをデプロイする
 	snow sql -f manual/deploy/compute_pool.sql \
-	  -D "sis_compute_pool_name=$(SIS_COMPUTE_POOL_NAME)" \
+	  -D "datacatalog_compute_pool_name=$(DATACATALOG_COMPUTE_POOL_NAME)" \
 	  -D "sis_role_name_prefix=$(SIS_ROLE_NAME_PREFIX)" \
 	  -c $(SNOWFLAKE_CLI_CONNECTION_NAME) \
 	  --role $(DCM_PROJECT_OWNER_ROLE_NAME)
 
 	snow sql -f manual/deploy/contact.sql \
-	  -D "sis_database_name=$(SIS_DATABASE_NAME)" \
+	  -D "datacatalog_database_name=$(DATACATALOG_DATABASE_NAME)" \
 	  -D "SNOWFLAKE_MY_USER_NAME=$(SNOWFLAKE_MY_USER_NAME)" \
 	  -c $(SNOWFLAKE_CLI_CONNECTION_NAME) \
 	  --role $(DCM_PROJECT_OWNER_ROLE_NAME)
 
 	snow sql -f manual/deploy/masking_policy.sql \
-	  -D "sis_database_name=$(SIS_DATABASE_NAME)" \
+	  -D "datacatalog_database_name=$(DATACATALOG_DATABASE_NAME)" \
 	  -c $(SNOWFLAKE_CLI_CONNECTION_NAME) \
 	  --role $(DCM_PROJECT_OWNER_ROLE_NAME)
 
 	snow sql -f manual/deploy/tag.sql \
-	  -D "sis_database_name=$(SIS_DATABASE_NAME)" \
+	  -D "datacatalog_database_name=$(DATACATALOG_DATABASE_NAME)" \
 	  -c $(SNOWFLAKE_CLI_CONNECTION_NAME) \
 	  --role $(DCM_PROJECT_OWNER_ROLE_NAME)
 
 .PHONY: manual-remove
 manual-remove: ## 手動デプロイしたオブジェクトを削除する
 	snow sql -f manual/remove/remove.sql \
-	  -D "sis_compute_pool_name=$(SIS_COMPUTE_POOL_NAME)" \
-	  -D "sis_database_name=$(SIS_DATABASE_NAME)" \
+	  -D "datacatalog_compute_pool_name=$(DATACATALOG_COMPUTE_POOL_NAME)" \
+	  -D "datacatalog_database_name=$(DATACATALOG_DATABASE_NAME)" \
 	  -c $(SNOWFLAKE_CLI_CONNECTION_NAME) \
 	  --role $(DCM_PROJECT_OWNER_ROLE_NAME)

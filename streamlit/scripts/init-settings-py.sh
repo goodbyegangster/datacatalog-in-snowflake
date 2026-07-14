@@ -32,7 +32,7 @@ set +a
 # envsubst で置換する変数
 # shellcheck disable=SC2016
 readonly SUBST_VARS='
-  $SIS_DATABASE_NAME
+  $DATACATALOG_DATABASE_NAME
 '
 
 # template ファイルから settings.py を生成する

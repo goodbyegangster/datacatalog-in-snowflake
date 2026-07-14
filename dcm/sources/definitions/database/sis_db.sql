@@ -1,6 +1,6 @@
 -- noqa: disable=LT02
 
-define database {{ sis_database_name }}
+define database {{ datacatalog_database_name }}
     data_retention_time_in_days = 0
     default_ddl_collation = 'utf8'
     object_visibility = $$

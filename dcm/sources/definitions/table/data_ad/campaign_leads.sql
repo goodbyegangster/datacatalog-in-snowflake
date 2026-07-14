@@ -1,6 +1,6 @@
 -- noqa: disable=LT02
 
-define table {{ sis_database_name }}.DATA_AD.CAMPAIGN_LEADS (
+define table {{ datacatalog_database_name }}.DATA_AD.CAMPAIGN_LEADS (
     LEAD_ID number comment 'リードID',
     FULL_NAME varchar(255) not null comment '氏名',
     EMAIL varchar(255) comment 'メールアドレス',

@@ -6,7 +6,7 @@ define role {{ sis_role_name_prefix }}_ACCESS__TAG__PII__RO
 
 grant role {{ sis_role_name_prefix }}_ACCESS__TAG__PII__RO to role {{ project_owner_role }};
 
-grant usage on database {{ sis_database_name }} to role {{ sis_role_name_prefix }}_ACCESS__TAG__PII__RO;
-grant usage on schema {{ sis_database_name }}.TAG to role {{ sis_role_name_prefix }}_ACCESS__TAG__PII__RO;
+grant usage on database {{ datacatalog_database_name }} to role {{ sis_role_name_prefix }}_ACCESS__TAG__PII__RO;
+grant usage on schema {{ datacatalog_database_name }}.TAG to role {{ sis_role_name_prefix }}_ACCESS__TAG__PII__RO;
 
-grant read on tag {{ sis_database_name }}.TAG.PII to role {{ sis_role_name_prefix }}_ACCESS__TAG__PII__RO;
+grant read on tag {{ datacatalog_database_name }}.TAG.PII to role {{ sis_role_name_prefix }}_ACCESS__TAG__PII__RO;
