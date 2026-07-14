@@ -7,5 +7,5 @@ define table {{ sis_database_name }}.DATA_SALES.PRODUCT_CATEGORIES (
     CREATED_AT timestamp_ntz not null comment 'レコード作成日時',
     constraint pk_01 primary key (CATEGORY_ID) not enforced
 )
-comment = '商品カテゴリマスター'
+comment = '（サンプル）商品カテゴリマスター'
 ;

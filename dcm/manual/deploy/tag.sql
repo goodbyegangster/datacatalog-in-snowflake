@@ -15,6 +15,13 @@ alter table <% sis_database_name %>.DATA_AD.CAMPAIGN_LEADS modify column EMAIL s
     <% sis_database_name %>.TAG.PII = 'true'
 ;
 
+-- D_CAMPAIGN_LEADS テーブルに tag を付与
+alter table <% sis_database_name %>.DATA_AD.D_CAMPAIGN_LEADS set tag
+    <% sis_database_name %>.TAG.DATA_DOMAIN = 'marketing',
+    <% sis_database_name %>.TAG.DATA_CATEGORY = 'transaction',
+    <% sis_database_name %>.TAG.SENSITIVITY = 'internal'
+;
+
 -- PRODUCTS テーブルに tag を付与
 alter table <% sis_database_name %>.DATA_SALES.PRODUCTS set tag
     <% sis_database_name %>.TAG.DATA_DOMAIN = 'sales',

@@ -2,5 +2,5 @@
 
 define tag {{ sis_database_name }}.TAG.SENSITIVITY
     allowed_values 'public', 'internal', 'confidential', 'restricted'
-    comment = 'データ機密度'
+    comment = '（サンプル）データ機密度'
 ;

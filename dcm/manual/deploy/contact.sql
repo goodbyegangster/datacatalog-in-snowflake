@@ -35,6 +35,20 @@ alter table <% sis_database_name %>.DATA_AD.CAMPAIGN_LEADS
     set contact support = <% sis_database_name %>.CONTACT."佐藤二郎"
 ;
 
+-- D_CAMPAIGN_LEADS テーブルに contact を付与
+alter table <% sis_database_name %>.DATA_AD.D_CAMPAIGN_LEADS
+    set contact access_approval = <% sis_database_name %>.CONTACT."山田太郎"
+;
+alter table <% sis_database_name %>.DATA_AD.D_CAMPAIGN_LEADS
+    set contact security_compliance = <% sis_database_name %>.CONTACT."鈴木四郎"
+;
+alter table <% sis_database_name %>.DATA_AD.D_CAMPAIGN_LEADS
+    set contact steward = <% sis_database_name %>.CONTACT."加藤三郎"
+;
+alter table <% sis_database_name %>.DATA_AD.D_CAMPAIGN_LEADS
+    set contact support = <% sis_database_name %>.CONTACT."佐藤二郎"
+;
+
 -- PRODUCTS テーブルに contact を付与
 alter table <% sis_database_name %>.DATA_SALES.PRODUCTS
     set contact access_approval = <% sis_database_name %>.CONTACT."山田太郎"
@@ -49,7 +63,7 @@ alter table <% sis_database_name %>.DATA_SALES.PRODUCTS
     set contact support = <% sis_database_name %>.CONTACT."佐藤二郎"
 ;
 
--- V_PRODUCTS テーブルに contact を付与
+-- V_PRODUCTS ビューに contact を付与
 alter view <% sis_database_name %>.DATA_SALES.V_PRODUCTS
     set contact access_approval = <% sis_database_name %>.CONTACT."山田太郎"
 ;

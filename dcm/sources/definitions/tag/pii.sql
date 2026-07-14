@@ -2,5 +2,5 @@
 
 define tag {{ sis_database_name }}.TAG.PII
     allowed_values 'true', 'false'
-    comment = '個人情報有無'
+    comment = '（サンプル）個人情報有無'
 ;

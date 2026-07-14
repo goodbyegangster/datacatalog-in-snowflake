@@ -11,5 +11,5 @@ define table {{ sis_database_name }}.DATA_SALES.PRODUCTS (
         references {{ sis_database_name }}.DATA_SALES.PRODUCT_CATEGORIES (CATEGORY_ID)
         not enforced
 )
-comment = '商品マスター'
+comment = '（サンプル）商品マスター'
 ;

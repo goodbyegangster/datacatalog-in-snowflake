@@ -7,7 +7,7 @@ define view {{ sis_database_name }}.DATA_SALES.V_PRODUCTS (
     PRICE  comment '価格',
     CREATED_AT comment 'レコード作成日時'
 )
-comment = '商品マスター（日用品）'
+comment = '（サンプル）商品マスター（日用品）'
 as
 select *
 from {{ sis_database_name }}.DATA_SALES.PRODUCTS

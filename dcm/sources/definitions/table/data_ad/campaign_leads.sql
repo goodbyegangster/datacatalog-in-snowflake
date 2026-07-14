@@ -8,5 +8,5 @@ define table {{ sis_database_name }}.DATA_AD.CAMPAIGN_LEADS (
     CREATED_AT timestamp_ntz not null comment 'リード作成日時',
     constraint pk_01 primary key (LEAD_ID) not enforced
 )
-comment = 'マーケティングキャンペーンで獲得したリード情報'
+comment = '（サンプル）マーケティングキャンペーンで獲得したリード情報'
 ;
