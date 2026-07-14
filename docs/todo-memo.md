@@ -31,9 +31,3 @@ ACCOUNTADMIN で実行ができるようにする。
 ### 改善点
 
 - assets の search で、database / schema が DISPLAY_SCOPES 依存のため、Fake で動作が変になる
-
-## assets の検索結果テーブルに、一致理由列を設ける
-
-フリーワード由来だけ。
-
-> 一致 = 資産名 / 資産説明 / カラム名 / カラム説明

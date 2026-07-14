@@ -2,10 +2,13 @@
 
 from __future__ import annotations
 
+from collections.abc import Mapping
+
 import pandas as pd
 import streamlit as st
 
 from catalog import schema
+from logic.search import FreewordMatchReason
 from runtime import state
 
 RESULTS_KEY = "asset_table"
@@ -16,6 +19,7 @@ _COLUMN_CONFIG = {
     "名前": st.column_config.TextColumn(width="medium"),
     "オブジェクト種別": st.column_config.TextColumn(width="small"),
     "説明": st.column_config.TextColumn(width="large"),
+    "フリーワード一致": st.column_config.TextColumn(width="large"),
 }
 _COMPACT_COLUMN_CONFIG = {
     "名前": st.column_config.TextColumn(width="medium"),
@@ -28,12 +32,18 @@ def clear_selection() -> None:
     st.session_state.pop(RESULTS_KEY, None)
 
 
-def render(assets: pd.DataFrame, *, compact: bool = False) -> int | None:
+def render(
+    assets: pd.DataFrame,
+    *,
+    compact: bool = False,
+    freeword_reasons: Mapping[int, FreewordMatchReason] | None = None,
+) -> int | None:
     """データ資産一覧を表示し、選択中の TABLE_ID を返す。"""
     A = schema.Assets
     ordered = assets.sort_values([A.DATABASE_NAME, A.SCHEMA_NAME, A.ASSET_NAME]).reset_index(
         drop=True
     )
+    reasons = freeword_reasons or {}
 
     if compact:
         display = pd.DataFrame({"名前": ordered[A.ASSET_NAME]}).reset_index(drop=True)
@@ -46,6 +56,11 @@ def render(assets: pd.DataFrame, *, compact: bool = False) -> int | None:
                 "名前": ordered[A.ASSET_NAME],
                 "オブジェクト種別": ordered[A.ASSET_TYPE],
                 "説明": ordered[A.DESCRIPTION],
+                "フリーワード一致": ordered[A.TABLE_ID].map(
+                    lambda table_id: reasons.get(
+                        int(table_id), FreewordMatchReason()
+                    ).text
+                ),
             }
         ).reset_index(drop=True)
         column_config = _COLUMN_CONFIG

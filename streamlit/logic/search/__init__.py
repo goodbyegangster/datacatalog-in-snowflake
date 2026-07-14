@@ -10,9 +10,11 @@ from __future__ import annotations
 from logic.search.assets import (
     AssetSearchCriteria,
     FreewordQuery,
+    FreewordMatchReason,
     TagSelection,
     filter_assets,
     freeword_asset_ids,
+    freeword_match_reasons,
     scope_databases,
     scope_schemas,
 )
@@ -22,11 +24,13 @@ from logic.search.users import UserFreewordQuery, filter_users
 __all__ = [
     "AssetSearchCriteria",
     "FreewordQuery",
+    "FreewordMatchReason",
     "TagSelection",
     "UserFreewordQuery",
     "filter_assets",
     "filter_users",
     "freeword_asset_ids",
+    "freeword_match_reasons",
     "parse_freeword",
     "scope_databases",
     "scope_schemas",

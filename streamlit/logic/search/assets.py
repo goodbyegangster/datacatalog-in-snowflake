@@ -11,6 +11,11 @@ from catalog import schema
 from logic.search.common import parse_freeword
 from settings import DISPLAY_SCOPES
 
+COLUMN_REASON_LIMIT = 2
+
+
+# --- Freeword query ---------------------------------------------------------
+
 
 @dataclass
 class FreewordQuery:
@@ -65,6 +70,158 @@ def freeword_asset_ids(
     return result
 
 
+# --- Freeword match reasons ------------------------------------------------
+
+
+@dataclass
+class FreewordMatchReason:
+    """フリーワード一致理由の表示値。"""
+
+    text: str = ""
+
+
+@dataclass
+class _FreewordMatchHit:
+    """フリーワードが TABLE_ID 内のどこに hit したか。"""
+
+    asset_name: bool = False
+    asset_desc: bool = False
+    column_names: list[str] = field(default_factory=list)
+    column_desc_names: list[str] = field(default_factory=list)
+
+
+def _ordered_column_names(columns: pd.DataFrame, mask: pd.Series) -> list[str]:
+    """条件に一致したカラム名を表示順で重複排除して返す。"""
+    C = schema.Columns
+    matched = columns.loc[mask, [C.TABLE_ID, C.ORDINAL_POSITION, C.COLUMN_NAME]]
+    matched = matched.sort_values([C.TABLE_ID, C.ORDINAL_POSITION, C.COLUMN_NAME])
+    return list(dict.fromkeys(matched[C.COLUMN_NAME].astype(str).tolist()))
+
+
+def _merge_hits(left: _FreewordMatchHit, right: _FreewordMatchHit) -> _FreewordMatchHit:
+    """複数トークンの一致理由を TABLE_ID 単位でまとめる。"""
+    return _FreewordMatchHit(
+        asset_name=left.asset_name or right.asset_name,
+        asset_desc=left.asset_desc or right.asset_desc,
+        column_names=list(dict.fromkeys([*left.column_names, *right.column_names])),
+        column_desc_names=list(
+            dict.fromkeys([*left.column_desc_names, *right.column_desc_names])
+        ),
+    )
+
+
+def _reasons_matching_token(
+    token: str, assets: pd.DataFrame, columns: pd.DataFrame, fq: FreewordQuery
+) -> dict[int, _FreewordMatchHit]:
+    """1 トークンに hit した場所を TABLE_ID ごとに返す。"""
+    A = schema.Assets
+    C = schema.Columns
+    needle = token.lower()
+    reasons: dict[int, _FreewordMatchHit] = {}
+
+    def contains(series: pd.Series) -> pd.Series:
+        return series.fillna("").str.lower().str.contains(needle, regex=False)
+
+    if fq.target_asset_name:
+        for table_id in assets.loc[contains(assets[A.ASSET_NAME]), A.TABLE_ID]:
+            reasons.setdefault(int(table_id), _FreewordMatchHit()).asset_name = True
+    if fq.target_asset_desc:
+        for table_id in assets.loc[contains(assets[A.DESCRIPTION]), A.TABLE_ID]:
+            reasons.setdefault(int(table_id), _FreewordMatchHit()).asset_desc = True
+    if fq.target_column_name:
+        name_mask = contains(columns[C.COLUMN_NAME])
+        for table_id, group in columns.loc[name_mask].groupby(C.TABLE_ID):
+            reasons.setdefault(
+                int(table_id), _FreewordMatchHit()
+            ).column_names = _ordered_column_names(group, pd.Series(True, index=group.index))
+    if fq.target_column_desc:
+        desc_mask = contains(columns[C.DESCRIPTION])
+        for table_id, group in columns.loc[desc_mask].groupby(C.TABLE_ID):
+            reasons.setdefault(
+                int(table_id), _FreewordMatchHit()
+            ).column_desc_names = _ordered_column_names(group, pd.Series(True, index=group.index))
+    return reasons
+
+
+def _format_object_target(hit: _FreewordMatchHit) -> str:
+    object_parts: list[str] = []
+    if hit.asset_name:
+        object_parts.append("名前")
+    if hit.asset_desc:
+        object_parts.append("説明")
+    return " / ".join(object_parts)
+
+
+def _format_column_target(label: str, column_names: list[str]) -> str | None:
+    if not column_names:
+        return None
+    visible = column_names[:COLUMN_REASON_LIMIT]
+    suffix = (
+        f" ほか{len(column_names) - COLUMN_REASON_LIMIT}件"
+        if len(column_names) > COLUMN_REASON_LIMIT
+        else ""
+    )
+    return f"{label} {', '.join(visible)}{suffix}"
+
+
+def _format_column_targets(hit: _FreewordMatchHit) -> str:
+    column_parts: list[str] = []
+    if column_name_reason := _format_column_target("カラム名", hit.column_names):
+        column_parts.append(column_name_reason)
+    if column_desc_reason := _format_column_target("カラム説明", hit.column_desc_names):
+        column_parts.append(column_desc_reason)
+    return "、".join(column_parts)
+
+
+def _format_reason(hit: _FreewordMatchHit) -> str:
+    object_text = _format_object_target(hit)
+    column_text = _format_column_targets(hit)
+
+    match bool(object_text), bool(column_text):
+        case True, True:
+            return f"{object_text} に一致。{column_text} に一致。"
+        case True, False:
+            return f"{object_text} に一致。"
+        case False, True:
+            return f"{column_text} に一致。"
+        case False, False:
+            return ""
+
+
+def freeword_match_reasons(
+    fq: FreewordQuery, assets: pd.DataFrame, columns: pd.DataFrame
+) -> dict[int, FreewordMatchReason]:
+    """フリーワード検索の一致理由を TABLE_ID -> 表示値で返す。"""
+    op, tokens = parse_freeword(fq.text)
+    if not tokens:
+        return {}
+
+    per_token = [_reasons_matching_token(t, assets, columns, fq) for t in tokens]
+    if op == "and":
+        matched_ids = freeword_asset_ids(fq, assets, columns) or set()
+    else:
+        matched_ids = set().union(*(set(reasons) for reasons in per_token))
+
+    reasons_by_id: dict[int, _FreewordMatchHit] = {}
+    for token_reasons in per_token:
+        for table_id in matched_ids & set(token_reasons):
+            if table_id in reasons_by_id:
+                reasons_by_id[table_id] = _merge_hits(
+                    reasons_by_id[table_id], token_reasons[table_id]
+                )
+            else:
+                reasons_by_id[table_id] = token_reasons[table_id]
+    return {
+        table_id: FreewordMatchReason(
+            text=_format_reason(hit),
+        )
+        for table_id, hit in reasons_by_id.items()
+    }
+
+
+# --- Search criteria --------------------------------------------------------
+
+
 @dataclass
 class TagSelection:
     """1 タグキーの選択状態。``selected`` が空なら無制約（絞り込まない）。"""
@@ -95,6 +252,9 @@ class AssetSearchCriteria:
     hierarchy_or: bool = False
     type_or: bool = False
     tag_or: bool = False
+
+
+# --- Asset filter -----------------------------------------------------------
 
 
 def _tag_value_matcher(sel: TagSelection, wanted: set[str]) -> Callable[[object], bool]:
@@ -191,6 +351,9 @@ def filter_assets(
         group_or = all_pass
 
     return assets[freeword_mask & group_and & group_or]
+
+
+# --- Scope options ----------------------------------------------------------
 
 
 def scope_databases() -> list[str]:

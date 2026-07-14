@@ -102,13 +102,18 @@ def main() -> None:
             st.info("該当するデータ資産がありません。検索条件を変更してください。")
             return
 
+        freeword_reasons = search.freeword_match_reasons(criteria.freeword, assets, columns)
         prior = st.session_state.get(state.ASSET_SELECTED_TABLE_ID)
         if prior is None:
-            selected_now = asset_results.render(filtered)
+            selected_now = asset_results.render(filtered, freeword_reasons=freeword_reasons)
         else:
             list_col, detail_col = st.columns([1, 3])
             with list_col:
-                selected_now = asset_results.render(filtered, compact=True)
+                selected_now = asset_results.render(
+                    filtered,
+                    compact=True,
+                    freeword_reasons=freeword_reasons,
+                )
             with detail_col:
                 asset_detail.render(prior, assets, columns, visibility)
 

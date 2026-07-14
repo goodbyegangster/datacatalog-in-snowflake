@@ -73,6 +73,7 @@ def test_assets_page_filters_by_freeword(assets_app: AppTest) -> None:
     result = dataframe_value(app)
     assert result["名前"].tolist() == ["ORDERS"]
     assert result["説明"].tolist() == ["Sales order facts"]
+    assert result["フリーワード一致"].tolist() == ["名前 に一致。"]
 
 
 def test_assets_page_disables_freeword_when_all_targets_are_off(

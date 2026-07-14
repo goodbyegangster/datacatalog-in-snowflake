@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import pandas as pd
+
 from catalog import schema
 from logic import search
 from logic.search import assets as asset_search
@@ -124,6 +126,69 @@ def test_filter_assets_matches_tags_on_asset_and_columns() -> None:
     assert asset_names(asset_tag_result) == ["ORDERS"]
     assert asset_names(column_tag_result) == ["CAMPAIGN_LEADS", "CUSTOMERS"]
     assert asset_names(multi_tag_result) == ["ORDERS"]
+
+
+def test_freeword_match_reasons_show_asset_and_column_hits() -> None:
+    reasons = search.freeword_match_reasons(
+        FreewordQuery(text="email"),
+        catalog_data.assets(),
+        catalog_data.columns(),
+    )
+
+    assert reasons[2].text == "カラム名 EMAIL、カラム説明 EMAIL に一致。"
+    assert reasons[3].text == "カラム名 CUSTOMER_EMAIL、カラム説明 CUSTOMER_EMAIL に一致。"
+
+
+def test_freeword_match_reasons_split_object_and_column_sentences() -> None:
+    reasons = search.freeword_match_reasons(
+        FreewordQuery(text="order"),
+        catalog_data.assets(),
+        catalog_data.columns(),
+    )
+
+    assert reasons[1].text == "名前 / 説明 に一致。カラム名 ORDER_ID、カラム説明 ORDER_ID, AMOUNT に一致。"
+
+
+def test_freeword_match_reasons_limit_column_names() -> None:
+    C = schema.Columns
+    columns = catalog_data.columns()
+    extra_columns = pd.DataFrame(
+        [
+            {
+                **columns.iloc[0].to_dict(),
+                C.COLUMN_NAME: "ORDER_EMAIL",
+                C.ORDINAL_POSITION: 3,
+                C.DESCRIPTION: "Order email",
+            },
+            {
+                **columns.iloc[0].to_dict(),
+                C.COLUMN_NAME: "BILLING_EMAIL",
+                C.ORDINAL_POSITION: 4,
+                C.DESCRIPTION: "Billing email",
+            },
+            {
+                **columns.iloc[0].to_dict(),
+                C.COLUMN_NAME: "SHIPPING_EMAIL",
+                C.ORDINAL_POSITION: 5,
+                C.DESCRIPTION: "Shipping email",
+            },
+        ]
+    )
+    columns = pd.concat([columns, extra_columns], ignore_index=True)
+
+    reasons = search.freeword_match_reasons(
+        FreewordQuery(
+            text="email",
+            target_asset_name=False,
+            target_asset_desc=False,
+            target_column_name=True,
+            target_column_desc=False,
+        ),
+        catalog_data.assets(),
+        columns,
+    )
+
+    assert reasons[1].text == "カラム名 ORDER_EMAIL, BILLING_EMAIL ほか1件 に一致。"
 
 
 def test_scope_options_come_from_display_scopes(monkeypatch) -> None:
