@@ -49,3 +49,5 @@ ACCOUNTADMIN で実行ができるようにする。
 ## assets ページの ユーザー tab に、ユーザー件数を caption で表示
 
 ## users ページの「閲覧可能データ資産」の上に、データ資産数を caption で表示
+
+## 「ログインユーザーのみ表示」の widget は、widget cleanup 対象にする
