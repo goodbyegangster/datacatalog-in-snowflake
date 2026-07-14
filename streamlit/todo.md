@@ -24,7 +24,7 @@
 - [x] **Step 2. モックを本物へ差し替え**：`infrastructure/snowflake`（ローカル secrets.toml 接続）→
   `catalog/providers/snowflake.py`（実カタログ表ロード）を実装し差し替え。`make run_local` で実データ表示を確認済み
   （両ページとも実データ表示 OK）。
-- [x] **Step 3. 検索を肉付け**：`logic/search.py` → 検索 UI を機能追加。
+- [x] **Step 3. 検索を肉付け**：`logic/search/` → 検索 UI を機能追加。
   - [x] Step 3a. データ資産検索（フリーワード / 階層 / 種別 / タグ / AND・OR トグル / 初期空欄＋インタラクティブ検索）。AppTest 検証済み。
   - [x] Step 3b. ユーザー検索（ログインユーザーのみ表示トグル＋フリーワード）。AppTest 検証済み。
 - [x] **Step 4. 詳細・グラフを肉付け**：`logic/graph/` → ロール継承グラフ専用ページを追加。
@@ -56,7 +56,7 @@
   - `catalog/providers/snowflake.py`：Snowflake 上のカタログテーブルを読む provider。
   - 対象：ASSETS / COLUMNS / USERS / TAGS / ACCESS_EDGES / ASSET_VISIBILITY。資産は `DISPLAY_SCOPES` で絞る。`SNOWFLAKE.ACCOUNT_USAGE` や本体には触れない。
 - [x] `infrastructure/snowflake.py`：`get_session()`。SiS は `get_active_session()`、ローカルは secrets.toml。UI から接続処理を書かず 1 箇所に集約。
-- [x] `logic/search.py`：純関数。フリーワード解析（部分一致・大小無視・` OR `/` AND `）、資産フィルタ（カテゴリ1 AND (2 <トグル> 3 <トグル> 4)）、ユーザーフィルタ。
+- [x] `logic/search/`：純関数。`assets.py` / `users.py` に分け、共通のフリーワード解析は `common.py` に配置。資産フィルタ（カテゴリ1 AND (2 <トグル> 3 <トグル> 4)）、ユーザーフィルタ。
 - [x] `logic/graph/`：`ACCESS_EDGES` から user↔asset の経路のみを抽出し DOT 生成（多段継承・DB ロール修飾・PUBLIC 除外）。
 - [x] `runtime/state.py`：`st.session_state` キー定数・名前空間ヘルパ（`asset_` / `user_` / `search_`）。
 - [x] `runtime/user_context.py`：Streamlit ログインユーザー名を取得する。fake mode では固定ユーザーを返す。
@@ -102,7 +102,7 @@
   `DISPLAY_SCOPES` は `ASSETS` / `COLUMNS` / `ASSET_VISIBILITY` 読み込み後に Python 側で絞る。
   大規模化して転送量が問題になった場合のみ SQL pushdown を検討する。
 - ~~検索ロジックの厳密仕様~~：**確定済み** —
-  `docs/design-search.md` と `logic/search.py` を正とする。フリーワード分割、カラムヒット時の資産包含、
+  `docs/design-search.md` と `logic/search/` を正とする。フリーワード分割、カラムヒット時の資産包含、
   未選択 = 無制約は `tests/unit/test_search.py` で検証する。
 - ~~グラフ経路抽出アルゴリズムの詳細~~：**確定済み** —
   一覧表示は `ASSET_VISIBILITY`、ロール継承グラフは `ACCESS_EDGES` を使う。

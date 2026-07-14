@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from catalog import schema
 from logic import search
+from logic.search import assets as asset_search
 from logic.search import AssetSearchCriteria, FreewordQuery, TagSelection, UserFreewordQuery
 from tests.fixtures import catalog_data
 
@@ -127,7 +128,7 @@ def test_filter_assets_matches_tags_on_asset_and_columns() -> None:
 
 def test_scope_options_come_from_display_scopes(monkeypatch) -> None:
     monkeypatch.setattr(
-        search,
+        asset_search,
         "DISPLAY_SCOPES",
         [
             {"DATABASE_NAME": "DB1", "SCHEMA_NAME": "S1"},
