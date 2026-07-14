@@ -124,6 +124,7 @@ def render(user_name: str, users: pd.DataFrame, visibility: pd.DataFrame) -> Non
             "データ資産付与ロール": vis_display_source[V.ASSET_ROLES].map(_fmt_roles),
         }
     ).reset_index(drop=True)
+    st.caption(f"データ資産: {len(display)} 件")
     action_slot = st.container()
     event = st.dataframe(
         display,

@@ -63,7 +63,10 @@ def render(asset: pd.Series, visibility: pd.DataFrame) -> None:
         vis = vis[vis[V.USER_NAME] == current_user_name]
 
     if vis.empty:
-        st.caption("閲覧可能なユーザーがいません")
+        if settings.IS_VISIBLE_ONLY_SELF_USER:
+            st.caption("ログインユーザーには、このデータ資産の閲覧権限がありません。")
+        else:
+            st.caption("閲覧可能なユーザーがいません")
         return
 
     vis = vis.sort_values(V.USER_NAME).reset_index(drop=True)
@@ -74,6 +77,7 @@ def render(asset: pd.Series, visibility: pd.DataFrame) -> None:
             "データ資産付与ロール": vis[V.ASSET_ROLES].map(_fmt_roles),
         }
     ).reset_index(drop=True)
+    st.caption(f"ユーザー: {len(display)} 件")
     action_slot = st.container()
     event = st.dataframe(
         display,

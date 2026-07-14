@@ -123,6 +123,23 @@ def test_assets_page_orders_visible_users_by_user_name(
     assert result["ユーザー"].tolist() == ["ALICE", "BOB"]
     assert result["ユーザー付与ロール"].tolist()[1] == "ANALYST, MARKETER"
     assert result["データ資産付与ロール"].tolist()[1] == "AD_READER, SALES_READER"
+    assert "ユーザー: 2 件" in [caption.value for caption in app.caption]
+
+
+def test_assets_page_shows_self_user_visibility_empty_message(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("CATALOG_DATA_MODE", "fake")
+    monkeypatch.setattr("settings.IS_VISIBLE_ONLY_SELF_USER", True)
+    app = AppTest.from_file(ASSETS_PAGE).run()
+    app.session_state[state.NAV_TO_TABLE_ID] = 2
+
+    app.run()
+
+    assert_no_exception(app)
+    assert "ログインユーザーには、このデータ資産の閲覧権限がありません。" in [
+        caption.value for caption in app.caption
+    ]
 
 
 def test_assets_page_shows_empty_message_when_no_asset_matches(

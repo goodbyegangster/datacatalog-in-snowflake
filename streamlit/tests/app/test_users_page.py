@@ -121,6 +121,7 @@ def test_users_page_orders_visible_assets_by_hierarchy(
     ]
     assert result["ユーザー付与ロール"].tolist()[0] == "ANALYST, MARKETER"
     assert result["データ資産付与ロール"].tolist()[0] == "AD_READER, SALES_READER"
+    assert "データ資産: 2 件" in [caption.value for caption in app.caption]
 
 
 def test_users_page_filters_only_self_in_fake_mode(users_app: AppTest) -> None:
