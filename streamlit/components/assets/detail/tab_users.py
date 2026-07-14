@@ -77,7 +77,6 @@ def render(asset: pd.Series, visibility: pd.DataFrame) -> None:
             "データ資産付与ロール": vis[V.ASSET_ROLES].map(_fmt_roles),
         }
     ).reset_index(drop=True)
-    st.caption(f"ユーザー: {len(display)} 件")
     action_slot = st.container()
     event = st.dataframe(
         display,
@@ -131,4 +130,4 @@ def render(asset: pd.Series, visibility: pd.DataFrame) -> None:
                     asset_fqn=asset_fqn,
                 )
                 st.switch_page("views/graph.py")
-        st.caption("行を選択してから、必要な操作ボタンを押してください")
+        st.caption(f"ユーザー: {len(display)} 件")
