@@ -18,7 +18,7 @@ from typing import TypedDict
 
 
 class TagRef(TypedDict):
-    """TAGS 列（ASSETS / COLUMNS）の 1 要素、および TAGS 表の 1 行。"""
+    """TAGS 列（ASSETS / COLUMNS）の 1 要素。"""
 
     TAG_DATABASE: str
     TAG_SCHEMA: str
@@ -134,10 +134,17 @@ class Tags(StrEnum):
     TAG_SCHEMA = "TAG_SCHEMA"
     TAG_NAME = "TAG_NAME"
     TAG_VALUE = "TAG_VALUE"
+    TAG_COMMENT = "TAG_COMMENT"
 
 
-# TAGS 表の 1 行は TagRef と同一形。
-TagRow = TagRef
+class TagRow(TypedDict):
+    """CATALOG.TAGS 表の 1 行。"""
+
+    TAG_DATABASE: str
+    TAG_SCHEMA: str
+    TAG_NAME: str
+    TAG_VALUE: str
+    TAG_COMMENT: str | None
 
 
 # --- CATALOG.ACCESS_EDGES ----------------------------------------------------

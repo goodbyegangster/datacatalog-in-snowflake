@@ -67,6 +67,7 @@ erDiagram
         varchar TAG_SCHEMA
         varchar TAG_NAME
         varchar TAG_VALUE
+        varchar TAG_COMMENT
     }
 
     ASSETS ||--o{ COLUMNS : "TABLE_ID"
@@ -159,10 +160,12 @@ erDiagram
 | TAG_SCHEMA | TAGS.TAG_SCHEMA | そのまま |
 | TAG_NAME | TAGS.TAG_NAME | そのまま |
 | TAG_VALUE | TAGS.ALLOWED_VALUES | 配列を flatten して 1 値 1 行に展開 |
+| TAG_COMMENT | TAGS.TAG_COMMENT | タグ定義のコメント。検索 UI の補助説明に利用 |
 
 なお `allowed_values` 未定義（自由記述）のタグは値を列挙できないため、本マスターには現れない。
 `TAGS` には、現時点で利用しない Snowflake 側の ID 列を持たない。
 タグは `TAG_DATABASE` / `TAG_SCHEMA` / `TAG_NAME` / `TAG_VALUE` の組み合わせを検索 UI 用の値として扱う。
+`TAG_COMMENT` は同一タグの各 `TAG_VALUE` 行に同じ値を保持する。
 
 ## 収集対象 データベース
 

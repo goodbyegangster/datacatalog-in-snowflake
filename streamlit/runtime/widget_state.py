@@ -29,7 +29,6 @@ def search_widget_keys(selectable_tag_keys: list[dict[str, str]]) -> list[str]:
             )
             for tag_key in selectable_tag_keys
         ],
-        state.SEARCH_USER_ONLY_SELF,
         state.SEARCH_USER_FREEWORD,
         state.SEARCH_USER_TARGET_USER_NAME,
         state.SEARCH_USER_TARGET_DISPLAY_NAME,

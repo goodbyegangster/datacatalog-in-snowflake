@@ -58,6 +58,7 @@
 
 - [streamlit/settings.py](../streamlit/settings.py) の `SELECTABLE_TAG_KEYS` で定義されたタグを、タグ毎に複数選択可能なプルダウンで allowed_values を表示
   - allowed_values の値は、カタログテーブル `TAGS` より取得する
+  - タグ定義のコメントは、カタログテーブル `TAGS.TAG_COMMENT` より取得し、プルダウン直上の補助説明として表示する
 - タグは「データ資産」自身だけでなく、その**いずれかのカラム**に付与されている場合もヒットとみなす
   - 例: `PII` はカラムに付与されることが多い
 - 初期は未選択（未選択 = このカテゴリーで絞り込まない）

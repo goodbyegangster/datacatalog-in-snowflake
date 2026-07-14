@@ -20,5 +20,5 @@ def test_search_widget_keys_include_asset_user_and_tag_keys() -> None:
     assert state.SEARCH_ASSET_DATABASES in keys
     assert state.SEARCH_ASSET_OP_TAG in keys
     assert state.search_asset_tag_key("DB", "SCHEMA", "DOMAIN") in keys
-    assert state.SEARCH_USER_ONLY_SELF in keys
+    assert state.SEARCH_USER_ONLY_SELF not in keys
     assert state.SEARCH_USER_FREEWORD in keys

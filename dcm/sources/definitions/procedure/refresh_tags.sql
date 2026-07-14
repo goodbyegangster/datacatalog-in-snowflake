@@ -17,13 +17,15 @@ begin
         TAG_DATABASE comment 'タグの DB',
         TAG_SCHEMA   comment 'タグのスキーマ',
         TAG_NAME     comment 'タグ名',
-        TAG_VALUE    comment 'タグ定義の allowed_values（未使用の値も含む）'
+        TAG_VALUE    comment 'タグ定義の allowed_values（未使用の値も含む）',
+        TAG_COMMENT  comment 'タグ定義のコメント'
     ) as
     select
         t.tag_database::varchar(255),
         t.tag_schema::varchar(255),
         t.tag_name::varchar(255),
-        av.value::varchar(255)
+        av.value::varchar(255),
+        t.tag_comment::varchar
     from snowflake.account_usage.tags as t,
          lateral flatten(input => t.allowed_values) as av
     where t.deleted is null;

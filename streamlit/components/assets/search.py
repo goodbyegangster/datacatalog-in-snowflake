@@ -48,6 +48,24 @@ def _tag_allowed_values(tags: pd.DataFrame, tag_key: dict) -> list[str]:
     return sorted(tags.loc[mask, T.TAG_VALUE].tolist())
 
 
+def _tag_comment(tags: pd.DataFrame, tag_key: dict) -> str | None:
+    """TAGS マスターから、指定タグのコメントを取得する。"""
+    T = schema.Tags
+    mask = (
+        (tags[T.TAG_DATABASE] == tag_key["DATABASE_NAME"])
+        & (tags[T.TAG_SCHEMA] == tag_key["SCHEMA_NAME"])
+        & (tags[T.TAG_NAME] == tag_key["TAG_NAME"])
+    )
+    comments = [
+        str(value).strip()
+        for value in tags.loc[mask, T.TAG_COMMENT].dropna().unique().tolist()
+        if str(value).strip()
+    ]
+    if not comments:
+        return None
+    return "\n\n".join(sorted(comments))
+
+
 def _tag_widget_key(tag_key: dict) -> str:
     return state.search_asset_tag_key(
         tag_key["DATABASE_NAME"], tag_key["SCHEMA_NAME"], tag_key["TAG_NAME"]
@@ -195,7 +213,15 @@ def render(assets: pd.DataFrame, tags: pd.DataFrame) -> AssetSearchCriteria:
         _render_combine_control(state.SEARCH_ASSET_OP_TAG)
         for tag_key, widget_key in zip(SELECTABLE_TAG_KEYS, tag_widget_keys, strict=True):
             allowed = _tag_allowed_values(tags, tag_key)
-            st.multiselect(tag_key["TAG_NAME"], allowed, key=widget_key)
+            st.markdown(f"**{tag_key['TAG_NAME']}**")
+            if comment := _tag_comment(tags, tag_key):
+                st.caption(comment)
+            st.multiselect(
+                tag_key["TAG_NAME"],
+                allowed,
+                key=widget_key,
+                label_visibility="collapsed",
+            )
             tag_selections.append(
                 TagSelection(
                     tag_database=tag_key["DATABASE_NAME"],

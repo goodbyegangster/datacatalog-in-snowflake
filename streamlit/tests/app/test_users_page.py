@@ -56,6 +56,24 @@ def test_users_page_opens_detail_from_navigation_state(users_app: AppTest) -> No
     assert [subheader.value for subheader in app.subheader] == ["ALICE"]
 
 
+def test_users_page_navigation_clears_freeword_that_hides_target(
+    users_app: AppTest,
+) -> None:
+    app = users_app
+    app.session_state[state.SEARCH_USER_FREEWORD] = "bob"
+    app.session_state[state.SEARCH_USER_ONLY_SELF] = False
+    app.session_state[state.SEARCH_USER_TARGET_USER_NAME] = True
+    app.session_state[state.SEARCH_USER_TARGET_DISPLAY_NAME] = True
+    app.session_state[state.NAV_TO_USER_NAME] = "ALICE"
+
+    app.run()
+
+    assert_no_exception(app)
+    assert app.text_input[0].value == ""
+    assert dataframe_value(app)["名前"].tolist() == ["ALICE", "BOB", "SVC_ETL"]
+    assert [subheader.value for subheader in app.subheader] == ["ALICE"]
+
+
 def test_users_page_filters_by_freeword(users_app: AppTest) -> None:
     app = users_app.run()
 

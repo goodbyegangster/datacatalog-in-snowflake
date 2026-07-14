@@ -19,6 +19,16 @@ def _tag_ref(tag_name: str, tag_value: str) -> dict[str, str]:
     }
 
 
+def _tag_row(tag_name: str, tag_value: str, tag_comment: str) -> dict[str, str]:
+    return {
+        "TAG_DATABASE": DB,
+        "TAG_SCHEMA": TAG_SCHEMA,
+        "TAG_NAME": tag_name,
+        "TAG_VALUE": tag_value,
+        "TAG_COMMENT": tag_comment,
+    }
+
+
 def load_assets() -> pd.DataFrame:
     A = schema.Assets
     return pd.DataFrame(
@@ -159,14 +169,13 @@ def load_users() -> pd.DataFrame:
 
 
 def load_tags() -> pd.DataFrame:
-    T = schema.Tags
     return pd.DataFrame(
         [
-            {T.TAG_DATABASE: DB, T.TAG_SCHEMA: TAG_SCHEMA, T.TAG_NAME: "DATA_CATEGORY", T.TAG_VALUE: "MASTER"},
-            {T.TAG_DATABASE: DB, T.TAG_SCHEMA: TAG_SCHEMA, T.TAG_NAME: "DATA_DOMAIN", T.TAG_VALUE: "SALES"},
-            {T.TAG_DATABASE: DB, T.TAG_SCHEMA: TAG_SCHEMA, T.TAG_NAME: "DATA_DOMAIN", T.TAG_VALUE: "MARKETING"},
-            {T.TAG_DATABASE: DB, T.TAG_SCHEMA: TAG_SCHEMA, T.TAG_NAME: "PII", T.TAG_VALUE: "YES"},
-            {T.TAG_DATABASE: DB, T.TAG_SCHEMA: TAG_SCHEMA, T.TAG_NAME: "SENSITIVITY", T.TAG_VALUE: "CONFIDENTIAL"},
+            _tag_row("DATA_CATEGORY", "MASTER", "データ資産の分類"),
+            _tag_row("DATA_DOMAIN", "SALES", "業務ドメイン"),
+            _tag_row("DATA_DOMAIN", "MARKETING", "業務ドメイン"),
+            _tag_row("PII", "YES", "個人情報の有無"),
+            _tag_row("SENSITIVITY", "CONFIDENTIAL", "機密度"),
         ]
     )
 

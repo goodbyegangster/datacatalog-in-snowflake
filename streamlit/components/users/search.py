@@ -45,6 +45,13 @@ def _clear() -> None:
     results.clear_selection()
 
 
+def prepare_for_user_navigation() -> None:
+    """明示的なユーザー遷移時に、遷移先を隠す検索条件を解除する。"""
+    st.session_state[state.SEARCH_USER_FREEWORD] = ""
+    if not settings.IS_VISIBLE_ONLY_SELF_USER:
+        st.session_state[state.SEARCH_USER_ONLY_SELF] = False
+
+
 def _freeword_target_disabled() -> bool:
     """フリーワード検索対象が 1 つも選択されていないか。"""
     return not any(st.session_state.get(key, True) for key in FREEWORD_TARGET_KEYS)

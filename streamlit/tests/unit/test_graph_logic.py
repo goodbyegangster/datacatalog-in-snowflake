@@ -47,14 +47,14 @@ def test_legend_dot_returns_node_legend() -> None:
 
     assert 'label="凡例"' in result
     assert "legend_user" in result
-    assert 'label="User"' in result
+    assert 'label="ユーザー"' in result
     assert "shape=oval" in result
     assert 'fillcolor="#E3F2FD"' in result
     assert "legend_role" in result
-    assert 'label="Role"' in result
+    assert 'label="ロール"' in result
     assert 'fillcolor="white"' in result
     assert "legend_asset" in result
-    assert 'label="Asset"' in result
+    assert 'label="データ資産"' in result
     assert 'fillcolor="#FFF3E0"' in result
 
 

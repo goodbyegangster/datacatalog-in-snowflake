@@ -13,12 +13,12 @@ def render(asset: pd.Series) -> None:
     A = schema.Assets
     display = pd.DataFrame(
         [
-            {"項目": "スチュワード", "ロール": asset[A.CONTACT_STEWARD] or ""},
-            {"項目": "サポート", "ロール": asset[A.CONTACT_SUPPORT] or ""},
-            {"項目": "承認者", "ロール": asset[A.CONTACT_ACCESS_APPROVAL] or ""},
+            {"担当": "スチュワード", "連絡先": asset[A.CONTACT_STEWARD] or ""},
+            {"担当": "サポート", "連絡先": asset[A.CONTACT_SUPPORT] or ""},
+            {"担当": "承認者", "連絡先": asset[A.CONTACT_ACCESS_APPROVAL] or ""},
             {
-                "項目": "セキュリティとコンプライアンス",
-                "ロール": asset[A.CONTACT_SECURITY_COMPLIANCE] or "",
+                "担当": "セキュリティとコンプライアンス",
+                "連絡先": asset[A.CONTACT_SECURITY_COMPLIANCE] or "",
             },
         ]
     )
@@ -27,7 +27,7 @@ def render(asset: pd.Series) -> None:
         hide_index=True,
         width="stretch",
         column_config={
-            "項目": st.column_config.TextColumn(width="medium"),
-            "ロール": st.column_config.TextColumn(width="large"),
+            "担当": st.column_config.TextColumn(width="medium"),
+            "連絡先": st.column_config.TextColumn(width="large"),
         },
     )

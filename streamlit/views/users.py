@@ -46,6 +46,8 @@ def main() -> None:
     _render_base_css()
 
     main_pane = st.container()
+    if state.NAV_TO_USER_NAME in st.session_state:
+        user_search.prepare_for_user_navigation()
     with st.sidebar:
         freeword, only_user_name, only_self_enabled = user_search.render()
 
