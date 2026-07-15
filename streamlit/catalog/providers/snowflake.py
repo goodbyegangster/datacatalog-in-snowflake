@@ -57,7 +57,7 @@ def _parse_json_column(df: pd.DataFrame, column: StrEnum) -> None:
 def _filter_display_scopes(df: pd.DataFrame, db_col: StrEnum, schema_col: StrEnum) -> pd.DataFrame:
     """DISPLAY_SCOPES（公開対象の DB / スキーマ）に属する行だけを残す。"""
     scopes = {(s["DATABASE_NAME"], s["SCHEMA_NAME"]) for s in DISPLAY_SCOPES}
-    keys = pd.Series(zip(df[str(db_col)], df[str(schema_col)], strict=True), index=df.index)
+    keys = pd.Series(list(zip(df[str(db_col)], df[str(schema_col)], strict=True)), index=df.index)
     return df[keys.isin(scopes)]
 
 

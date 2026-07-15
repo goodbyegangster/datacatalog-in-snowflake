@@ -2,12 +2,17 @@
 
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
 import pandas as pd
+import streamlit as st
+
 import settings
 from catalog import schema
 from runtime import state, user_context
 
-import streamlit as st
+if TYPE_CHECKING:
+    from streamlit.elements.arrow import DataframeState
 
 TABLE_KEY = "asset_users_table"
 CURRENT_USER_UNAVAILABLE_MESSAGE = (
@@ -36,14 +41,14 @@ def _set_graph_page_navigation(*, user_name: str, table_id: int, asset_fqn: str)
     st.session_state[state.NAV_GRAPH_RETURN_PAGE] = "assets"
 
 
-def _selected_user_row(event: object, display: pd.DataFrame) -> int | None:
+def _selected_user_row(event: DataframeState, display: pd.DataFrame) -> int | None:
     """ユーザータブで選択されたセルの行位置を返す。"""
-    cells = event.selection.cells
+    cells = event.get("selection", {}).get("cells", [])
     if not cells:
         return None
 
     cell = cells[0]
-    row_index = cell["row"] if isinstance(cell, dict) else cell[0]
+    row_index = cell[0]
     if row_index >= len(display):
         return None
     return int(row_index)

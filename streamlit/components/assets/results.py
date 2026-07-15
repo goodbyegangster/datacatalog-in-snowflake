@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from collections.abc import Mapping
+from numbers import Integral
 
 import pandas as pd
 import streamlit as st
@@ -24,6 +25,18 @@ _COLUMN_CONFIG = {
 _COMPACT_COLUMN_CONFIG = {
     "名前": st.column_config.TextColumn(width="medium"),
 }
+
+
+def _table_id_key(value: object) -> int:
+    if isinstance(value, Integral):
+        return int(value)
+    if isinstance(value, float) and value.is_integer():
+        return int(value)
+    return int(str(value))
+
+
+def _freeword_reason_text(table_id: object, reasons: Mapping[int, FreewordMatchReason]) -> str:
+    return reasons.get(_table_id_key(table_id), FreewordMatchReason()).text
 
 
 def clear_selection() -> None:
@@ -56,8 +69,8 @@ def render(
                 "名前": ordered[A.ASSET_NAME],
                 "オブジェクト種別": ordered[A.ASSET_TYPE],
                 "説明": ordered[A.DESCRIPTION],
-                "フリーワード一致": ordered[A.TABLE_ID].map(
-                    lambda table_id: reasons.get(int(table_id), FreewordMatchReason()).text
+                "フリーワード一致": ordered[A.TABLE_ID].astype(int).map(
+                    lambda table_id: _freeword_reason_text(table_id, reasons)
                 ),
             }
         ).reset_index(drop=True)
@@ -75,7 +88,7 @@ def render(
         key=RESULTS_KEY,
     )
 
-    cells = event.selection.cells
+    cells = event.get("selection", {}).get("cells", [])
     if cells and cells[0][0] < len(ordered):
         return int(ordered.iloc[cells[0][0]][A.TABLE_ID])
     return None

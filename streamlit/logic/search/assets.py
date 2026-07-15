@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from collections.abc import Callable
 from dataclasses import dataclass, field
+from numbers import Integral
 
 import pandas as pd
 
@@ -11,6 +12,15 @@ from catalog import schema
 from logic.search.common import parse_freeword
 
 COLUMN_REASON_LIMIT = 2
+
+
+def _to_int(value: object) -> int:
+    """pandas 由来のスカラー値を TABLE_ID 用の int に正規化する。"""
+    if isinstance(value, Integral):
+        return int(value)
+    if isinstance(value, float) and value.is_integer():
+        return int(value)
+    return int(str(value))
 
 
 # --- Freeword query ---------------------------------------------------------
@@ -129,13 +139,13 @@ def _reasons_matching_token(
         name_mask = contains(columns[C.COLUMN_NAME])
         for table_id, group in columns.loc[name_mask].groupby(C.TABLE_ID):
             reasons.setdefault(
-                int(table_id), _FreewordMatchHit()
+                _to_int(table_id), _FreewordMatchHit()
             ).column_names = _ordered_column_names(group, pd.Series(True, index=group.index))
     if fq.target_column_desc:
         desc_mask = contains(columns[C.DESCRIPTION])
         for table_id, group in columns.loc[desc_mask].groupby(C.TABLE_ID):
             reasons.setdefault(
-                int(table_id), _FreewordMatchHit()
+                _to_int(table_id), _FreewordMatchHit()
             ).column_desc_names = _ordered_column_names(group, pd.Series(True, index=group.index))
     return reasons
 

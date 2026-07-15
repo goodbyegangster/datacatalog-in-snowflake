@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import hashlib
+from typing import Literal
 
 import pandas as pd
 import streamlit as st
@@ -12,7 +13,9 @@ from components.assets import results
 from components.assets.detail import tab_columns, tab_contact, tab_stats, tab_users
 from runtime import state
 
-ASSET_TYPE_BADGE_COLORS = {
+BadgeColor = Literal["red", "orange", "yellow", "blue", "green", "violet", "gray", "grey", "primary"]
+
+ASSET_TYPE_BADGE_COLORS: dict[str, BadgeColor] = {
     "BASE TABLE": "blue",
     "VIEW": "green",
     "MATERIALIZED VIEW": "violet",
@@ -23,7 +26,7 @@ ASSET_TYPE_BADGE_COLORS = {
     "EVENT TABLE": "red",
     "TEMPORARY TABLE": "gray",
 }
-TAG_BADGE_COLOR_PALETTE = (
+TAG_BADGE_COLOR_PALETTE: tuple[BadgeColor, ...] = (
     "blue",
     "green",
     "orange",
@@ -35,12 +38,12 @@ TAG_BADGE_COLOR_PALETTE = (
 )
 
 
-def _asset_type_badge_color(asset_type: str) -> str:
+def _asset_type_badge_color(asset_type: str) -> BadgeColor:
     """ASSET_TYPE に応じた badge 色を返す。"""
     return ASSET_TYPE_BADGE_COLORS.get(asset_type, "gray")
 
 
-def _tag_badge_color(tag_name: str) -> str:
+def _tag_badge_color(tag_name: str) -> BadgeColor:
     """タグキー名から安定した badge 色を返す。"""
     digest = hashlib.sha256(tag_name.encode("utf-8")).digest()
     index = digest[0] % len(TAG_BADGE_COLOR_PALETTE)

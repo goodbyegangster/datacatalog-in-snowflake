@@ -3,6 +3,7 @@ from __future__ import annotations
 import sys
 import types
 from pathlib import Path
+from typing import Any, cast
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 if str(PROJECT_ROOT) not in sys.path:
@@ -10,7 +11,7 @@ if str(PROJECT_ROOT) not in sys.path:
 
 
 if "settings" not in sys.modules:
-    settings = types.ModuleType("settings")
+    settings = cast(Any, types.ModuleType("settings"))
     settings.CATALOG_LOCATION = {
         "DATABASE_NAME": "hogehoge",
         "SCHEMA_NAME": "CATALOG",

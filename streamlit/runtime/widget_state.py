@@ -2,12 +2,18 @@
 
 from __future__ import annotations
 
+from collections.abc import Sequence
+from typing import TYPE_CHECKING
+
 import streamlit as st
 
 from runtime import state
 
+if TYPE_CHECKING:
+    from settings import SelectableTagKey
 
-def search_widget_keys(selectable_tag_keys: list[dict[str, str]]) -> list[str]:
+
+def search_widget_keys(selectable_tag_keys: Sequence[SelectableTagKey]) -> list[str]:
     """検索条件としてページをまたいで保持する widget key を返す。"""
     return [
         state.SEARCH_ASSET_FREEWORD,

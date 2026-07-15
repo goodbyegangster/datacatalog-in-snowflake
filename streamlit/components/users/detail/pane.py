@@ -2,6 +2,9 @@
 
 from __future__ import annotations
 
+import math
+from typing import TYPE_CHECKING, Literal
+
 import pandas as pd
 import streamlit as st
 
@@ -9,8 +12,13 @@ from catalog import schema
 from components.users import results
 from runtime import state
 
+if TYPE_CHECKING:
+    from streamlit.elements.arrow import DataframeState
+
+BadgeColor = Literal["red", "orange", "yellow", "blue", "green", "violet", "gray", "grey", "primary"]
+
 ASSETS_TABLE_KEY = "user_assets_table"
-USER_TYPE_BADGE_COLORS = {
+USER_TYPE_BADGE_COLORS: dict[str, BadgeColor] = {
     "PERSON": "blue",
     "SERVICE": "orange",
     "LEGACY_SERVICE": "gray",
@@ -26,12 +34,17 @@ def _fmt_roles(roles: object) -> str:
 
 def _display_user_type(user_type: object) -> str:
     """Snowflake ユーザー種別を表示用に正規化する。"""
-    if pd.isna(user_type) or user_type == "":
+    if (
+        user_type is None
+        or user_type is pd.NA
+        or user_type == ""
+        or (isinstance(user_type, float) and math.isnan(user_type))
+    ):
         return "PERSON"
     return str(user_type)
 
 
-def _user_type_badge_color(user_type: str) -> str:
+def _user_type_badge_color(user_type: str) -> BadgeColor:
     """ユーザー種別に応じた badge 色を返す。"""
     return USER_TYPE_BADGE_COLORS.get(user_type, "gray")
 
@@ -56,14 +69,14 @@ def _set_graph_page_navigation(*, user_name: str, table_id: int, asset_fqn: str)
     st.session_state[state.NAV_GRAPH_RETURN_PAGE] = "users"
 
 
-def _selected_asset_row(event: object, display: pd.DataFrame) -> int | None:
+def _selected_asset_row(event: DataframeState, display: pd.DataFrame) -> int | None:
     """閲覧可能データ資産一覧で選択されたセルの行位置を返す。"""
-    cells = event.selection.cells
+    cells = event.get("selection", {}).get("cells", [])
     if not cells:
         return None
 
     cell = cells[0]
-    row_index = cell["row"] if isinstance(cell, dict) else cell[0]
+    row_index = cell[0]
     if row_index >= len(display):
         return None
     return int(row_index)
@@ -168,11 +181,14 @@ def render(user_name: str, users: pd.DataFrame, visibility: pd.DataFrame) -> Non
                 key=f"user_asset_graph_button_{user_name}",
                 width="stretch",
             ):
+                if selected_asset_row is None:
+                    return
+                selected_asset = display.iloc[selected_asset_row]
                 asset_fqn = ".".join(
                     [
-                        str(display.iloc[selected_asset_row]["データベース"]),
-                        str(display.iloc[selected_asset_row]["スキーマ"]),
-                        str(display.iloc[selected_asset_row]["名前"]),
+                        str(selected_asset["データベース"]),
+                        str(selected_asset["スキーマ"]),
+                        str(selected_asset["名前"]),
                     ]
                 )
                 _set_graph_page_navigation(

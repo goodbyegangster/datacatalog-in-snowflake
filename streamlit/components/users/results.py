@@ -58,7 +58,7 @@ def render(users: pd.DataFrame, *, compact: bool = False) -> str | None:
         key=RESULTS_KEY,
     )
 
-    cells = event.selection.cells
+    cells = event.get("selection", {}).get("cells", [])
     if cells and cells[0][0] < len(ordered):
         return str(ordered.iloc[cells[0][0]][U.USER_NAME])
     return None
