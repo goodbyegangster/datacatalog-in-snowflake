@@ -9,7 +9,6 @@ import pandas as pd
 
 from catalog import schema
 from logic.search.common import parse_freeword
-from settings import DISPLAY_SCOPES
 
 COLUMN_REASON_LIMIT = 2
 
@@ -104,9 +103,7 @@ def _merge_hits(left: _FreewordMatchHit, right: _FreewordMatchHit) -> _FreewordM
         asset_name=left.asset_name or right.asset_name,
         asset_desc=left.asset_desc or right.asset_desc,
         column_names=list(dict.fromkeys([*left.column_names, *right.column_names])),
-        column_desc_names=list(
-            dict.fromkeys([*left.column_desc_names, *right.column_desc_names])
-        ),
+        column_desc_names=list(dict.fromkeys([*left.column_desc_names, *right.column_desc_names])),
     )
 
 
@@ -324,7 +321,9 @@ def filter_assets(
     hierarchy_mask = db_ok & schema_ok
 
     type_active = bool(criteria.selected_types)
-    asset_type_mask = assets[A.ASSET_TYPE].isin(criteria.selected_types) if type_active else all_pass
+    asset_type_mask = (
+        assets[A.ASSET_TYPE].isin(criteria.selected_types) if type_active else all_pass
+    )
 
     tag_active = any(t.selected for t in criteria.tag_selections)
     tag_mask = _tag_mask(assets, columns, criteria.tag_selections)
@@ -356,19 +355,16 @@ def filter_assets(
 # --- Scope options ----------------------------------------------------------
 
 
-def scope_databases() -> list[str]:
-    """DISPLAY_SCOPES に定義されたデータベース名（重複排除・定義順）。"""
-    seen: list[str] = []
-    for s in DISPLAY_SCOPES:
-        if s["DATABASE_NAME"] not in seen:
-            seen.append(s["DATABASE_NAME"])
-    return seen
+def scope_databases(assets: pd.DataFrame) -> list[str]:
+    """表示対象の資産に含まれるデータベース名（重複排除・ソート済み）。"""
+    A = schema.Assets
+    return sorted(assets[A.DATABASE_NAME].dropna().astype(str).unique().tolist())
 
 
-def scope_schemas(databases: list[str]) -> list[str]:
-    """指定データベースに属するスキーマ名（DISPLAY_SCOPES 由来・重複排除・定義順）。"""
-    seen: list[str] = []
-    for s in DISPLAY_SCOPES:
-        if s["DATABASE_NAME"] in databases and s["SCHEMA_NAME"] not in seen:
-            seen.append(s["SCHEMA_NAME"])
-    return seen
+def scope_schemas(assets: pd.DataFrame, databases: list[str]) -> list[str]:
+    """指定データベースに属する、表示対象資産のスキーマ名（重複排除・ソート済み）。"""
+    A = schema.Assets
+    if not databases:
+        return []
+    scoped = assets[assets[A.DATABASE_NAME].isin(databases)]
+    return sorted(scoped[A.SCHEMA_NAME].dropna().astype(str).unique().tolist())

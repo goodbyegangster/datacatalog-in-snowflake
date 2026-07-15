@@ -9,6 +9,8 @@ __pycache__
 .vscode/
 app.zip
 dcm/manifest.yml
+streamlit/.config/
+.ruff.toml
 streamlit/.streamlit/secrets.toml
 streamlit/output/
 streamlit/settings.py

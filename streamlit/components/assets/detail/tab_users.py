@@ -3,11 +3,11 @@
 from __future__ import annotations
 
 import pandas as pd
-import streamlit as st
-
 import settings
 from catalog import schema
 from runtime import state, user_context
+
+import streamlit as st
 
 TABLE_KEY = "asset_users_table"
 CURRENT_USER_UNAVAILABLE_MESSAGE = (

@@ -3,14 +3,14 @@
 from __future__ import annotations
 
 import pandas as pd
-import streamlit as st
-
 from catalog import schema
 from components.assets import results
 from logic import search
 from logic.search import AssetSearchCriteria, FreewordQuery, TagSelection
 from runtime import state
 from settings import SELECTABLE_TAG_KEYS
+
+import streamlit as st
 
 FREEWORD_TARGET_KEYS = (
     state.SEARCH_ASSET_TARGET_ASSET_NAME,
@@ -183,14 +183,14 @@ def render(assets: pd.DataFrame, tags: pd.DataFrame) -> AssetSearchCriteria:
         _render_combine_control(state.SEARCH_ASSET_OP_HIERARCHY)
         st.multiselect(
             "データベース",
-            search.scope_databases(),
+            search.scope_databases(assets),
             key=state.SEARCH_ASSET_DATABASES,
             on_change=_on_database_change,
         )
         selected_dbs = st.session_state.get(state.SEARCH_ASSET_DATABASES, [])
         st.multiselect(
             "スキーマ",
-            search.scope_schemas(selected_dbs),
+            search.scope_schemas(assets, selected_dbs),
             key=state.SEARCH_ASSET_SCHEMAS,
             help="データベースを選択すると候補が表示されます",
         )

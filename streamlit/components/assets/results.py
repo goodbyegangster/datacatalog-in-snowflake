@@ -57,9 +57,7 @@ def render(
                 "オブジェクト種別": ordered[A.ASSET_TYPE],
                 "説明": ordered[A.DESCRIPTION],
                 "フリーワード一致": ordered[A.TABLE_ID].map(
-                    lambda table_id: reasons.get(
-                        int(table_id), FreewordMatchReason()
-                    ).text
+                    lambda table_id: reasons.get(int(table_id), FreewordMatchReason()).text
                 ),
             }
         ).reset_index(drop=True)

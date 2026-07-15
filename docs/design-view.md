@@ -162,7 +162,8 @@ flowchart TD
 
 ### page：データ資産
 
-[streamlit/settings.py](../streamlit/settings.py) の `DISPLAY_SCOPES` で定義されたデータベース / スキーマに所属するもののみ表示する。
+Snowflake provider では、[streamlit/settings.py](../streamlit/settings.py) の `DISPLAY_SCOPES` で定義されたデータベース / スキーマに所属するもののみ表示する。
+検索 pane のデータベース / スキーマ候補は、provider から読み込まれた表示対象データ資産より作成する。
 
 #### 画面レイアウト
 

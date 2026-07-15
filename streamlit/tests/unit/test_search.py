@@ -6,7 +6,6 @@ import pandas as pd
 
 from catalog import schema
 from logic import search
-from logic.search import assets as asset_search
 from logic.search import AssetSearchCriteria, FreewordQuery, TagSelection, UserFreewordQuery
 from tests.fixtures import catalog_data
 
@@ -191,19 +190,20 @@ def test_freeword_match_reasons_limit_column_names() -> None:
     assert reasons[1].text == "カラム名 ORDER_EMAIL, BILLING_EMAIL ほか1件 に一致。"
 
 
-def test_scope_options_come_from_display_scopes(monkeypatch) -> None:
-    monkeypatch.setattr(
-        asset_search,
-        "DISPLAY_SCOPES",
+def test_scope_options_come_from_assets() -> None:
+    A = schema.Assets
+    assets = pd.DataFrame(
         [
-            {"DATABASE_NAME": "DB1", "SCHEMA_NAME": "S1"},
-            {"DATABASE_NAME": "DB1", "SCHEMA_NAME": "S2"},
-            {"DATABASE_NAME": "DB2", "SCHEMA_NAME": "S3"},
-        ],
+            {A.DATABASE_NAME: "DB2", A.SCHEMA_NAME: "S3"},
+            {A.DATABASE_NAME: "DB1", A.SCHEMA_NAME: "S2"},
+            {A.DATABASE_NAME: "DB1", A.SCHEMA_NAME: "S1"},
+            {A.DATABASE_NAME: "DB1", A.SCHEMA_NAME: "S1"},
+        ]
     )
 
-    assert search.scope_databases() == ["DB1", "DB2"]
-    assert search.scope_schemas(["DB1"]) == ["S1", "S2"]
+    assert search.scope_databases(assets) == ["DB1", "DB2"]
+    assert search.scope_schemas(assets, ["DB1"]) == ["S1", "S2"]
+    assert search.scope_schemas(assets, []) == []
 
 
 def test_filter_users_matches_freeword_and_self_filter() -> None:
