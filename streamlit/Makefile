@@ -29,18 +29,22 @@ run_test: ## テスト
 
 .PHONY: run_local
 run_local: ## ローカルサーバーを起動
-	streamlit run streamlit_app.py
+	streamlit run streamlit_app.py --server.address 127.0.0.1
 
 .PHONY: run_fake
 run_fake: ## fake catalog でローカルサーバーを起動
-	CATALOG_DATA_MODE=fake streamlit run streamlit_app.py
+	CATALOG_DATA_MODE=fake streamlit run streamlit_app.py --server.address 127.0.0.1
 
 .PHONY: run_fake_headless
 run_fake_headless: ## fake catalog でローカルサーバーを起動 (headless mode)
-	CATALOG_DATA_MODE=fake streamlit run streamlit_app.py --server.headless true
+	CATALOG_DATA_MODE=fake streamlit run streamlit_app.py --server.headless true --server.address 127.0.0.1
 
 .PHONY: deploy
 deploy: ## Snowflake へデプロイ
 	snow streamlit deploy --replace \
 	  -c $(SNOWFLAKE_CLI_CONNECTION_NAME) \
 	  --role $(SIS_OWNER_ROLE_NAME)
+
+.PHONY: logs
+logs: ## sis ログ確認
+	snow streamlit logs app -c $(SNOWFLAKE_CLI_CONNECTION_NAME)

@@ -31,6 +31,7 @@ templating:
       external_access_pypi_name: ${EXTERNAL_ACCESS_PYPI_NAME}
       datacatalog_database_name: ${DATACATALOG_DATABASE_NAME}
       datacatalog_warehouse_name: ${DATACATALOG_WAREHOUSE_NAME}
+      datacatalog_owner_role_name: ${DATACATALOG_OWNER_ROLE_NAME}
       sis_owner_role_name: ${SIS_OWNER_ROLE_NAME}
       sis_reader_role_name: ${SIS_READER_ROLE_NAME}
       sis_role_name_prefix: ${SIS_ROLE_NAME_PREFIX}

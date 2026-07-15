@@ -1,0 +1,6 @@
+-- noqa: disable=LT02
+
+define tag {{ datacatalog_database_name }}.SAMPLE_TAG.DATA_DOMAIN
+    allowed_values 'sales', 'marketing', 'finance', 'product', 'corporate'
+    comment = '（サンプル）データドメイン'
+;
