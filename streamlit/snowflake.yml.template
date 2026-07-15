@@ -9,9 +9,9 @@ entities:
   app:
     type: streamlit
     identifier:
-      name: datacatalog
       database: ${DATACATALOG_DATABASE_NAME}
       schema: APP
+      name: ${STREAMLIT_TITLE_NAME}
     title: ${STREAMLIT_TITLE_NAME}
     comment: データカタログ
     compute_pool: ${DATACATALOG_COMPUTE_POOL_NAME}

@@ -6,32 +6,27 @@
 
 manifest_version: 2
 type: dcm_project
-default_target: dcm_sample
+default_target: datacatalog
 
 # references: manifest.yml => target
 # https://docs.snowflake.com/ja/user-guide/dcm-projects/dcm-projects-files#project-targets
 
 targets:
-  dcm_sample:
+  datacatalog:
     account_identifier: ${SNOWFLAKE_ACCOUNT_IDENTIFIER}
-    project_name: ${DCM_DATABASE_NAME}.DCM.DCM_SAMPLE
-    project_owner: ${DCM_PROJECT_OWNER_ROLE_NAME}
-    templating_config: sis_sample
+    project_name: ${DCM_DATABASE_NAME}.DCM.DATACATALOG
+    project_owner: ${DATACATALOG_OWNER_ROLE_NAME}
+    templating_config: prod
 
 # references: manifest.yml => templating
 # https://docs.snowflake.com/ja/user-guide/dcm-projects/dcm-projects-files#project-templating-configurations
 
 templating:
-  defaults:
-    snowflake_account_name: ${SNOWFLAKE_ACCOUNT_NAME}
-    project_owner_role: ${DCM_PROJECT_OWNER_ROLE_NAME}
-    wh_size: X-SMALL
   configurations:
-    sis_sample:
+    prod:
       external_access_pypi_name: ${EXTERNAL_ACCESS_PYPI_NAME}
       datacatalog_database_name: ${DATACATALOG_DATABASE_NAME}
       datacatalog_warehouse_name: ${DATACATALOG_WAREHOUSE_NAME}
       datacatalog_owner_role_name: ${DATACATALOG_OWNER_ROLE_NAME}
       sis_owner_role_name: ${SIS_OWNER_ROLE_NAME}
       sis_reader_role_name: ${SIS_READER_ROLE_NAME}
-      sis_role_name_prefix: ${SIS_ROLE_NAME_PREFIX}

@@ -1,5 +1,3 @@
--- noqa: disable=LT02
-
 define table {{ datacatalog_database_name }}.SAMPLE_DATA_SALES.PRODUCTS (
     PRODUCT_ID number comment '商品ID',
     PRODUCT_NAME varchar(255) not null comment '商品名',

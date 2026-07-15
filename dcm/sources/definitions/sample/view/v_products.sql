@@ -1,5 +1,3 @@
--- noqa: disable=LT02
-
 define view {{ datacatalog_database_name }}.SAMPLE_DATA_SALES.V_PRODUCTS (
     PRODUCT_ID comment '商品ID',
     PRODUCT_NAME comment '商品名',

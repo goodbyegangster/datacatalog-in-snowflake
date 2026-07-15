@@ -45,6 +45,16 @@ deploy: ## Snowflake へデプロイ
 	  -c $(SNOWFLAKE_CLI_CONNECTION_NAME) \
 	  --role $(SIS_OWNER_ROLE_NAME)
 
+.PHONY: drop
+drop: ## Streamlit App を削除
+	snow streamlit drop ${STREAMLIT_TITLE_NAME} \
+	  --database $(DATACATALOG_DATABASE_NAME) \
+	  --schema APP \
+	  -c $(SNOWFLAKE_CLI_CONNECTION_NAME) \
+	  --role $(SIS_OWNER_ROLE_NAME)
+
 .PHONY: logs
-logs: ## sis ログ確認
-	snow streamlit logs app -c $(SNOWFLAKE_CLI_CONNECTION_NAME)
+logs: ## Streamlit App のログを確認
+	snow streamlit logs app \
+	  -c $(SNOWFLAKE_CLI_CONNECTION_NAME) \
+	  --role $(SIS_OWNER_ROLE_NAME)

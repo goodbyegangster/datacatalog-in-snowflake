@@ -1,5 +1,3 @@
--- noqa: disable=LT02
-
 define warehouse {{ datacatalog_warehouse_name }}
     warehouse_type = 'STANDARD'
     warehouse_size = 'XSMALL'

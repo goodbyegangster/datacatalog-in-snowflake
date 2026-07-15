@@ -11,7 +11,7 @@ help:
 setup: ## DCM プロジェクト実行用のオブジェクトを作成する
 	snow sql -f sql/setup.sql \
 	  -D "snowflake_my_user_name=$(SNOWFLAKE_MY_USER_NAME)" \
-	  -D "dcm_project_owner_role_name=$(DCM_PROJECT_OWNER_ROLE_NAME)" \
+	  -D "datacatalog_owner_role_name=$(DATACATALOG_OWNER_ROLE_NAME)" \
 	  -D "dcm_database_name=$(DCM_DATABASE_NAME)" \
 	  -D "external_access_pypi_name=$(EXTERNAL_ACCESS_PYPI_NAME)" \
 	  -c $(SNOWFLAKE_CLI_CONNECTION_NAME)
@@ -19,7 +19,7 @@ setup: ## DCM プロジェクト実行用のオブジェクトを作成する
 .PHONY: remove
 remove: ## 作成済みオブジェクトを削除する
 	snow sql -f sql/remove.sql \
-	  -D "dcm_project_owner_role_name=$(DCM_PROJECT_OWNER_ROLE_NAME)" \
+	  -D "datacatalog_owner_role_name=$(DATACATALOG_OWNER_ROLE_NAME)" \
 	  -D "dcm_database_name=$(DCM_DATABASE_NAME)" \
 	  -D "external_access_pypi_name=$(EXTERNAL_ACCESS_PYPI_NAME)" \
 	  -c $(SNOWFLAKE_CLI_CONNECTION_NAME)

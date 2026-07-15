@@ -1,5 +1,3 @@
--- noqa: disable=LT02
-
 define role {{ sis_owner_role_name }}
     comment = 'Streamlit App 所有者向けロール'
 ;
