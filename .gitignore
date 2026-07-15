@@ -5,12 +5,13 @@ __pycache__
 .packages/
 .pytest_cache/
 .ruff_cache
+.ruff.toml
 .venv/
 .vscode/
 app.zip
 dcm/manifest.yml
+pyrightconfig.json
 streamlit/.config/
-.ruff.toml
 streamlit/.streamlit/secrets.toml
 streamlit/output/
 streamlit/settings.py

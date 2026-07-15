@@ -9,8 +9,8 @@ from __future__ import annotations
 
 from logic.search.assets import (
     AssetSearchCriteria,
-    FreewordQuery,
     FreewordMatchReason,
+    FreewordQuery,
     TagSelection,
     filter_assets,
     freeword_asset_ids,
