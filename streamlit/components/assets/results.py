@@ -9,6 +9,7 @@ import pandas as pd
 import streamlit as st
 
 from catalog import schema
+from components.common import dataframe_selection
 from logic.search import FreewordMatchReason
 from runtime import state
 
@@ -88,7 +89,7 @@ def render(
         key=RESULTS_KEY,
     )
 
-    cells = event.get("selection", {}).get("cells", [])
-    if cells and cells[0][0] < len(ordered):
-        return int(ordered.iloc[cells[0][0]][assets_schema.TABLE_ID])
+    row_index = dataframe_selection.get_selected_row_index(event, len(ordered))
+    if row_index is not None:
+        return int(ordered.iloc[row_index][assets_schema.TABLE_ID])
     return None

@@ -2,17 +2,13 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
-
 import pandas as pd
 import streamlit as st
 
 import settings
 from catalog import schema
+from components.common import dataframe_selection
 from runtime import navigation, user_context
-
-if TYPE_CHECKING:
-    from streamlit.elements.arrow import DataframeState
 
 TABLE_KEY = "asset_users_table"
 CURRENT_USER_UNAVAILABLE_MESSAGE = (
@@ -25,19 +21,6 @@ def _fmt_roles(roles: object) -> str:
     if not isinstance(roles, list) or not roles:
         return ""
     return ", ".join(sorted(str(role) for role in roles))
-
-
-def _selected_user_row(event: DataframeState, display: pd.DataFrame) -> int | None:
-    """ユーザータブで選択されたセルの行位置を返す。"""
-    cells = event.get("selection", {}).get("cells", [])
-    if not cells:
-        return None
-
-    cell = cells[0]
-    row_index = cell[0]
-    if row_index >= len(display):
-        return None
-    return int(row_index)
 
 
 def render(asset: pd.Series, visibility: pd.DataFrame) -> None:
@@ -84,7 +67,7 @@ def render(asset: pd.Series, visibility: pd.DataFrame) -> None:
         },
     )
 
-    selected_user_row = _selected_user_row(event, display)
+    selected_user_row = dataframe_selection.get_selected_row_index(event, len(display))
     selected_user_name = (
         None if selected_user_row is None else str(display.iloc[selected_user_row]["ユーザー"])
     )

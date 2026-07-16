@@ -6,6 +6,7 @@ import pandas as pd
 import streamlit as st
 
 from catalog import schema
+from components.common import dataframe_selection
 from runtime import state
 
 RESULTS_KEY = "user_table"
@@ -58,7 +59,7 @@ def render(users: pd.DataFrame, *, compact: bool = False) -> str | None:
         key=RESULTS_KEY,
     )
 
-    cells = event.get("selection", {}).get("cells", [])
-    if cells and cells[0][0] < len(ordered):
-        return str(ordered.iloc[cells[0][0]][users_schema.USER_NAME])
+    row_index = dataframe_selection.get_selected_row_index(event, len(ordered))
+    if row_index is not None:
+        return str(ordered.iloc[row_index][users_schema.USER_NAME])
     return None

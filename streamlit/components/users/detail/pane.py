@@ -3,17 +3,15 @@
 from __future__ import annotations
 
 import math
-from typing import TYPE_CHECKING, Literal
+from typing import Literal
 
 import pandas as pd
 import streamlit as st
 
 from catalog import schema
+from components.common import dataframe_selection
 from components.users import results
 from runtime import navigation, state
-
-if TYPE_CHECKING:
-    from streamlit.elements.arrow import DataframeState
 
 BadgeColor = Literal[
     "red", "orange", "yellow", "blue", "green", "violet", "gray", "grey", "primary"
@@ -55,19 +53,6 @@ def _close() -> None:
     """詳細ペインを閉じる。行選択ウィジェットの選択状態も解除する。"""
     results.clear_selection()
     st.session_state.pop(state.NAV_TO_USER_NAME, None)
-
-
-def _selected_asset_row(event: DataframeState, display: pd.DataFrame) -> int | None:
-    """閲覧可能データ資産一覧で選択されたセルの行位置を返す。"""
-    cells = event.get("selection", {}).get("cells", [])
-    if not cells:
-        return None
-
-    cell = cells[0]
-    row_index = cell[0]
-    if row_index >= len(display):
-        return None
-    return int(row_index)
 
 
 def render(user_name: str, users: pd.DataFrame, visibility: pd.DataFrame) -> None:
@@ -149,7 +134,7 @@ def render(user_name: str, users: pd.DataFrame, visibility: pd.DataFrame) -> Non
         },
     )
 
-    selected_asset_row = _selected_asset_row(event, display)
+    selected_asset_row = dataframe_selection.get_selected_row_index(event, len(display))
     selected_table_id = (
         None
         if selected_asset_row is None

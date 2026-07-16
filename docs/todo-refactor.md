@@ -27,7 +27,7 @@ Streamlit in Snowflake アプリのリファクタリング候補を管理する
   - 注意:
     - `st.switch_page()` 自体は Streamlit 依存なので、純ロジック化ではなく runtime helper として扱う。
 
-- [ ] `st.dataframe` の single-cell selection 取り出し処理を共通化する
+- [x] `st.dataframe` の single-cell selection 取り出し処理を共通化する
   - 対象:
     - `streamlit/components/assets/results.py`
     - `streamlit/components/users/results.py`
