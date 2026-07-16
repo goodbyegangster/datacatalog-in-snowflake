@@ -10,15 +10,15 @@ from catalog import schema
 
 def render(asset: pd.Series) -> None:
     """連絡先 tab を表示する。"""
-    A = schema.Assets
+    assets_schema = schema.Assets
     display = pd.DataFrame(
         [
-            {"担当": "スチュワード", "連絡先": asset[A.CONTACT_STEWARD] or ""},
-            {"担当": "サポート", "連絡先": asset[A.CONTACT_SUPPORT] or ""},
-            {"担当": "承認者", "連絡先": asset[A.CONTACT_ACCESS_APPROVAL] or ""},
+            {"担当": "スチュワード", "連絡先": asset[assets_schema.CONTACT_STEWARD] or ""},
+            {"担当": "サポート", "連絡先": asset[assets_schema.CONTACT_SUPPORT] or ""},
+            {"担当": "承認者", "連絡先": asset[assets_schema.CONTACT_ACCESS_APPROVAL] or ""},
             {
                 "担当": "セキュリティとコンプライアンス",
-                "連絡先": asset[A.CONTACT_SECURITY_COMPLIANCE] or "",
+                "連絡先": asset[assets_schema.CONTACT_SECURITY_COMPLIANCE] or "",
             },
         ]
     )

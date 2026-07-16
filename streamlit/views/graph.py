@@ -88,6 +88,7 @@ def _render_navigation_buttons(user_name: str, table_id: int) -> None:
 
 
 def main() -> None:
+    """ロール継承グラフページを描画する。"""
     st.title("🌐 ロール継承グラフ", anchor=False)
     styles.render_base_css()
     styles.render_page_css("hide_sidebar.css")

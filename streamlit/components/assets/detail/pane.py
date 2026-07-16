@@ -13,7 +13,9 @@ from components.assets import results
 from components.assets.detail import tab_columns, tab_contact, tab_stats, tab_users
 from runtime import state
 
-BadgeColor = Literal["red", "orange", "yellow", "blue", "green", "violet", "gray", "grey", "primary"]
+BadgeColor = Literal[
+    "red", "orange", "yellow", "blue", "green", "violet", "gray", "grey", "primary"
+]
 
 ASSET_TYPE_BADGE_COLORS: dict[str, BadgeColor] = {
     "BASE TABLE": "blue",
@@ -64,8 +66,8 @@ def render(
     visibility: pd.DataFrame,
 ) -> None:
     """データ資産の詳細ペインを表示する。"""
-    A = schema.Assets
-    match = assets[assets[A.TABLE_ID] == table_id]
+    assets_schema = schema.Assets
+    match = assets[assets[assets_schema.TABLE_ID] == table_id]
     if match.empty:
         st.error("選択されたデータ資産が見つかりませんでした")
         return
@@ -74,7 +76,7 @@ def render(
     with st.container(key="asset-summary"):
         title_col, close_col = st.columns([1, 0.12], vertical_alignment="center")
         with title_col:
-            st.subheader(asset[A.ASSET_NAME], anchor=False)
+            st.subheader(asset[assets_schema.ASSET_NAME], anchor=False)
         with close_col:
             st.button(
                 "",
@@ -85,24 +87,24 @@ def render(
                 type="primary",
             )
 
-        if asset[A.DESCRIPTION]:
-            st.markdown(f"**{asset[A.DESCRIPTION]}**")
+        if asset[assets_schema.DESCRIPTION]:
+            st.markdown(f"**{asset[assets_schema.DESCRIPTION]}**")
 
         col1, col2, col3, col4 = st.columns(4)
         with col1:
             st.caption("データベース")
-            st.markdown(f"**{asset[A.DATABASE_NAME]}**")
+            st.markdown(f"**{asset[assets_schema.DATABASE_NAME]}**")
         with col2:
             st.caption("スキーマ")
-            st.markdown(f"**{asset[A.SCHEMA_NAME]}**")
+            st.markdown(f"**{asset[assets_schema.SCHEMA_NAME]}**")
         with col3:
             st.caption("オブジェクト種別")
             st.badge(
-                asset[A.ASSET_TYPE],
-                color=_asset_type_badge_color(asset[A.ASSET_TYPE]),
+                asset[assets_schema.ASSET_TYPE],
+                color=_asset_type_badge_color(asset[assets_schema.ASSET_TYPE]),
             )
         with col4:
-            is_public = bool(asset[A.IS_PUBLIC_VISIBILITY])
+            is_public = bool(asset[assets_schema.IS_PUBLIC_VISIBILITY])
             st.caption("PUBLIC")
             st.badge(
                 "参照可能" if is_public else "参照不可",
@@ -110,7 +112,7 @@ def render(
             )
 
         st.caption("タグ")
-        tags = asset[A.TAGS]
+        tags = asset[assets_schema.TAGS]
         if isinstance(tags, list) and tags:
             tag_cols = st.columns(3)
             for index, tag in enumerate(tags):

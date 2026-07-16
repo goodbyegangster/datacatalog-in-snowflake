@@ -7,9 +7,12 @@
 from __future__ import annotations
 
 import os
+from types import ModuleType
 from typing import Literal
 
 import pandas as pd
+
+from catalog.providers import fake, snowflake
 
 CatalogDataMode = Literal["snowflake", "fake"]
 
@@ -22,36 +25,37 @@ def data_mode() -> CatalogDataMode:
     return "snowflake"
 
 
-def _provider():
+def _provider() -> ModuleType:
     if data_mode() == "fake":
-        from catalog.providers import fake
-
         return fake
-
-    from catalog.providers import snowflake
-
     return snowflake
 
 
 def load_assets() -> pd.DataFrame:
+    """データ資産カタログを読み込む。"""
     return _provider().load_assets()
 
 
 def load_columns() -> pd.DataFrame:
+    """カラムカタログを読み込む。"""
     return _provider().load_columns()
 
 
 def load_users() -> pd.DataFrame:
+    """ユーザーカタログを読み込む。"""
     return _provider().load_users()
 
 
 def load_tags() -> pd.DataFrame:
+    """タグカタログを読み込む。"""
     return _provider().load_tags()
 
 
 def load_access_edges() -> pd.DataFrame:
+    """アクセス経路エッジを読み込む。"""
     return _provider().load_access_edges()
 
 
 def load_asset_visibility() -> pd.DataFrame:
+    """ユーザー別の資産閲覧可否を読み込む。"""
     return _provider().load_asset_visibility()

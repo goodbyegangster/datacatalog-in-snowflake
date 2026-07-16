@@ -10,15 +10,18 @@ from logic.search import AssetSearchCriteria, FreewordQuery, TagSelection, UserF
 from tests.fixtures import catalog_data
 
 
-def asset_names(df):
+def asset_names(df: pd.DataFrame) -> list[str]:
+    """データ資産名をリストで返す。"""
     return df[schema.Assets.ASSET_NAME].tolist()
 
 
-def user_names(df):
+def user_names(df: pd.DataFrame) -> list[str]:
+    """ユーザー名をリストで返す。"""
     return df[schema.Users.USER_NAME].tolist()
 
 
 def tag_selection(tag_name: str, selected: list[str]) -> TagSelection:
+    """テスト用のタグ選択条件を返す。"""
     return TagSelection(
         tag_database=catalog_data.DB,
         tag_schema=catalog_data.TAG_SCHEMA,
@@ -29,6 +32,7 @@ def tag_selection(tag_name: str, selected: list[str]) -> TagSelection:
 
 
 def test_parse_freeword_uses_or_before_and() -> None:
+    """OR を AND より先に分割する。"""
     assert search.parse_freeword("orders OR leads AND customer") == (
         "or",
         ["orders", "leads AND customer"],
@@ -38,6 +42,7 @@ def test_parse_freeword_uses_or_before_and() -> None:
 
 
 def test_filter_assets_matches_column_freeword() -> None:
+    """カラムのフリーワード一致で資産を返す。"""
     criteria = AssetSearchCriteria(
         freeword=FreewordQuery(
             text="email",
@@ -54,6 +59,7 @@ def test_filter_assets_matches_column_freeword() -> None:
 
 
 def test_filter_assets_matches_and_and_or_freeword() -> None:
+    """AND と OR のフリーワード検索を適用する。"""
     assets = catalog_data.assets()
     columns = catalog_data.columns()
 
@@ -73,6 +79,7 @@ def test_filter_assets_matches_and_and_or_freeword() -> None:
 
 
 def test_filter_assets_applies_hierarchy_and_type_as_and_bucket() -> None:
+    """階層と種別を AND 条件として適用する。"""
     criteria = AssetSearchCriteria(
         selected_databases=[catalog_data.DB],
         selected_schemas=["DATA_SALES"],
@@ -85,6 +92,7 @@ def test_filter_assets_applies_hierarchy_and_type_as_and_bucket() -> None:
 
 
 def test_filter_assets_applies_category_or_bucket() -> None:
+    """カテゴリ条件を OR bucket として適用する。"""
     criteria = AssetSearchCriteria(
         selected_schemas=["DATA_AD"],
         selected_types=["DYNAMIC TABLE"],
@@ -98,6 +106,7 @@ def test_filter_assets_applies_category_or_bucket() -> None:
 
 
 def test_filter_assets_matches_tags_on_asset_and_columns() -> None:
+    """資産タグとカラムタグの両方で検索する。"""
     assets = catalog_data.assets()
     columns = catalog_data.columns()
 
@@ -128,6 +137,7 @@ def test_filter_assets_matches_tags_on_asset_and_columns() -> None:
 
 
 def test_freeword_match_reasons_show_asset_and_column_hits() -> None:
+    """一致理由に資産とカラムのヒット箇所を表示する。"""
     reasons = search.freeword_match_reasons(
         FreewordQuery(text="email"),
         catalog_data.assets(),
@@ -139,37 +149,42 @@ def test_freeword_match_reasons_show_asset_and_column_hits() -> None:
 
 
 def test_freeword_match_reasons_split_object_and_column_sentences() -> None:
+    """オブジェクトとカラムの一致理由を文で分ける。"""
     reasons = search.freeword_match_reasons(
         FreewordQuery(text="order"),
         catalog_data.assets(),
         catalog_data.columns(),
     )
 
-    assert reasons[1].text == "名前 / 説明 に一致。カラム名 ORDER_ID、カラム説明 ORDER_ID, AMOUNT に一致。"
+    assert (
+        reasons[1].text
+        == "名前 / 説明 に一致。カラム名 ORDER_ID、カラム説明 ORDER_ID, AMOUNT に一致。"
+    )
 
 
 def test_freeword_match_reasons_limit_column_names() -> None:
-    C = schema.Columns
+    """一致理由に表示するカラム名を上限で省略する。"""
+    columns_schema = schema.Columns
     columns = catalog_data.columns()
     extra_columns = pd.DataFrame(
         [
             {
                 **columns.iloc[0].to_dict(),
-                C.COLUMN_NAME: "ORDER_EMAIL",
-                C.ORDINAL_POSITION: 3,
-                C.DESCRIPTION: "Order email",
+                columns_schema.COLUMN_NAME: "ORDER_EMAIL",
+                columns_schema.ORDINAL_POSITION: 3,
+                columns_schema.DESCRIPTION: "Order email",
             },
             {
                 **columns.iloc[0].to_dict(),
-                C.COLUMN_NAME: "BILLING_EMAIL",
-                C.ORDINAL_POSITION: 4,
-                C.DESCRIPTION: "Billing email",
+                columns_schema.COLUMN_NAME: "BILLING_EMAIL",
+                columns_schema.ORDINAL_POSITION: 4,
+                columns_schema.DESCRIPTION: "Billing email",
             },
             {
                 **columns.iloc[0].to_dict(),
-                C.COLUMN_NAME: "SHIPPING_EMAIL",
-                C.ORDINAL_POSITION: 5,
-                C.DESCRIPTION: "Shipping email",
+                columns_schema.COLUMN_NAME: "SHIPPING_EMAIL",
+                columns_schema.ORDINAL_POSITION: 5,
+                columns_schema.DESCRIPTION: "Shipping email",
             },
         ]
     )
@@ -191,13 +206,14 @@ def test_freeword_match_reasons_limit_column_names() -> None:
 
 
 def test_scope_options_come_from_assets() -> None:
-    A = schema.Assets
+    """スコープ候補を資産一覧から生成する。"""
+    assets_schema = schema.Assets
     assets = pd.DataFrame(
         [
-            {A.DATABASE_NAME: "DB2", A.SCHEMA_NAME: "S3"},
-            {A.DATABASE_NAME: "DB1", A.SCHEMA_NAME: "S2"},
-            {A.DATABASE_NAME: "DB1", A.SCHEMA_NAME: "S1"},
-            {A.DATABASE_NAME: "DB1", A.SCHEMA_NAME: "S1"},
+            {assets_schema.DATABASE_NAME: "DB2", assets_schema.SCHEMA_NAME: "S3"},
+            {assets_schema.DATABASE_NAME: "DB1", assets_schema.SCHEMA_NAME: "S2"},
+            {assets_schema.DATABASE_NAME: "DB1", assets_schema.SCHEMA_NAME: "S1"},
+            {assets_schema.DATABASE_NAME: "DB1", assets_schema.SCHEMA_NAME: "S1"},
         ]
     )
 
@@ -207,6 +223,7 @@ def test_scope_options_come_from_assets() -> None:
 
 
 def test_filter_users_matches_freeword_and_self_filter() -> None:
+    """ユーザーのフリーワードと自ユーザー絞り込みを適用する。"""
     users = catalog_data.users()
 
     only_self = search.filter_users(users, UserFreewordQuery(), only_user_name="ALICE")

@@ -18,7 +18,7 @@ CACHE_TTL = 3600
 
 def _catalog_fqn(table_name: str) -> str:
     """CATALOG_LOCATION を前置した、カタログ表の完全修飾名を返す。"""
-    return f'{CATALOG_LOCATION["DATABASE_NAME"]}.{CATALOG_LOCATION["SCHEMA_NAME"]}.{table_name}'
+    return f"{CATALOG_LOCATION['DATABASE_NAME']}.{CATALOG_LOCATION['SCHEMA_NAME']}.{table_name}"
 
 
 def _read_table(session: Session, table_name: str) -> pd.DataFrame:
@@ -64,21 +64,21 @@ def _filter_display_scopes(df: pd.DataFrame, db_col: StrEnum, schema_col: StrEnu
 @st.cache_data(ttl=CACHE_TTL)
 def load_assets() -> pd.DataFrame:
     """CATALOG.ASSETS。DISPLAY_SCOPES に含まれる資産のみ。"""
-    A = schema.Assets
+    assets_schema = schema.Assets
     df = _read_table(get_session(), "ASSETS")
-    _parse_json_column(df, A.TAGS)
-    df = _filter_display_scopes(df, A.DATABASE_NAME, A.SCHEMA_NAME)
+    _parse_json_column(df, assets_schema.TAGS)
+    df = _filter_display_scopes(df, assets_schema.DATABASE_NAME, assets_schema.SCHEMA_NAME)
     return _normalize(df, schema.Assets)
 
 
 @st.cache_data(ttl=CACHE_TTL)
 def load_columns() -> pd.DataFrame:
     """CATALOG.COLUMNS。DISPLAY_SCOPES に含まれる資産のカラムのみ。"""
-    C = schema.Columns
+    columns_schema = schema.Columns
     df = _read_table(get_session(), "COLUMNS")
-    _parse_json_column(df, C.TAGS)
-    _parse_json_column(df, C.FOREIGN_KEYS)
-    df = _filter_display_scopes(df, C.DATABASE_NAME, C.SCHEMA_NAME)
+    _parse_json_column(df, columns_schema.TAGS)
+    _parse_json_column(df, columns_schema.FOREIGN_KEYS)
+    df = _filter_display_scopes(df, columns_schema.DATABASE_NAME, columns_schema.SCHEMA_NAME)
     return _normalize(df, schema.Columns)
 
 
@@ -106,9 +106,9 @@ def load_access_edges() -> pd.DataFrame:
 @st.cache_data(ttl=CACHE_TTL)
 def load_asset_visibility() -> pd.DataFrame:
     """CATALOG.ASSET_VISIBILITY（user↔asset の到達ペア）。DISPLAY_SCOPES の資産のみ。"""
-    V = schema.AssetVisibility
+    visibility_schema = schema.AssetVisibility
     df = _read_table(get_session(), "ASSET_VISIBILITY")
-    _parse_json_column(df, V.USER_ROLES)
-    _parse_json_column(df, V.ASSET_ROLES)
-    df = _filter_display_scopes(df, V.DATABASE_NAME, V.SCHEMA_NAME)
+    _parse_json_column(df, visibility_schema.USER_ROLES)
+    _parse_json_column(df, visibility_schema.ASSET_ROLES)
+    df = _filter_display_scopes(df, visibility_schema.DATABASE_NAME, visibility_schema.SCHEMA_NAME)
     return _normalize(df, schema.AssetVisibility)

@@ -23,8 +23,8 @@ from logic.search.users import UserFreewordQuery, filter_users
 
 __all__ = [
     "AssetSearchCriteria",
-    "FreewordQuery",
     "FreewordMatchReason",
+    "FreewordQuery",
     "TagSelection",
     "UserFreewordQuery",
     "filter_assets",

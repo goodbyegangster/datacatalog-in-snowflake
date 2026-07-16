@@ -10,9 +10,9 @@ from catalog import schema
 
 def render(asset: pd.Series) -> None:
     """統計情報 tab を表示する。"""
-    A = schema.Assets
-    row_count = asset[A.ROW_COUNT]
-    n_bytes = asset[A.BYTES]
+    assets_schema = schema.Assets
+    row_count = asset[assets_schema.ROW_COUNT]
+    n_bytes = asset[assets_schema.BYTES]
     display = pd.DataFrame(
         [
             {"項目": "行数", "値": f"{int(row_count):,}" if pd.notna(row_count) else "-"},

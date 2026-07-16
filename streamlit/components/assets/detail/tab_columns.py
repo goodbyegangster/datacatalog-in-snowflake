@@ -34,8 +34,10 @@ def _fmt_foreign_keys(foreign_keys: object) -> str:
 
 def render(table_id: int, columns: pd.DataFrame) -> None:
     """カラム tab を表示する。"""
-    C = schema.Columns
-    cols = columns[columns[C.TABLE_ID] == table_id].sort_values(C.ORDINAL_POSITION)
+    columns_schema = schema.Columns
+    cols = columns[columns[columns_schema.TABLE_ID] == table_id].sort_values(
+        columns_schema.ORDINAL_POSITION
+    )
     if cols.empty:
         st.caption("カラム情報がありません")
         return
@@ -43,16 +45,16 @@ def render(table_id: int, columns: pd.DataFrame) -> None:
     st.caption("詳細な確認は Fullscreen モード（表選択時に右上出現）を利用してください")
     display = pd.DataFrame(
         {
-            "位置": cols[C.ORDINAL_POSITION],
-            "名前": cols[C.COLUMN_NAME],
-            "説明": cols[C.DESCRIPTION].fillna(""),
-            "型": cols[C.DATA_TYPE],
-            "PKEY": cols[C.IS_PRIMARY_KEY],
-            "NOT NULL": cols[C.IS_NULLABLE],
-            "UNIQUE": cols[C.IS_UNIQUE_KEY],
-            "外部 KEY": cols[C.FOREIGN_KEYS].map(_fmt_foreign_keys),
-            "masking policy": cols[C.MASKING_POLICY_NAME].fillna("").astype(bool),
-            "タグ": cols[C.TAGS].map(_fmt_tags),
+            "位置": cols[columns_schema.ORDINAL_POSITION],
+            "名前": cols[columns_schema.COLUMN_NAME],
+            "説明": cols[columns_schema.DESCRIPTION].fillna(""),
+            "型": cols[columns_schema.DATA_TYPE],
+            "PKEY": cols[columns_schema.IS_PRIMARY_KEY],
+            "NOT NULL": cols[columns_schema.IS_NULLABLE],
+            "UNIQUE": cols[columns_schema.IS_UNIQUE_KEY],
+            "外部 KEY": cols[columns_schema.FOREIGN_KEYS].map(_fmt_foreign_keys),
+            "masking policy": cols[columns_schema.MASKING_POLICY_NAME].fillna("").astype(bool),
+            "タグ": cols[columns_schema.TAGS].map(_fmt_tags),
         }
     )
     st.dataframe(

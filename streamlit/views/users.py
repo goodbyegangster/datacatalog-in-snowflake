@@ -34,14 +34,15 @@ def _consume_nav_to_user_name(users: pd.DataFrame) -> str | None:
         return None
 
     normalized = str(user_name).upper()
-    U = schema.Users
-    if normalized in set(users[U.USER_NAME].astype(str).str.upper().tolist()):
+    users_schema = schema.Users
+    if normalized in set(users[users_schema.USER_NAME].astype(str).str.upper().tolist()):
         st.session_state[state.USER_SELECTED_NAME] = normalized
         return normalized
     return None
 
 
 def main() -> None:
+    """ユーザーページを描画する。"""
     st.title("👤 ユーザー", anchor=False)
     _render_base_css()
 
@@ -82,8 +83,10 @@ def main() -> None:
             return
 
         prior = st.session_state.get(state.USER_SELECTED_NAME)
-        U = schema.Users
-        if prior is not None and prior not in set(filtered[U.USER_NAME].astype(str).tolist()):
+        users_schema = schema.Users
+        if prior is not None and prior not in set(
+            filtered[users_schema.USER_NAME].astype(str).tolist()
+        ):
             user_results.clear_selection()
             prior = None
 

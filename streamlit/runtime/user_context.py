@@ -2,9 +2,9 @@
 
 from __future__ import annotations
 
-import streamlit as st
-
 from catalog import provider as catalog
+
+import streamlit as st
 
 FAKE_CURRENT_USER_NAME = "ALICE"
 

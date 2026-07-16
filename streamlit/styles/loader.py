@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from functools import lru_cache
+from functools import cache
 from pathlib import Path
 
 import streamlit as st
@@ -10,7 +10,7 @@ import streamlit as st
 _STYLE_DIR = Path(__file__).parent
 
 
-@lru_cache(maxsize=None)
+@cache
 def _read_css(name: str) -> str:
     """CSS ファイルを読み込む。"""
     return (_STYLE_DIR / name).read_text(encoding="utf-8")

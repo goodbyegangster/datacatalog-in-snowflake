@@ -39,6 +39,8 @@ class ForeignKeyRef(TypedDict):
 
 
 class Assets(StrEnum):
+    """CATALOG.ASSETS の列名。"""
+
     TABLE_ID = "TABLE_ID"
     DATABASE_NAME = "DATABASE_NAME"
     SCHEMA_NAME = "SCHEMA_NAME"
@@ -56,6 +58,8 @@ class Assets(StrEnum):
 
 
 class AssetRow(TypedDict):
+    """CATALOG.ASSETS の行型。"""
+
     TABLE_ID: int
     DATABASE_NAME: str
     SCHEMA_NAME: str
@@ -76,6 +80,8 @@ class AssetRow(TypedDict):
 
 
 class Columns(StrEnum):
+    """CATALOG.COLUMNS の列名。"""
+
     TABLE_ID = "TABLE_ID"
     DATABASE_NAME = "DATABASE_NAME"
     SCHEMA_NAME = "SCHEMA_NAME"
@@ -93,6 +99,8 @@ class Columns(StrEnum):
 
 
 class ColumnRow(TypedDict):
+    """CATALOG.COLUMNS の行型。"""
+
     TABLE_ID: int
     DATABASE_NAME: str
     SCHEMA_NAME: str
@@ -113,6 +121,8 @@ class ColumnRow(TypedDict):
 
 
 class Users(StrEnum):
+    """CATALOG.USERS の列名。"""
+
     USER_NAME = "USER_NAME"
     DISPLAY_NAME = "DISPLAY_NAME"
     USER_TYPE = "USER_TYPE"
@@ -120,6 +130,8 @@ class Users(StrEnum):
 
 
 class UserRow(TypedDict):
+    """CATALOG.USERS の行型。"""
+
     USER_NAME: str
     DISPLAY_NAME: str | None
     USER_TYPE: str
@@ -130,6 +142,8 @@ class UserRow(TypedDict):
 
 
 class Tags(StrEnum):
+    """CATALOG.TAGS の列名。"""
+
     TAG_DATABASE = "TAG_DATABASE"
     TAG_SCHEMA = "TAG_SCHEMA"
     TAG_NAME = "TAG_NAME"
@@ -151,6 +165,8 @@ class TagRow(TypedDict):
 
 
 class AccessEdges(StrEnum):
+    """CATALOG.ACCESS_EDGES の列名。"""
+
     SOURCE_NODE = "SOURCE_NODE"
     SOURCE_TYPE = "SOURCE_TYPE"
     TARGET_NODE = "TARGET_NODE"
@@ -161,6 +177,8 @@ class AccessEdges(StrEnum):
 
 
 class AccessEdgeRow(TypedDict):
+    """CATALOG.ACCESS_EDGES の行型。"""
+
     SOURCE_NODE: str
     SOURCE_TYPE: str
     TARGET_NODE: str
@@ -174,6 +192,8 @@ class AccessEdgeRow(TypedDict):
 
 
 class AssetVisibility(StrEnum):
+    """CATALOG.ASSET_VISIBILITY の列名。"""
+
     USER_NAME = "USER_NAME"
     TABLE_ID = "TABLE_ID"
     DATABASE_NAME = "DATABASE_NAME"
@@ -184,6 +204,8 @@ class AssetVisibility(StrEnum):
 
 
 class AssetVisibilityRow(TypedDict):
+    """CATALOG.ASSET_VISIBILITY の行型。"""
+
     USER_NAME: str
     TABLE_ID: int
     DATABASE_NAME: str

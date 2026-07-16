@@ -46,7 +46,8 @@ def checkbox_by_label(app: AppTest, label: str) -> Any:
     for widget in app.checkbox:
         if widget.label == label:
             return widget
-    raise AssertionError(f"checkbox not found: {label}")
+    message = f"checkbox not found: {label}"
+    raise AssertionError(message)
 
 
 def multiselect_by_label(app: AppTest, label: str) -> Any:
@@ -54,4 +55,5 @@ def multiselect_by_label(app: AppTest, label: str) -> Any:
     for widget in app.multiselect:
         if widget.label == label:
             return widget
-    raise AssertionError(f"multiselect not found: {label}")
+    message = f"multiselect not found: {label}"
+    raise AssertionError(message)

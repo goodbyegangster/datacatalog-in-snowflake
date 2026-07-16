@@ -44,8 +44,8 @@ def _ids_matching_token(
 
     カラム名 / 説明にヒットした場合は、その所属データ資産を対象に含める。
     """
-    A = schema.Assets
-    C = schema.Columns
+    assets_schema = schema.Assets
+    columns_schema = schema.Columns
     needle = token.lower()
     ids: set[int] = set()
 
@@ -53,13 +53,17 @@ def _ids_matching_token(
         return series.fillna("").str.lower().str.contains(needle, regex=False)
 
     if fq.target_asset_name:
-        ids |= set(assets.loc[contains(assets[A.ASSET_NAME]), A.TABLE_ID])
+        ids |= set(assets.loc[contains(assets[assets_schema.ASSET_NAME]), assets_schema.TABLE_ID])
     if fq.target_asset_desc:
-        ids |= set(assets.loc[contains(assets[A.DESCRIPTION]), A.TABLE_ID])
+        ids |= set(assets.loc[contains(assets[assets_schema.DESCRIPTION]), assets_schema.TABLE_ID])
     if fq.target_column_name:
-        ids |= set(columns.loc[contains(columns[C.COLUMN_NAME]), C.TABLE_ID])
+        ids |= set(
+            columns.loc[contains(columns[columns_schema.COLUMN_NAME]), columns_schema.TABLE_ID]
+        )
     if fq.target_column_desc:
-        ids |= set(columns.loc[contains(columns[C.DESCRIPTION]), C.TABLE_ID])
+        ids |= set(
+            columns.loc[contains(columns[columns_schema.DESCRIPTION]), columns_schema.TABLE_ID]
+        )
     return ids
 
 
@@ -101,10 +105,14 @@ class _FreewordMatchHit:
 
 def _ordered_column_names(columns: pd.DataFrame, mask: pd.Series) -> list[str]:
     """条件に一致したカラム名を表示順で重複排除して返す。"""
-    C = schema.Columns
-    matched = columns.loc[mask, [C.TABLE_ID, C.ORDINAL_POSITION, C.COLUMN_NAME]]
-    matched = matched.sort_values([C.TABLE_ID, C.ORDINAL_POSITION, C.COLUMN_NAME])
-    return list(dict.fromkeys(matched[C.COLUMN_NAME].astype(str).tolist()))
+    columns_schema = schema.Columns
+    matched = columns.loc[
+        mask, [columns_schema.TABLE_ID, columns_schema.ORDINAL_POSITION, columns_schema.COLUMN_NAME]
+    ]
+    matched = matched.sort_values(
+        [columns_schema.TABLE_ID, columns_schema.ORDINAL_POSITION, columns_schema.COLUMN_NAME]
+    )
+    return list(dict.fromkeys(matched[columns_schema.COLUMN_NAME].astype(str).tolist()))
 
 
 def _merge_hits(left: _FreewordMatchHit, right: _FreewordMatchHit) -> _FreewordMatchHit:
@@ -121,8 +129,8 @@ def _reasons_matching_token(
     token: str, assets: pd.DataFrame, columns: pd.DataFrame, fq: FreewordQuery
 ) -> dict[int, _FreewordMatchHit]:
     """1 トークンに hit した場所を TABLE_ID ごとに返す。"""
-    A = schema.Assets
-    C = schema.Columns
+    assets_schema = schema.Assets
+    columns_schema = schema.Columns
     needle = token.lower()
     reasons: dict[int, _FreewordMatchHit] = {}
 
@@ -130,23 +138,29 @@ def _reasons_matching_token(
         return series.fillna("").str.lower().str.contains(needle, regex=False)
 
     if fq.target_asset_name:
-        for table_id in assets.loc[contains(assets[A.ASSET_NAME]), A.TABLE_ID]:
+        for table_id in assets.loc[
+            contains(assets[assets_schema.ASSET_NAME]), assets_schema.TABLE_ID
+        ]:
             reasons.setdefault(int(table_id), _FreewordMatchHit()).asset_name = True
     if fq.target_asset_desc:
-        for table_id in assets.loc[contains(assets[A.DESCRIPTION]), A.TABLE_ID]:
+        for table_id in assets.loc[
+            contains(assets[assets_schema.DESCRIPTION]), assets_schema.TABLE_ID
+        ]:
             reasons.setdefault(int(table_id), _FreewordMatchHit()).asset_desc = True
     if fq.target_column_name:
-        name_mask = contains(columns[C.COLUMN_NAME])
-        for table_id, group in columns.loc[name_mask].groupby(C.TABLE_ID):
+        name_mask = contains(columns[columns_schema.COLUMN_NAME])
+        for table_id, group in columns.loc[name_mask].groupby(columns_schema.TABLE_ID):
             reasons.setdefault(
                 _to_int(table_id), _FreewordMatchHit()
-            ).column_names = _ordered_column_names(group, pd.Series(True, index=group.index))
+            ).column_names = _ordered_column_names(group, pd.Series(data=True, index=group.index))
     if fq.target_column_desc:
-        desc_mask = contains(columns[C.DESCRIPTION])
-        for table_id, group in columns.loc[desc_mask].groupby(C.TABLE_ID):
+        desc_mask = contains(columns[columns_schema.DESCRIPTION])
+        for table_id, group in columns.loc[desc_mask].groupby(columns_schema.TABLE_ID):
             reasons.setdefault(
                 _to_int(table_id), _FreewordMatchHit()
-            ).column_desc_names = _ordered_column_names(group, pd.Series(True, index=group.index))
+            ).column_desc_names = _ordered_column_names(
+                group, pd.Series(data=True, index=group.index)
+            )
     return reasons
 
 
@@ -241,6 +255,7 @@ class TagSelection:
 
     @property
     def is_unconstrained(self) -> bool:
+        """タグ値が選択されていないか。"""
         return not self.selected
 
 
@@ -289,17 +304,19 @@ def _tag_mask(
     タグは資産（テーブル / ビュー）自身だけでなく、**その資産のいずれかのカラム**に
     付与されている場合もヒットとみなす（例: PII はカラムに付くことが多い）。
     """
-    A = schema.Assets
+    assets_schema = schema.Assets
     mask = pd.Series(data=True, index=assets.index)
     for sel in selections:
         if sel.is_unconstrained:
             continue
         matches = _tag_value_matcher(sel, set(sel.selected))
-        matched_ids = set(assets.loc[assets[A.TAGS].map(matches), A.TABLE_ID])
+        matched_ids = set(
+            assets.loc[assets[assets_schema.TAGS].map(matches), assets_schema.TABLE_ID]
+        )
         if not columns.empty:
             col_hit = columns[schema.Columns.TAGS].map(matches)
             matched_ids |= set(columns.loc[col_hit, schema.Columns.TABLE_ID])
-        mask &= assets[A.TABLE_ID].isin(matched_ids)
+        mask &= assets[assets_schema.TABLE_ID].isin(matched_ids)
     return mask
 
 
@@ -311,28 +328,28 @@ def filter_assets(
     ``①フリーワード AND （AND 群を全て満たす） AND （OR 群のいずれかを満たす）``。
     未選択（無制約）の検索条件グループは AND / OR いずれの群にも入れない。
     """
-    A = schema.Assets
-    all_pass = pd.Series(True, index=assets.index)
+    assets_schema = schema.Assets
+    all_pass = pd.Series(data=True, index=assets.index)
 
     fw_ids = freeword_asset_ids(criteria.freeword, assets, columns)
-    freeword_mask = all_pass if fw_ids is None else assets[A.TABLE_ID].isin(fw_ids)
+    freeword_mask = all_pass if fw_ids is None else assets[assets_schema.TABLE_ID].isin(fw_ids)
 
     hierarchy_active = bool(criteria.selected_databases or criteria.selected_schemas)
     db_ok = (
         all_pass
         if not criteria.selected_databases
-        else assets[A.DATABASE_NAME].isin(criteria.selected_databases)
+        else assets[assets_schema.DATABASE_NAME].isin(criteria.selected_databases)
     )
     schema_ok = (
         all_pass
         if not criteria.selected_schemas
-        else assets[A.SCHEMA_NAME].isin(criteria.selected_schemas)
+        else assets[assets_schema.SCHEMA_NAME].isin(criteria.selected_schemas)
     )
     hierarchy_mask = db_ok & schema_ok
 
     type_active = bool(criteria.selected_types)
     asset_type_mask = (
-        assets[A.ASSET_TYPE].isin(criteria.selected_types) if type_active else all_pass
+        assets[assets_schema.ASSET_TYPE].isin(criteria.selected_types) if type_active else all_pass
     )
 
     tag_active = any(t.selected for t in criteria.tag_selections)
@@ -353,7 +370,7 @@ def filter_assets(
     for mask in and_masks:
         group_and &= mask
     if or_masks:
-        group_or = pd.Series(False, index=assets.index)
+        group_or = pd.Series(data=False, index=assets.index)
         for mask in or_masks:
             group_or |= mask
     else:
@@ -367,14 +384,14 @@ def filter_assets(
 
 def scope_databases(assets: pd.DataFrame) -> list[str]:
     """表示対象の資産に含まれるデータベース名（重複排除・ソート済み）。"""
-    A = schema.Assets
-    return sorted(assets[A.DATABASE_NAME].dropna().astype(str).unique().tolist())
+    assets_schema = schema.Assets
+    return sorted(assets[assets_schema.DATABASE_NAME].dropna().astype(str).unique().tolist())
 
 
 def scope_schemas(assets: pd.DataFrame, databases: list[str]) -> list[str]:
     """指定データベースに属する、表示対象資産のスキーマ名（重複排除・ソート済み）。"""
-    A = schema.Assets
+    assets_schema = schema.Assets
     if not databases:
         return []
-    scoped = assets[assets[A.DATABASE_NAME].isin(databases)]
-    return sorted(scoped[A.SCHEMA_NAME].dropna().astype(str).unique().tolist())
+    scoped = assets[assets[assets_schema.DATABASE_NAME].isin(databases)]
+    return sorted(scoped[assets_schema.SCHEMA_NAME].dropna().astype(str).unique().tolist())

@@ -11,7 +11,7 @@ if str(PROJECT_ROOT) not in sys.path:
 
 
 if "settings" not in sys.modules:
-    settings = cast(Any, types.ModuleType("settings"))
+    settings = cast("Any", types.ModuleType("settings"))
     settings.CATALOG_LOCATION = {
         "DATABASE_NAME": "hogehoge",
         "SCHEMA_NAME": "CATALOG",

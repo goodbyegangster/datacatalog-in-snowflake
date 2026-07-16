@@ -29,19 +29,19 @@ def clear_selection() -> None:
 
 def render(users: pd.DataFrame, *, compact: bool = False) -> str | None:
     """ユーザー一覧を表示し、選択中の USER_NAME を返す。"""
-    U = schema.Users
-    ordered = users.sort_values(U.USER_NAME).reset_index(drop=True)
+    users_schema = schema.Users
+    ordered = users.sort_values(users_schema.USER_NAME).reset_index(drop=True)
 
     if compact:
-        display = pd.DataFrame({"名前": ordered[U.USER_NAME]}).reset_index(drop=True)
+        display = pd.DataFrame({"名前": ordered[users_schema.USER_NAME]}).reset_index(drop=True)
         column_config = _COMPACT_COLUMN_CONFIG
     else:
         display = pd.DataFrame(
             {
-                "名前": ordered[U.USER_NAME],
-                "表示名": ordered[U.DISPLAY_NAME],
-                "タイプ": ordered[U.USER_TYPE],
-                "ステータス": ordered[U.DISABLED].map(lambda d: "無効" if d else "有効"),
+                "名前": ordered[users_schema.USER_NAME],
+                "表示名": ordered[users_schema.DISPLAY_NAME],
+                "タイプ": ordered[users_schema.USER_TYPE],
+                "ステータス": ordered[users_schema.DISABLED].map(lambda d: "無効" if d else "有効"),
             }
         ).reset_index(drop=True)
         column_config = _COLUMN_CONFIG
@@ -60,5 +60,5 @@ def render(users: pd.DataFrame, *, compact: bool = False) -> str | None:
 
     cells = event.get("selection", {}).get("cells", [])
     if cells and cells[0][0] < len(ordered):
-        return str(ordered.iloc[cells[0][0]][U.USER_NAME])
+        return str(ordered.iloc[cells[0][0]][users_schema.USER_NAME])
     return None

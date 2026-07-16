@@ -15,7 +15,9 @@ from runtime import state
 if TYPE_CHECKING:
     from streamlit.elements.arrow import DataframeState
 
-BadgeColor = Literal["red", "orange", "yellow", "blue", "green", "violet", "gray", "grey", "primary"]
+BadgeColor = Literal[
+    "red", "orange", "yellow", "blue", "green", "violet", "gray", "grey", "primary"
+]
 
 ASSETS_TABLE_KEY = "user_assets_table"
 USER_TYPE_BADGE_COLORS: dict[str, BadgeColor] = {
@@ -84,8 +86,8 @@ def _selected_asset_row(event: DataframeState, display: pd.DataFrame) -> int | N
 
 def render(user_name: str, users: pd.DataFrame, visibility: pd.DataFrame) -> None:
     """ユーザーの詳細ペインを表示する。"""
-    U = schema.Users
-    match = users[users[U.USER_NAME] == user_name]
+    users_schema = schema.Users
+    match = users[users[users_schema.USER_NAME] == user_name]
     if match.empty:
         st.error("選択されたユーザーが見つかりませんでした。")
         return
@@ -93,7 +95,7 @@ def render(user_name: str, users: pd.DataFrame, visibility: pd.DataFrame) -> Non
 
     title_col, close_col = st.columns([1, 0.12], vertical_alignment="center")
     with title_col:
-        st.subheader(user[U.USER_NAME], anchor=False)
+        st.subheader(user[users_schema.USER_NAME], anchor=False)
     with close_col:
         st.button(
             "",
@@ -104,12 +106,12 @@ def render(user_name: str, users: pd.DataFrame, visibility: pd.DataFrame) -> Non
             type="primary",
         )
 
-    display_name = user[U.DISPLAY_NAME]
+    display_name = user[users_schema.DISPLAY_NAME]
     if pd.notna(display_name) and str(display_name) != "":
         st.markdown(f"**{display_name}**")
 
-    user_type = _display_user_type(user[U.USER_TYPE])
-    disabled = bool(user[U.DISABLED])
+    user_type = _display_user_type(user[users_schema.USER_TYPE])
+    disabled = bool(user[users_schema.DISABLED])
     col1, col2 = st.columns(2)
     with col1:
         st.caption("タイプ")
@@ -118,23 +120,29 @@ def render(user_name: str, users: pd.DataFrame, visibility: pd.DataFrame) -> Non
         st.caption("ステータス")
         st.badge("無効" if disabled else "有効", color="red" if disabled else "green")
 
-    V = schema.AssetVisibility
-    vis = visibility[visibility[V.USER_NAME] == user_name]
+    visibility_schema = schema.AssetVisibility
+    vis = visibility[visibility[visibility_schema.USER_NAME] == user_name]
     st.markdown("**閲覧可能なデータ資産**")
     if vis.empty:
         st.caption("閲覧可能なデータ資産がありません。")
         return
 
     vis_display_source = vis.sort_values(
-        [V.DATABASE_NAME, V.SCHEMA_NAME, V.ASSET_NAME]
+        [
+            visibility_schema.DATABASE_NAME,
+            visibility_schema.SCHEMA_NAME,
+            visibility_schema.ASSET_NAME,
+        ]
     ).reset_index(drop=True)
     display = pd.DataFrame(
         {
-            "データベース": vis_display_source[V.DATABASE_NAME],
-            "スキーマ": vis_display_source[V.SCHEMA_NAME],
-            "名前": vis_display_source[V.ASSET_NAME],
-            "ユーザー付与ロール": vis_display_source[V.USER_ROLES].map(_fmt_roles),
-            "データ資産付与ロール": vis_display_source[V.ASSET_ROLES].map(_fmt_roles),
+            "データベース": vis_display_source[visibility_schema.DATABASE_NAME],
+            "スキーマ": vis_display_source[visibility_schema.SCHEMA_NAME],
+            "名前": vis_display_source[visibility_schema.ASSET_NAME],
+            "ユーザー付与ロール": vis_display_source[visibility_schema.USER_ROLES].map(_fmt_roles),
+            "データ資産付与ロール": vis_display_source[visibility_schema.ASSET_ROLES].map(
+                _fmt_roles
+            ),
         }
     ).reset_index(drop=True)
     action_slot = st.container()
@@ -159,7 +167,7 @@ def render(user_name: str, users: pd.DataFrame, visibility: pd.DataFrame) -> Non
     selected_table_id = (
         None
         if selected_asset_row is None
-        else int(vis_display_source.iloc[selected_asset_row][V.TABLE_ID])
+        else int(vis_display_source.iloc[selected_asset_row][visibility_schema.TABLE_ID])
     )
     with action_slot:
         open_col, graph_col = st.columns(2)

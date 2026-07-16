@@ -56,16 +56,16 @@ def _selected_user_row(event: DataframeState, display: pd.DataFrame) -> int | No
 
 def render(asset: pd.Series, visibility: pd.DataFrame) -> None:
     """ユーザー tab を表示する。"""
-    A = schema.Assets
-    V = schema.AssetVisibility
-    table_id = int(asset[A.TABLE_ID])
-    vis = visibility[visibility[V.TABLE_ID] == table_id]
+    assets_schema = schema.Assets
+    visibility_schema = schema.AssetVisibility
+    table_id = int(asset[assets_schema.TABLE_ID])
+    vis = visibility[visibility[visibility_schema.TABLE_ID] == table_id]
     if settings.IS_VISIBLE_ONLY_SELF_USER:
         current_user_name = user_context.current_user_name()
         if current_user_name is None:
             st.warning(CURRENT_USER_UNAVAILABLE_MESSAGE)
             return
-        vis = vis[vis[V.USER_NAME] == current_user_name]
+        vis = vis[vis[visibility_schema.USER_NAME] == current_user_name]
 
     if vis.empty:
         if settings.IS_VISIBLE_ONLY_SELF_USER:
@@ -74,12 +74,12 @@ def render(asset: pd.Series, visibility: pd.DataFrame) -> None:
             st.caption("閲覧可能なユーザーがいません")
         return
 
-    vis = vis.sort_values(V.USER_NAME).reset_index(drop=True)
+    vis = vis.sort_values(visibility_schema.USER_NAME).reset_index(drop=True)
     display = pd.DataFrame(
         {
-            "ユーザー": vis[V.USER_NAME],
-            "ユーザー付与ロール": vis[V.USER_ROLES].map(_fmt_roles),
-            "データ資産付与ロール": vis[V.ASSET_ROLES].map(_fmt_roles),
+            "ユーザー": vis[visibility_schema.USER_NAME],
+            "ユーザー付与ロール": vis[visibility_schema.USER_ROLES].map(_fmt_roles),
+            "データ資産付与ロール": vis[visibility_schema.ASSET_ROLES].map(_fmt_roles),
         }
     ).reset_index(drop=True)
     action_slot = st.container()
@@ -104,9 +104,9 @@ def render(asset: pd.Series, visibility: pd.DataFrame) -> None:
     )
     asset_fqn = ".".join(
         [
-            str(asset[A.DATABASE_NAME]),
-            str(asset[A.SCHEMA_NAME]),
-            str(asset[A.ASSET_NAME]),
+            str(asset[assets_schema.DATABASE_NAME]),
+            str(asset[assets_schema.SCHEMA_NAME]),
+            str(asset[assets_schema.ASSET_NAME]),
         ]
     )
     with action_slot:

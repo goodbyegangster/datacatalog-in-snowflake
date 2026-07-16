@@ -5,14 +5,14 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 import pandas as pd
-import streamlit as st
-
 from catalog import schema
 from components.assets import results
 from logic import search
 from logic.search import AssetSearchCriteria, FreewordQuery, TagSelection
 from runtime import state
 from settings import SELECTABLE_TAG_KEYS
+
+import streamlit as st
 
 if TYPE_CHECKING:
     from settings import SelectableTagKey
@@ -44,27 +44,27 @@ def _defaults() -> dict[str, object]:
 
 def _tag_allowed_values(tags: pd.DataFrame, tag_key: SelectableTagKey) -> list[str]:
     """TAGS マスターから、指定タグの allowed_values を取得する。"""
-    T = schema.Tags
+    tags_schema = schema.Tags
     mask = (
-        (tags[T.TAG_DATABASE] == tag_key["DATABASE_NAME"])
-        & (tags[T.TAG_SCHEMA] == tag_key["SCHEMA_NAME"])
-        & (tags[T.TAG_NAME] == tag_key["TAG_NAME"])
+        (tags[tags_schema.TAG_DATABASE] == tag_key["DATABASE_NAME"])
+        & (tags[tags_schema.TAG_SCHEMA] == tag_key["SCHEMA_NAME"])
+        & (tags[tags_schema.TAG_NAME] == tag_key["TAG_NAME"])
     )
-    values = tags.loc[mask, str(T.TAG_VALUE)].dropna().astype(str).tolist()
+    values = tags.loc[mask, str(tags_schema.TAG_VALUE)].dropna().astype(str).tolist()
     return sorted(values)
 
 
 def _tag_comment(tags: pd.DataFrame, tag_key: SelectableTagKey) -> str | None:
     """TAGS マスターから、指定タグのコメントを取得する。"""
-    T = schema.Tags
+    tags_schema = schema.Tags
     mask = (
-        (tags[T.TAG_DATABASE] == tag_key["DATABASE_NAME"])
-        & (tags[T.TAG_SCHEMA] == tag_key["SCHEMA_NAME"])
-        & (tags[T.TAG_NAME] == tag_key["TAG_NAME"])
+        (tags[tags_schema.TAG_DATABASE] == tag_key["DATABASE_NAME"])
+        & (tags[tags_schema.TAG_SCHEMA] == tag_key["SCHEMA_NAME"])
+        & (tags[tags_schema.TAG_NAME] == tag_key["TAG_NAME"])
     )
     comments = [
         str(value).strip()
-        for value in tags.loc[mask, str(T.TAG_COMMENT)].dropna().unique().tolist()
+        for value in tags.loc[mask, str(tags_schema.TAG_COMMENT)].dropna().unique().tolist()
         if str(value).strip()
     ]
     if not comments:

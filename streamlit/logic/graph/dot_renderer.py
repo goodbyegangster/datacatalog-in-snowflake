@@ -6,9 +6,8 @@ from dataclasses import dataclass
 from functools import lru_cache
 
 import pandas as pd
-from jinja2 import Environment, PackageLoader, select_autoescape
-
 from catalog import schema
+from jinja2 import Environment, PackageLoader, select_autoescape
 
 
 @dataclass(frozen=True)
@@ -72,15 +71,17 @@ def _user_asset_edges(
     graph_edges: set[tuple[str, str]],
     edges: pd.DataFrame,
 ) -> list[DotEdge]:
-    E = schema.AccessEdges
+    edges_schema = schema.AccessEdges
     edge_labels = {
-        (str(row[E.SOURCE_NODE]), str(row[E.TARGET_NODE])): str(row[E.PRIVILEGE] or "")
+        (str(row[edges_schema.SOURCE_NODE]), str(row[edges_schema.TARGET_NODE])): str(
+            row[edges_schema.PRIVILEGE] or ""
+        )
         for _, row in edges.iterrows()
     }
     dot_edges: list[DotEdge] = []
     for source, target in sorted(graph_edges):
         label = edge_labels.get((source, target), "")
-        attrs = f'label={_dot_quote(label)}' if label else ""
+        attrs = f"label={_dot_quote(label)}" if label else ""
         dot_edges.append(DotEdge(source=source, target=target, attrs=attrs))
     return dot_edges
 

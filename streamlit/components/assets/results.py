@@ -6,11 +6,11 @@ from collections.abc import Mapping
 from numbers import Integral
 
 import pandas as pd
-import streamlit as st
-
 from catalog import schema
 from logic.search import FreewordMatchReason
 from runtime import state
+
+import streamlit as st
 
 RESULTS_KEY = "asset_table"
 
@@ -52,26 +52,26 @@ def render(
     freeword_reasons: Mapping[int, FreewordMatchReason] | None = None,
 ) -> int | None:
     """データ資産一覧を表示し、選択中の TABLE_ID を返す。"""
-    A = schema.Assets
-    ordered = assets.sort_values([A.DATABASE_NAME, A.SCHEMA_NAME, A.ASSET_NAME]).reset_index(
-        drop=True
-    )
+    assets_schema = schema.Assets
+    ordered = assets.sort_values(
+        [assets_schema.DATABASE_NAME, assets_schema.SCHEMA_NAME, assets_schema.ASSET_NAME]
+    ).reset_index(drop=True)
     reasons = freeword_reasons or {}
 
     if compact:
-        display = pd.DataFrame({"名前": ordered[A.ASSET_NAME]}).reset_index(drop=True)
+        display = pd.DataFrame({"名前": ordered[assets_schema.ASSET_NAME]}).reset_index(drop=True)
         column_config = _COMPACT_COLUMN_CONFIG
     else:
         display = pd.DataFrame(
             {
-                "データベース": ordered[A.DATABASE_NAME],
-                "スキーマ": ordered[A.SCHEMA_NAME],
-                "名前": ordered[A.ASSET_NAME],
-                "オブジェクト種別": ordered[A.ASSET_TYPE],
-                "説明": ordered[A.DESCRIPTION],
-                "フリーワード一致": ordered[A.TABLE_ID].astype(int).map(
-                    lambda table_id: _freeword_reason_text(table_id, reasons)
-                ),
+                "データベース": ordered[assets_schema.DATABASE_NAME],
+                "スキーマ": ordered[assets_schema.SCHEMA_NAME],
+                "名前": ordered[assets_schema.ASSET_NAME],
+                "オブジェクト種別": ordered[assets_schema.ASSET_TYPE],
+                "説明": ordered[assets_schema.DESCRIPTION],
+                "フリーワード一致": ordered[assets_schema.TABLE_ID]
+                .astype(int)
+                .map(lambda table_id: _freeword_reason_text(table_id, reasons)),
             }
         ).reset_index(drop=True)
         column_config = _COLUMN_CONFIG
@@ -90,5 +90,5 @@ def render(
 
     cells = event.get("selection", {}).get("cells", [])
     if cells and cells[0][0] < len(ordered):
-        return int(ordered.iloc[cells[0][0]][A.TABLE_ID])
+        return int(ordered.iloc[cells[0][0]][assets_schema.TABLE_ID])
     return None

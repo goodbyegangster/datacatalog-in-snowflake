@@ -6,6 +6,7 @@ from runtime import state, widget_state
 
 
 def test_search_widget_keys_include_asset_user_and_tag_keys() -> None:
+    """検索ウィジェットの維持対象 key を返す。"""
     keys = widget_state.search_widget_keys(
         [
             {

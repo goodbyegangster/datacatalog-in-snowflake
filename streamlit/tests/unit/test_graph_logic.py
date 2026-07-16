@@ -9,19 +9,21 @@ from logic import graph
 
 
 def edge(source: str, target: str, relation_type: str, privilege: str | None = None) -> dict:
-    E = schema.AccessEdges
+    """ACCESS_EDGES の 1 行を作る。"""
+    edges_schema = schema.AccessEdges
     return {
-        E.SOURCE_NODE: source,
-        E.SOURCE_TYPE: "USER" if relation_type == "USER_TO_ROLE" else "ROLE",
-        E.TARGET_NODE: target,
-        E.TARGET_TYPE: "TABLE" if relation_type == "ROLE_TO_ASSET" else "ROLE",
-        E.RELATION_TYPE: relation_type,
-        E.PRIVILEGE: privilege,
-        E.GRANTED_ON: "TABLE" if relation_type == "ROLE_TO_ASSET" else "ROLE",
+        edges_schema.SOURCE_NODE: source,
+        edges_schema.SOURCE_TYPE: "USER" if relation_type == "USER_TO_ROLE" else "ROLE",
+        edges_schema.TARGET_NODE: target,
+        edges_schema.TARGET_TYPE: "TABLE" if relation_type == "ROLE_TO_ASSET" else "ROLE",
+        edges_schema.RELATION_TYPE: relation_type,
+        edges_schema.PRIVILEGE: privilege,
+        edges_schema.GRANTED_ON: "TABLE" if relation_type == "ROLE_TO_ASSET" else "ROLE",
     }
 
 
 def test_build_user_asset_graph_returns_dot_for_reachable_asset() -> None:
+    """到達可能な資産の経路と DOT を返す。"""
     edges = pd.DataFrame(
         [
             edge("ALICE", "ANALYST", "USER_TO_ROLE"),
@@ -43,6 +45,7 @@ def test_build_user_asset_graph_returns_dot_for_reachable_asset() -> None:
 
 
 def test_legend_dot_returns_node_legend() -> None:
+    """凡例 DOT にユーザー、ロール、資産ノードを含める。"""
     result = graph.legend_dot()
 
     assert 'label="凡例"' in result
@@ -59,6 +62,7 @@ def test_legend_dot_returns_node_legend() -> None:
 
 
 def test_find_user_asset_paths_keeps_multiple_diamond_paths() -> None:
+    """ダイヤモンド型の複数経路を維持する。"""
     edges = pd.DataFrame(
         [
             edge("ALICE", "ROLE_A", "USER_TO_ROLE"),
@@ -83,6 +87,7 @@ def test_find_user_asset_paths_keeps_multiple_diamond_paths() -> None:
 
 
 def test_build_user_asset_graph_returns_empty_paths_when_unreachable() -> None:
+    """到達不能な場合は空の経路を返す。"""
     edges = pd.DataFrame([edge("BOB", "ANALYST", "USER_TO_ROLE")])
 
     result = graph.build_user_asset_graph(
@@ -97,6 +102,7 @@ def test_build_user_asset_graph_returns_empty_paths_when_unreachable() -> None:
 
 
 def test_build_user_asset_graph_marks_path_limit_exceeded() -> None:
+    """経路数上限を超えたことを返す。"""
     edges = pd.DataFrame(
         [
             edge("ALICE", "ROLE_A", "USER_TO_ROLE"),
@@ -106,12 +112,12 @@ def test_build_user_asset_graph_marks_path_limit_exceeded() -> None:
         ]
     )
 
-    paths, path_limit_exceeded = graph._find_user_asset_paths(
+    result = graph.build_user_asset_graph(
         edges,
         user_name="ALICE",
         asset_fqn="DB.SCHEMA.ORDERS",
         max_paths=1,
     )
 
-    assert paths == [["ALICE", "ROLE_A", "DB.SCHEMA.ORDERS"]]
-    assert path_limit_exceeded is True
+    assert result.paths == [["ALICE", "ROLE_A", "DB.SCHEMA.ORDERS"]]
+    assert result.path_limit_exceeded is True

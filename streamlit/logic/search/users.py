@@ -23,10 +23,10 @@ def filter_users(
     users: pd.DataFrame, freeword: UserFreewordQuery, only_user_name: str | None = None
 ) -> pd.DataFrame:
     """ユーザーを絞り込む。``only_user_name`` 指定時は自ユーザーのみ。"""
-    U = schema.Users
+    users_schema = schema.Users
     df = users
     if only_user_name is not None:
-        df = df[df[U.USER_NAME] == only_user_name]
+        df = df[df[users_schema.USER_NAME] == only_user_name]
 
     op, tokens = parse_freeword(freeword.text)
     if not tokens:
@@ -34,11 +34,18 @@ def filter_users(
 
     def token_mask(token: str) -> pd.Series:
         needle = token.lower()
-        mask = pd.Series(False, index=df.index)
+        mask = pd.Series(data=False, index=df.index)
         if freeword.target_user_name:
-            mask |= df[U.USER_NAME].fillna("").str.lower().str.contains(needle, regex=False)
+            mask |= (
+                df[users_schema.USER_NAME].fillna("").str.lower().str.contains(needle, regex=False)
+            )
         if freeword.target_display_name:
-            mask |= df[U.DISPLAY_NAME].fillna("").str.lower().str.contains(needle, regex=False)
+            mask |= (
+                df[users_schema.DISPLAY_NAME]
+                .fillna("")
+                .str.lower()
+                .str.contains(needle, regex=False)
+            )
         return mask
 
     masks = [token_mask(t) for t in tokens]

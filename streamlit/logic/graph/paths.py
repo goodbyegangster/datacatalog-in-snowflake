@@ -50,12 +50,12 @@ def _find_user_asset_paths(
     max_paths: int = 500,
 ) -> tuple[list[list[str]], bool]:
     """ACCESS_EDGES から user -> asset の全単純経路を探索し、上限超過も返す。"""
-    E = schema.AccessEdges
-    usable = edges[edges[E.RELATION_TYPE].isin(GRAPH_RELATION_TYPES)]
+    edges_schema = schema.AccessEdges
+    usable = edges[edges[edges_schema.RELATION_TYPE].isin(GRAPH_RELATION_TYPES)]
     adjacency: dict[str, list[str]] = defaultdict(list)
     for row in usable.itertuples(index=False):
-        source = str(getattr(row, E.SOURCE_NODE))
-        target = str(getattr(row, E.TARGET_NODE))
+        source = str(getattr(row, edges_schema.SOURCE_NODE))
+        target = str(getattr(row, edges_schema.TARGET_NODE))
         adjacency[source].append(target)
 
     for targets in adjacency.values():
@@ -91,10 +91,16 @@ def build_user_asset_graph(
     *,
     user_name: str,
     asset_fqn: str,
+    max_depth: int = 50,
+    max_paths: int = 500,
 ) -> UserAssetGraph:
     """user -> asset の経路を DOT graph として返す。"""
     paths, path_limit_exceeded = _find_user_asset_paths(
-        edges, user_name=user_name, asset_fqn=asset_fqn
+        edges,
+        user_name=user_name,
+        asset_fqn=asset_fqn,
+        max_depth=max_depth,
+        max_paths=max_paths,
     )
     return UserAssetGraph(
         paths=paths,
