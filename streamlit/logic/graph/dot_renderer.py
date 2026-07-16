@@ -6,8 +6,9 @@ from dataclasses import dataclass
 from functools import lru_cache
 
 import pandas as pd
-from catalog import schema
 from jinja2 import Environment, PackageLoader, select_autoescape
+
+from catalog import schema
 
 
 @dataclass(frozen=True)

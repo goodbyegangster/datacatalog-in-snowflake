@@ -6,11 +6,11 @@ from collections.abc import Mapping
 from numbers import Integral
 
 import pandas as pd
+import streamlit as st
+
 from catalog import schema
 from logic.search import FreewordMatchReason
 from runtime import state
-
-import streamlit as st
 
 RESULTS_KEY = "asset_table"
 

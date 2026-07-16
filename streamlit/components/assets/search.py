@@ -5,14 +5,14 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 import pandas as pd
+import streamlit as st
+
 from catalog import schema
 from components.assets import results
 from logic import search
 from logic.search import AssetSearchCriteria, FreewordQuery, TagSelection
 from runtime import state
 from settings import SELECTABLE_TAG_KEYS
-
-import streamlit as st
 
 if TYPE_CHECKING:
     from settings import SelectableTagKey
