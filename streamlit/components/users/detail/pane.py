@@ -10,7 +10,7 @@ import streamlit as st
 
 from catalog import schema
 from components.users import results
-from runtime import state
+from runtime import navigation, state
 
 if TYPE_CHECKING:
     from streamlit.elements.arrow import DataframeState
@@ -55,20 +55,6 @@ def _close() -> None:
     """詳細ペインを閉じる。行選択ウィジェットの選択状態も解除する。"""
     results.clear_selection()
     st.session_state.pop(state.NAV_TO_USER_NAME, None)
-
-
-def _set_asset_page_navigation(table_id: int) -> None:
-    """データ資産ページへ遷移するための状態を積む。"""
-    st.session_state[state.NAV_TO_TABLE_ID] = int(table_id)
-    st.session_state.pop(state.ASSET_SELECTED_TABLE_ID, None)
-
-
-def _set_graph_page_navigation(*, user_name: str, table_id: int, asset_fqn: str) -> None:
-    """ロール継承グラフページへ遷移するための状態を積む。"""
-    st.session_state[state.NAV_GRAPH_USER_NAME] = user_name
-    st.session_state[state.NAV_GRAPH_TABLE_ID] = int(table_id)
-    st.session_state[state.NAV_GRAPH_ASSET_FQN] = asset_fqn
-    st.session_state[state.NAV_GRAPH_RETURN_PAGE] = "users"
 
 
 def _selected_asset_row(event: DataframeState, display: pd.DataFrame) -> int | None:
@@ -179,8 +165,7 @@ def render(user_name: str, users: pd.DataFrame, visibility: pd.DataFrame) -> Non
                 key=f"user_asset_open_button_{user_name}",
                 width="stretch",
             ):
-                _set_asset_page_navigation(selected_table_id or 0)
-                st.switch_page("views/assets.py")
+                navigation.open_asset_page(selected_table_id or 0)
         with graph_col:
             if st.button(
                 "ロール継承グラフを表示",
@@ -199,10 +184,10 @@ def render(user_name: str, users: pd.DataFrame, visibility: pd.DataFrame) -> Non
                         str(selected_asset["名前"]),
                     ]
                 )
-                _set_graph_page_navigation(
+                navigation.open_graph_page(
                     user_name=user_name,
                     table_id=selected_table_id or 0,
                     asset_fqn=asset_fqn,
+                    return_page="users",
                 )
-                st.switch_page("views/graph.py")
         st.caption(f"データ資産: {len(display)} 件")

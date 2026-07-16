@@ -13,7 +13,7 @@ Streamlit in Snowflake アプリのリファクタリング候補を管理する
 
 ## 優先度 高
 
-- [ ] ページ間遷移 state 操作を `runtime/navigation.py` へ集約する
+- [x] ページ間遷移 state 操作を `runtime/navigation.py` へ集約する
   - 対象:
     - `streamlit/components/assets/detail/tab_users.py`
     - `streamlit/components/users/detail/pane.py`

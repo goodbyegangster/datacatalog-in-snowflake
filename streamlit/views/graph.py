@@ -12,79 +12,37 @@ import streamlit as st
 import styles
 from catalog import provider as catalog
 from logic import graph
-from runtime import state
-
-RETURN_PAGE_PATHS = {
-    "assets": "views/assets.py",
-    "users": "views/users.py",
-}
-
-
-def _graph_target() -> tuple[str | None, int | None, str | None]:
-    """session_state から graph 表示対象を取得する。"""
-    user_name = st.session_state.get(state.NAV_GRAPH_USER_NAME)
-    table_id = st.session_state.get(state.NAV_GRAPH_TABLE_ID)
-    asset_fqn = st.session_state.get(state.NAV_GRAPH_ASSET_FQN)
-    try:
-        normalized_table_id = None if table_id is None else int(table_id)
-    except (TypeError, ValueError):
-        normalized_table_id = None
-    return (
-        None if user_name is None else str(user_name),
-        normalized_table_id,
-        None if asset_fqn is None else str(asset_fqn),
-    )
-
-
-def _return_page() -> str | None:
-    """session_state から graph 表示元ページを取得する。"""
-    value = st.session_state.get(state.NAV_GRAPH_RETURN_PAGE)
-    if value not in RETURN_PAGE_PATHS:
-        return None
-    return str(value)
-
-
-def _return_to_source(return_page: str, *, user_name: str, table_id: int) -> None:
-    """graph 表示元ページへ戻る。"""
-    if return_page == "assets":
-        st.session_state[state.ASSET_SELECTED_TABLE_ID] = table_id
-    elif return_page == "users":
-        st.session_state[state.USER_SELECTED_NAME] = user_name
-    st.switch_page(RETURN_PAGE_PATHS[return_page])
+from runtime import navigation
 
 
 def _render_navigation_buttons(user_name: str, table_id: int) -> None:
     """対象の詳細ページへ戻るためのボタンを表示する。"""
-    return_page = _return_page()
+    return_page = navigation.resolve_graph_return_page()
     left_col, right_col = st.columns(2)
     if return_page == "assets":
         with left_col:
             if st.button("データ資産に戻る", icon=":material/arrow_back:", width="stretch"):
-                _return_to_source("assets", user_name=user_name, table_id=table_id)
+                navigation.return_from_graph("assets", user_name=user_name, table_id=table_id)
         with right_col:
             if st.button("ユーザーを開く", icon=":material/person_search:", width="stretch"):
-                st.session_state[state.NAV_TO_USER_NAME] = user_name
-                st.switch_page("views/users.py")
+                navigation.open_user_page(user_name)
         return
 
     if return_page == "users":
         with left_col:
             if st.button("ユーザーに戻る", icon=":material/arrow_back:", width="stretch"):
-                _return_to_source("users", user_name=user_name, table_id=table_id)
+                navigation.return_from_graph("users", user_name=user_name, table_id=table_id)
         with right_col:
             if st.button("データ資産を開く", icon=":material/table_view:", width="stretch"):
-                st.session_state[state.NAV_TO_TABLE_ID] = table_id
-                st.switch_page("views/assets.py")
+                navigation.open_asset_page(table_id)
         return
 
     with left_col:
         if st.button("ユーザーを開く", icon=":material/person_search:", width="stretch"):
-            st.session_state[state.NAV_TO_USER_NAME] = user_name
-            st.switch_page("views/users.py")
+            navigation.open_user_page(user_name)
     with right_col:
         if st.button("データ資産を開く", icon=":material/table_view:", width="stretch"):
-            st.session_state[state.NAV_TO_TABLE_ID] = table_id
-            st.switch_page("views/assets.py")
+            navigation.open_asset_page(table_id)
 
 
 def main() -> None:
@@ -93,13 +51,13 @@ def main() -> None:
     styles.render_base_css()
     styles.render_page_css("hide_sidebar.css")
 
-    user_name, table_id, asset_fqn = _graph_target()
-    if user_name is None or table_id is None or asset_fqn is None:
+    target = navigation.resolve_graph_target()
+    if target is None:
         st.info("ロール継承グラフの表示対象が選択されていません。")
         return
 
-    _render_navigation_buttons(user_name, table_id)
-    st.markdown(f"**{user_name}** から **{asset_fqn}** までのロール継承")
+    _render_navigation_buttons(target.user_name, target.table_id)
+    st.markdown(f"**{target.user_name}** から **{target.asset_fqn}** までのロール継承")
 
     try:
         edges = catalog.load_access_edges()
@@ -111,7 +69,11 @@ def main() -> None:
             st.exception(exc)
         return
 
-    result = graph.build_user_asset_graph(edges, user_name=user_name, asset_fqn=asset_fqn)
+    result = graph.build_user_asset_graph(
+        edges,
+        user_name=target.user_name,
+        asset_fqn=target.asset_fqn,
+    )
     if result.path_limit_exceeded:
         st.warning("経路が多すぎるため表示できません。")
         return

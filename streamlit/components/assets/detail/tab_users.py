@@ -9,7 +9,7 @@ import streamlit as st
 
 import settings
 from catalog import schema
-from runtime import state, user_context
+from runtime import navigation, user_context
 
 if TYPE_CHECKING:
     from streamlit.elements.arrow import DataframeState
@@ -25,20 +25,6 @@ def _fmt_roles(roles: object) -> str:
     if not isinstance(roles, list) or not roles:
         return ""
     return ", ".join(sorted(str(role) for role in roles))
-
-
-def _set_user_page_navigation(user_name: str) -> None:
-    """ユーザーページへ遷移するための状態を積む。"""
-    st.session_state[state.NAV_TO_USER_NAME] = user_name
-    st.session_state.pop(state.USER_SELECTED_NAME, None)
-
-
-def _set_graph_page_navigation(*, user_name: str, table_id: int, asset_fqn: str) -> None:
-    """ロール継承グラフページへ遷移するための状態を積む。"""
-    st.session_state[state.NAV_GRAPH_USER_NAME] = user_name
-    st.session_state[state.NAV_GRAPH_TABLE_ID] = int(table_id)
-    st.session_state[state.NAV_GRAPH_ASSET_FQN] = asset_fqn
-    st.session_state[state.NAV_GRAPH_RETURN_PAGE] = "assets"
 
 
 def _selected_user_row(event: DataframeState, display: pd.DataFrame) -> int | None:
@@ -119,8 +105,7 @@ def render(asset: pd.Series, visibility: pd.DataFrame) -> None:
                 key=f"asset_user_open_button_{table_id}",
                 width="stretch",
             ):
-                _set_user_page_navigation(selected_user_name or "")
-                st.switch_page("views/users.py")
+                navigation.open_user_page(selected_user_name or "")
         with graph_col:
             if st.button(
                 "ロール継承グラフを表示",
@@ -129,10 +114,10 @@ def render(asset: pd.Series, visibility: pd.DataFrame) -> None:
                 key=f"asset_user_graph_button_{table_id}",
                 width="stretch",
             ):
-                _set_graph_page_navigation(
+                navigation.open_graph_page(
                     user_name=selected_user_name or "",
                     table_id=table_id,
                     asset_fqn=asset_fqn,
+                    return_page="assets",
                 )
-                st.switch_page("views/graph.py")
         st.caption(f"ユーザー: {len(display)} 件")
