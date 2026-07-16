@@ -6,6 +6,7 @@ import pandas as pd
 import pytest
 from streamlit.testing.v1 import AppTest
 
+import settings
 from catalog import schema
 from catalog.providers import fake as catalog_fake
 from runtime import state
@@ -172,7 +173,7 @@ def test_assets_page_resets_schema_when_database_changes(assets_app: AppTest) ->
     """データベース変更時にスキーマ選択をリセットする。"""
     app = assets_app.run()
 
-    multiselect_by_label(app, "データベース").set_value([catalog_data.DB]).run()
+    multiselect_by_label(app, "データベース").set_value([catalog_data.database_name()]).run()
     assert multiselect_by_label(app, "スキーマ").options == ["DATA_AD", "DATA_SALES"]
 
     multiselect_by_label(app, "スキーマ").set_value(["DATA_SALES"]).run()
@@ -184,6 +185,23 @@ def test_assets_page_resets_schema_when_database_changes(assets_app: AppTest) ->
     assert multiselect_by_label(app, "データベース").value == []
     assert multiselect_by_label(app, "スキーマ").value == []
     assert multiselect_by_label(app, "スキーマ").options == []
+
+
+def test_assets_page_shows_fake_tag_comments_with_settings_database(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """fake mode でも settings のタグキーに一致するコメントを表示する。"""
+    monkeypatch.setenv("CATALOG_DATA_MODE", "fake")
+    fake_db = "LOCAL_FAKE_DB"
+    monkeypatch.setitem(settings.CATALOG_LOCATION, "DATABASE_NAME", fake_db)
+    for tag_key in settings.SELECTABLE_TAG_KEYS:
+        monkeypatch.setitem(tag_key, "DATABASE_NAME", fake_db)
+
+    app = AppTest.from_file(ASSETS_PAGE).run()
+
+    assert_no_exception(app)
+    assert multiselect_by_label(app, "DATA_DOMAIN").options == ["MARKETING", "SALES"]
+    assert "業務ドメイン" in [caption.value for caption in app.caption]
 
 
 def test_assets_page_clear_button_resets_search_widgets(assets_app: AppTest) -> None:
@@ -255,7 +273,7 @@ def test_assets_page_shows_large_results_without_pagination(
     monkeypatch.setattr(catalog_fake, "load_assets", lambda: many_assets(LARGE_RESULT_COUNT))
     app = AppTest.from_file(ASSETS_PAGE).run()
 
-    multiselect_by_label(app, "データベース").set_value([catalog_data.DB]).run()
+    multiselect_by_label(app, "データベース").set_value([catalog_data.database_name()]).run()
 
     assert_no_exception(app)
     assert len(app.number_input) == 0

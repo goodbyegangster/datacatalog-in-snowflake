@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import importlib
 import sys
 import types
 from pathlib import Path
@@ -10,7 +11,8 @@ if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
 
-if "settings" not in sys.modules:
+def _install_fallback_settings() -> None:
+    """settings.py が未生成の環境向けに最小の settings module を用意する。"""
     settings = cast("Any", types.ModuleType("settings"))
     settings.CATALOG_LOCATION = {
         "DATABASE_NAME": "hogehoge",
@@ -28,3 +30,11 @@ if "settings" not in sys.modules:
     ]
     settings.IS_VISIBLE_ONLY_SELF_USER = False
     sys.modules["settings"] = settings
+
+
+try:
+    importlib.import_module("settings")
+except ModuleNotFoundError as exc:
+    if exc.name != "settings":
+        raise
+    _install_fallback_settings()

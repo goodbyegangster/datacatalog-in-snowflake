@@ -10,6 +10,12 @@ from streamlit.testing.v1 import AppTest
 from catalog.providers import fake as catalog_fake
 from runtime import state
 from tests.app.conftest import GRAPH_PAGE, assert_no_exception
+from tests.fixtures import catalog_data
+
+
+def orders_fqn() -> str:
+    """Fake catalog の ORDERS FQN を返す。"""
+    return catalog_data.asset_fqn("DATA_SALES", "ORDERS")
 
 
 def test_graph_page_requires_selected_target(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -28,14 +34,14 @@ def test_graph_page_shows_graph_target_and_paths(monkeypatch: pytest.MonkeyPatch
     app = AppTest.from_file(GRAPH_PAGE)
     app.session_state[state.NAV_GRAPH_USER_NAME] = "ALICE"
     app.session_state[state.NAV_GRAPH_TABLE_ID] = 1
-    app.session_state[state.NAV_GRAPH_ASSET_FQN] = "hogehoge.DATA_SALES.ORDERS"
+    app.session_state[state.NAV_GRAPH_ASSET_FQN] = orders_fqn()
     app.session_state[state.NAV_GRAPH_RETURN_PAGE] = "assets"
 
     app.run()
 
     assert_no_exception(app)
     assert [title.value for title in app.title] == ["🌐 ロール継承グラフ"]
-    assert any("**ALICE** から **hogehoge.DATA_SALES.ORDERS**" in md.value for md in app.markdown)
+    assert any(f"**ALICE** から **{orders_fqn()}**" in md.value for md in app.markdown)
     assert [button.label for button in app.button] == ["データ資産に戻る", "ユーザーを開く"]
     assert [caption.value for caption in app.caption] == ["1 経路"]
     assert len(app.dataframe) == 0
@@ -49,7 +55,7 @@ def test_graph_page_shows_user_return_button_from_users(
     app = AppTest.from_file(GRAPH_PAGE)
     app.session_state[state.NAV_GRAPH_USER_NAME] = "ALICE"
     app.session_state[state.NAV_GRAPH_TABLE_ID] = 1
-    app.session_state[state.NAV_GRAPH_ASSET_FQN] = "hogehoge.DATA_SALES.ORDERS"
+    app.session_state[state.NAV_GRAPH_ASSET_FQN] = orders_fqn()
     app.session_state[state.NAV_GRAPH_RETURN_PAGE] = "users"
 
     app.run()
@@ -66,7 +72,7 @@ def test_graph_page_shows_open_buttons_without_return_page(
     app = AppTest.from_file(GRAPH_PAGE)
     app.session_state[state.NAV_GRAPH_USER_NAME] = "ALICE"
     app.session_state[state.NAV_GRAPH_TABLE_ID] = 1
-    app.session_state[state.NAV_GRAPH_ASSET_FQN] = "hogehoge.DATA_SALES.ORDERS"
+    app.session_state[state.NAV_GRAPH_ASSET_FQN] = orders_fqn()
 
     app.run()
 
@@ -85,7 +91,7 @@ def test_graph_page_shows_traceback_in_fake_mode(monkeypatch: pytest.MonkeyPatch
     app = AppTest.from_file(GRAPH_PAGE)
     app.session_state[state.NAV_GRAPH_USER_NAME] = "ALICE"
     app.session_state[state.NAV_GRAPH_TABLE_ID] = 1
-    app.session_state[state.NAV_GRAPH_ASSET_FQN] = "hogehoge.DATA_SALES.ORDERS"
+    app.session_state[state.NAV_GRAPH_ASSET_FQN] = orders_fqn()
 
     app.run()
 

@@ -4,15 +4,21 @@ from __future__ import annotations
 
 import pandas as pd
 
+import settings
 from catalog import schema
 
-DB = "hogehoge"
+DB = settings.CATALOG_LOCATION["DATABASE_NAME"]
 TAG_SCHEMA = "TAG"
+
+
+def _database_name() -> str:
+    """Fake catalog が参照するデータベース名を settings から返す。"""
+    return settings.CATALOG_LOCATION["DATABASE_NAME"]
 
 
 def _tag_ref(tag_name: str, tag_value: str) -> dict[str, str]:
     return {
-        "TAG_DATABASE": DB,
+        "TAG_DATABASE": _database_name(),
         "TAG_SCHEMA": TAG_SCHEMA,
         "TAG_NAME": tag_name,
         "TAG_VALUE": tag_value,
@@ -21,7 +27,7 @@ def _tag_ref(tag_name: str, tag_value: str) -> dict[str, str]:
 
 def _tag_row(tag_name: str, tag_value: str, tag_comment: str) -> dict[str, str]:
     return {
-        "TAG_DATABASE": DB,
+        "TAG_DATABASE": _database_name(),
         "TAG_SCHEMA": TAG_SCHEMA,
         "TAG_NAME": tag_name,
         "TAG_VALUE": tag_value,
@@ -32,11 +38,12 @@ def _tag_row(tag_name: str, tag_value: str, tag_comment: str) -> dict[str, str]:
 def load_assets() -> pd.DataFrame:
     """Fake のデータ資産カタログを返す。"""
     assets_schema = schema.Assets
+    db = _database_name()
     return pd.DataFrame(
         [
             {
                 assets_schema.TABLE_ID: 1,
-                assets_schema.DATABASE_NAME: DB,
+                assets_schema.DATABASE_NAME: db,
                 assets_schema.SCHEMA_NAME: "DATA_SALES",
                 assets_schema.ASSET_NAME: "ORDERS",
                 assets_schema.ASSET_TYPE: "BASE TABLE",
@@ -52,7 +59,7 @@ def load_assets() -> pd.DataFrame:
             },
             {
                 assets_schema.TABLE_ID: 2,
-                assets_schema.DATABASE_NAME: DB,
+                assets_schema.DATABASE_NAME: db,
                 assets_schema.SCHEMA_NAME: "DATA_AD",
                 assets_schema.ASSET_NAME: "CAMPAIGN_LEADS",
                 assets_schema.ASSET_TYPE: "VIEW",
@@ -68,7 +75,7 @@ def load_assets() -> pd.DataFrame:
             },
             {
                 assets_schema.TABLE_ID: 3,
-                assets_schema.DATABASE_NAME: DB,
+                assets_schema.DATABASE_NAME: db,
                 assets_schema.SCHEMA_NAME: "DATA_SALES",
                 assets_schema.ASSET_NAME: "CUSTOMERS",
                 assets_schema.ASSET_TYPE: "DYNAMIC TABLE",
@@ -89,11 +96,12 @@ def load_assets() -> pd.DataFrame:
 def load_columns() -> pd.DataFrame:
     """Fake のカラムカタログを返す。"""
     columns_schema = schema.Columns
+    db = _database_name()
     return pd.DataFrame(
         [
             {
                 columns_schema.TABLE_ID: 1,
-                columns_schema.DATABASE_NAME: DB,
+                columns_schema.DATABASE_NAME: db,
                 columns_schema.SCHEMA_NAME: "DATA_SALES",
                 columns_schema.TABLE_NAME: "ORDERS",
                 columns_schema.COLUMN_NAME: "ORDER_ID",
@@ -109,7 +117,7 @@ def load_columns() -> pd.DataFrame:
             },
             {
                 columns_schema.TABLE_ID: 1,
-                columns_schema.DATABASE_NAME: DB,
+                columns_schema.DATABASE_NAME: db,
                 columns_schema.SCHEMA_NAME: "DATA_SALES",
                 columns_schema.TABLE_NAME: "ORDERS",
                 columns_schema.COLUMN_NAME: "AMOUNT",
@@ -125,7 +133,7 @@ def load_columns() -> pd.DataFrame:
             },
             {
                 columns_schema.TABLE_ID: 2,
-                columns_schema.DATABASE_NAME: DB,
+                columns_schema.DATABASE_NAME: db,
                 columns_schema.SCHEMA_NAME: "DATA_AD",
                 columns_schema.TABLE_NAME: "CAMPAIGN_LEADS",
                 columns_schema.COLUMN_NAME: "EMAIL",
@@ -141,7 +149,7 @@ def load_columns() -> pd.DataFrame:
             },
             {
                 columns_schema.TABLE_ID: 3,
-                columns_schema.DATABASE_NAME: DB,
+                columns_schema.DATABASE_NAME: db,
                 columns_schema.SCHEMA_NAME: "DATA_SALES",
                 columns_schema.TABLE_NAME: "CUSTOMERS",
                 columns_schema.COLUMN_NAME: "CUSTOMER_EMAIL",
@@ -202,12 +210,13 @@ def load_tags() -> pd.DataFrame:
 def load_asset_visibility() -> pd.DataFrame:
     """Fake の資産閲覧可否を返す。"""
     visibility_schema = schema.AssetVisibility
+    db = _database_name()
     return pd.DataFrame(
         [
             {
                 visibility_schema.USER_NAME: "ALICE",
                 visibility_schema.TABLE_ID: 1,
-                visibility_schema.DATABASE_NAME: DB,
+                visibility_schema.DATABASE_NAME: db,
                 visibility_schema.SCHEMA_NAME: "DATA_SALES",
                 visibility_schema.ASSET_NAME: "ORDERS",
                 visibility_schema.USER_ROLES: ["ANALYST"],
@@ -216,7 +225,7 @@ def load_asset_visibility() -> pd.DataFrame:
             {
                 visibility_schema.USER_NAME: "BOB",
                 visibility_schema.TABLE_ID: 2,
-                visibility_schema.DATABASE_NAME: DB,
+                visibility_schema.DATABASE_NAME: db,
                 visibility_schema.SCHEMA_NAME: "DATA_AD",
                 visibility_schema.ASSET_NAME: "CAMPAIGN_LEADS",
                 visibility_schema.USER_ROLES: ["MARKETER"],
@@ -229,6 +238,7 @@ def load_asset_visibility() -> pd.DataFrame:
 def load_access_edges() -> pd.DataFrame:
     """Fake のアクセス経路エッジを返す。"""
     edges_schema = schema.AccessEdges
+    db = _database_name()
     return pd.DataFrame(
         [
             {
@@ -252,7 +262,7 @@ def load_access_edges() -> pd.DataFrame:
             {
                 edges_schema.SOURCE_NODE: "SALES_READER",
                 edges_schema.SOURCE_TYPE: "ROLE",
-                edges_schema.TARGET_NODE: f"{DB}.DATA_SALES.ORDERS",
+                edges_schema.TARGET_NODE: f"{db}.DATA_SALES.ORDERS",
                 edges_schema.TARGET_TYPE: "ASSET",
                 edges_schema.RELATION_TYPE: "ROLE_TO_ASSET",
                 edges_schema.PRIVILEGE: "SELECT",
@@ -279,7 +289,7 @@ def load_access_edges() -> pd.DataFrame:
             {
                 edges_schema.SOURCE_NODE: "AD_READER",
                 edges_schema.SOURCE_TYPE: "ROLE",
-                edges_schema.TARGET_NODE: f"{DB}.DATA_AD.CAMPAIGN_LEADS",
+                edges_schema.TARGET_NODE: f"{db}.DATA_AD.CAMPAIGN_LEADS",
                 edges_schema.TARGET_TYPE: "ASSET",
                 edges_schema.RELATION_TYPE: "ROLE_TO_ASSET",
                 edges_schema.PRIVILEGE: "SELECT",

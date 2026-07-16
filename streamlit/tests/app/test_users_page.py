@@ -146,8 +146,8 @@ def test_users_page_orders_visible_assets_by_hierarchy(
     assert_no_exception(app)
     result = dataframe_value(app, index=1)
     assert result[["データベース", "スキーマ", "名前"]].to_numpy().tolist() == [
-        [catalog_data.DB, "DATA_AD", "CAMPAIGN_LEADS"],
-        [catalog_data.DB, "DATA_SALES", "ORDERS"],
+        [catalog_data.database_name(), "DATA_AD", "CAMPAIGN_LEADS"],
+        [catalog_data.database_name(), "DATA_SALES", "ORDERS"],
     ]
     assert result["ユーザー付与ロール"].tolist()[0] == "ANALYST, MARKETER"
     assert result["データ資産付与ロール"].tolist()[0] == "AD_READER, SALES_READER"

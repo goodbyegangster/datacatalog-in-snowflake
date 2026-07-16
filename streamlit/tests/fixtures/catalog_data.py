@@ -2,16 +2,26 @@ from __future__ import annotations
 
 import pandas as pd
 
+import settings
 from catalog.providers import fake as catalog_fake
 
-DB = catalog_fake.DB
 TAG_SCHEMA = catalog_fake.TAG_SCHEMA
+
+
+def database_name() -> str:
+    """テスト実行時点の settings に基づくデータベース名を返す。"""
+    return settings.CATALOG_LOCATION["DATABASE_NAME"]
+
+
+def asset_fqn(schema_name: str, asset_name: str) -> str:
+    """テスト用のデータ資産 FQN を返す。"""
+    return f"{database_name()}.{schema_name}.{asset_name}"
 
 
 def tag_ref(tag_name: str, tag_value: str) -> dict[str, str]:
     """テスト用のタグ参照を返す。"""
     return {
-        "TAG_DATABASE": DB,
+        "TAG_DATABASE": database_name(),
         "TAG_SCHEMA": TAG_SCHEMA,
         "TAG_NAME": tag_name,
         "TAG_VALUE": tag_value,

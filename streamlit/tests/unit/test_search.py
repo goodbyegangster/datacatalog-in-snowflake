@@ -23,7 +23,7 @@ def user_names(df: pd.DataFrame) -> list[str]:
 def tag_selection(tag_name: str, selected: list[str]) -> TagSelection:
     """テスト用のタグ選択条件を返す。"""
     return TagSelection(
-        tag_database=catalog_data.DB,
+        tag_database=catalog_data.database_name(),
         tag_schema=catalog_data.TAG_SCHEMA,
         tag_name=tag_name,
         selected=selected,
@@ -81,7 +81,7 @@ def test_filter_assets_matches_and_and_or_freeword() -> None:
 def test_filter_assets_applies_hierarchy_and_type_as_and_bucket() -> None:
     """階層と種別を AND 条件として適用する。"""
     criteria = AssetSearchCriteria(
-        selected_databases=[catalog_data.DB],
+        selected_databases=[catalog_data.database_name()],
         selected_schemas=["DATA_SALES"],
         selected_types=["BASE TABLE"],
     )
