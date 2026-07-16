@@ -51,7 +51,9 @@ def _load_catalog_data() -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.D
         tags = catalog.load_tags()
         visibility = catalog.load_asset_visibility()
     except Exception as exc:
-        st.error("データの取得に失敗しました。接続設定やカタログテーブルの生成状況をご確認ください。")
+        st.error(
+            "データの取得に失敗しました。接続設定やカタログテーブルの生成状況をご確認ください。"
+        )
         if catalog.data_mode() == "fake":
             st.exception(exc)
         return None
