@@ -27,11 +27,11 @@ class DisplayScope(TypedDict):
 DISPLAY_SCOPES: list[DisplayScope] = [
     {
         "DATABASE_NAME": "${DATACATALOG_DATABASE_NAME}",
-        "SCHEMA_NAME": "DATA_AD",
+        "SCHEMA_NAME": "SAMPLE_DATA_AD",
     },
     {
         "DATABASE_NAME": "${DATACATALOG_DATABASE_NAME}",
-        "SCHEMA_NAME": "DATA_SALES",
+        "SCHEMA_NAME": "SAMPLE_DATA_SALES",
     },
 ]
 
@@ -47,22 +47,22 @@ class SelectableTagKey(TypedDict):
 SELECTABLE_TAG_KEYS: list[SelectableTagKey] = [
     {
         "DATABASE_NAME": "${DATACATALOG_DATABASE_NAME}",
-        "SCHEMA_NAME": "TAG",
+        "SCHEMA_NAME": "SAMPLE_TAG",
         "TAG_NAME": "DATA_CATEGORY",
     },
     {
         "DATABASE_NAME": "${DATACATALOG_DATABASE_NAME}",
-        "SCHEMA_NAME": "TAG",
+        "SCHEMA_NAME": "SAMPLE_TAG",
         "TAG_NAME": "DATA_DOMAIN",
     },
     {
         "DATABASE_NAME": "${DATACATALOG_DATABASE_NAME}",
-        "SCHEMA_NAME": "TAG",
+        "SCHEMA_NAME": "SAMPLE_TAG",
         "TAG_NAME": "PII",
     },
     {
         "DATABASE_NAME": "${DATACATALOG_DATABASE_NAME}",
-        "SCHEMA_NAME": "TAG",
+        "SCHEMA_NAME": "SAMPLE_TAG",
         "TAG_NAME": "SENSITIVITY",
     },
 ]

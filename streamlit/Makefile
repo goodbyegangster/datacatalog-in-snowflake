@@ -8,7 +8,8 @@ help:
 	@grep -hE '^[0-9a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "%-30s %-60s\n", $$1, $$2}'
 
 .PHONY: update-snowflake-schema-json
-update-snowflake-schema-json: ## .config/snowflake-schema.json を最新化する
+init-snowflake-schema-json: ## .config/snowflake-schema.json を最新化する
+	mkdir -p .config
 	snow helpers generate-project-schema > .config/snowflake-schema.json
 
 .PHONY: init-snowflake-yml
