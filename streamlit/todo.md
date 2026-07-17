@@ -118,3 +118,11 @@
   Streamlit に委ねる。
   - 完全に決定論的な開閉が必要になった場合は、`st.expander` をやめて session_state 管理の
     自前アコーディオン（見出しトグルボタン＋条件付き表示）へ切り替える必要がある。今回は見送り。
+
+## 修正したい点のメモ
+
+- /home/kawata/educ/datacatalog-in-snowflake/streamlit/catalog/providers/fake.py:10
+  - 定数 DB は不要では？
+- /home/kawata/educ/datacatalog-in-snowflake/streamlit/catalog/providers/fake.py:11
+  - TAG_SCHEMA をハードコードするのを辞めたい
+  - 常に `TAG` という値になるとは限らない
