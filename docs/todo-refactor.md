@@ -56,7 +56,7 @@ Streamlit in Snowflake アプリのリファクタリング候補を管理する
   - 注意:
     - 表示固有の細かい整形まで無理にまとめない。
 
-- [ ] カタログロード時のエラー表示を共通化する
+- [x] カタログロード時のエラー表示を共通化する
   - 対象:
     - `streamlit/views/assets.py`
     - `streamlit/views/users.py`

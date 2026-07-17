@@ -1,11 +1,4 @@
-"""page：ユーザー。
-
-design-view.md の「page：ユーザー」に対応。検索 UI は sidebar に配置し、本文側に
-ユーザー一覧・詳細ペインを表示する。初期は全ユーザー表示。
-
-詳細ペインでは、選択ユーザーの基本情報と閲覧可能なデータ資産を表示する。
-閲覧可能データ資産一覧では、行選択後のボタン操作でロール継承グラフを表示する。
-"""
+"""View ユーザー。"""
 
 from __future__ import annotations
 
@@ -20,6 +13,7 @@ from components.users import results as user_results
 from components.users import search as user_search
 from logic import search
 from runtime import state
+from views.common import error_handling
 
 
 def _render_base_css() -> None:
@@ -62,11 +56,7 @@ def main() -> None:
             users = catalog.load_users()
             visibility = catalog.load_asset_visibility()
         except Exception as exc:
-            st.error(
-                "データの取得に失敗しました。接続設定やカタログテーブルの生成状況をご確認ください。"
-            )
-            if catalog.data_mode() == "fake":
-                st.exception(exc)
+            error_handling.render_catalog_load_error(exc)
             return
 
         search_fingerprint = user_search.fingerprint(freeword, only_user_name)

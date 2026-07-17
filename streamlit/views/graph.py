@@ -1,9 +1,4 @@
-"""page：ロール継承グラフ。
-
-データ資産 / ユーザー画面から選択された user -> asset のロール継承経路を、
-ページ全幅で表示する。ページ間の受け渡しは query parameter ではなく
-``st.session_state`` に積まれた一時 state を利用する。
-"""
+"""View ロール継承グラフ。"""
 
 from __future__ import annotations
 
@@ -13,6 +8,7 @@ import styles
 from catalog import provider as catalog
 from logic import graph
 from runtime import navigation
+from views.common import error_handling
 
 
 def _render_navigation_buttons(user_name: str, table_id: int) -> None:
@@ -62,11 +58,7 @@ def main() -> None:
     try:
         edges = catalog.load_access_edges()
     except Exception as exc:
-        st.error(
-            "データの取得に失敗しました。接続設定やカタログテーブルの生成状況をご確認ください。"
-        )
-        if catalog.data_mode() == "fake":
-            st.exception(exc)
+        error_handling.render_catalog_load_error(exc)
         return
 
     result = graph.build_user_asset_graph(

@@ -1,11 +1,4 @@
-"""page：データ資産。
-
-design-view.md の「page：データ資産」に対応。検索 UI は sidebar に配置し、本文側に
-一覧 / 詳細を表示する。検索仕様は design-search.md、検索ロジックは ``logic.search`` を参照。
-
-初期状態は一覧を空欄表示とし、検索入力に応じてインタラクティブに結果を表示する。
-ユーザータブでは、行選択後のボタン操作でロール継承グラフを表示する。
-"""
+"""View データ資産。"""
 
 from __future__ import annotations
 
@@ -22,6 +15,7 @@ from components.assets import results as asset_results
 from components.assets import search as asset_search
 from logic import search
 from runtime import state
+from views.common import error_handling
 
 
 @dataclass(frozen=True)
@@ -63,11 +57,7 @@ def _load_catalog_data() -> AssetCatalogData | None:
         tags = catalog.load_tags()
         visibility = catalog.load_asset_visibility()
     except Exception as exc:
-        st.error(
-            "データの取得に失敗しました。接続設定やカタログテーブルの生成状況をご確認ください。"
-        )
-        if catalog.data_mode() == "fake":
-            st.exception(exc)
+        error_handling.render_catalog_load_error(exc)
         return None
     return AssetCatalogData(
         assets=assets,
