@@ -187,15 +187,17 @@ def test_assets_page_resets_schema_when_database_changes(assets_app: AppTest) ->
     assert multiselect_by_label(app, "スキーマ").options == []
 
 
-def test_assets_page_shows_fake_tag_comments_with_settings_database(
+def test_assets_page_shows_fake_tag_comments_with_settings_tag_location(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     """fake mode でも settings のタグキーに一致するコメントを表示する。"""
     monkeypatch.setenv("CATALOG_DATA_MODE", "fake")
     fake_db = "LOCAL_FAKE_DB"
+    fake_tag_schema = "LOCAL_FAKE_TAG"
     monkeypatch.setitem(settings.CATALOG_LOCATION, "DATABASE_NAME", fake_db)
     for tag_key in settings.SELECTABLE_TAG_KEYS:
         monkeypatch.setitem(tag_key, "DATABASE_NAME", fake_db)
+        monkeypatch.setitem(tag_key, "SCHEMA_NAME", fake_tag_schema)
 
     app = AppTest.from_file(ASSETS_PAGE).run()
 

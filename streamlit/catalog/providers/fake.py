@@ -7,28 +7,36 @@ import pandas as pd
 import settings
 from catalog import schema
 
-DB = settings.CATALOG_LOCATION["DATABASE_NAME"]
-TAG_SCHEMA = "TAG"
 
-
-def _database_name() -> str:
+def _get_database_name() -> str:
     """Fake catalog が参照するデータベース名を settings から返す。"""
     return settings.CATALOG_LOCATION["DATABASE_NAME"]
 
 
-def _tag_ref(tag_name: str, tag_value: str) -> dict[str, str]:
+def _find_selectable_tag_key(tag_name: str) -> settings.SelectableTagKey:
+    """Fake tag 名に対応する settings のタグキーを返す。"""
+    for tag_key in settings.SELECTABLE_TAG_KEYS:
+        if tag_key["TAG_NAME"] == tag_name:
+            return tag_key
+    message = f"settings.SELECTABLE_TAG_KEYS に fake tag が定義されていません: {tag_name}"
+    raise ValueError(message)
+
+
+def _build_tag_ref(tag_name: str, tag_value: str) -> dict[str, str]:
+    tag_key = _find_selectable_tag_key(tag_name)
     return {
-        "TAG_DATABASE": _database_name(),
-        "TAG_SCHEMA": TAG_SCHEMA,
+        "TAG_DATABASE": tag_key["DATABASE_NAME"],
+        "TAG_SCHEMA": tag_key["SCHEMA_NAME"],
         "TAG_NAME": tag_name,
         "TAG_VALUE": tag_value,
     }
 
 
-def _tag_row(tag_name: str, tag_value: str, tag_comment: str) -> dict[str, str]:
+def _build_tag_row(tag_name: str, tag_value: str, tag_comment: str) -> dict[str, str]:
+    tag_key = _find_selectable_tag_key(tag_name)
     return {
-        "TAG_DATABASE": _database_name(),
-        "TAG_SCHEMA": TAG_SCHEMA,
+        "TAG_DATABASE": tag_key["DATABASE_NAME"],
+        "TAG_SCHEMA": tag_key["SCHEMA_NAME"],
         "TAG_NAME": tag_name,
         "TAG_VALUE": tag_value,
         "TAG_COMMENT": tag_comment,
@@ -38,7 +46,7 @@ def _tag_row(tag_name: str, tag_value: str, tag_comment: str) -> dict[str, str]:
 def load_assets() -> pd.DataFrame:
     """Fake のデータ資産カタログを返す。"""
     assets_schema = schema.Assets
-    db = _database_name()
+    db = _get_database_name()
     return pd.DataFrame(
         [
             {
@@ -50,7 +58,7 @@ def load_assets() -> pd.DataFrame:
                 assets_schema.DESCRIPTION: "Sales order facts",
                 assets_schema.ROW_COUNT: 120,
                 assets_schema.BYTES: 4096,
-                assets_schema.TAGS: [_tag_ref("DATA_DOMAIN", "SALES")],
+                assets_schema.TAGS: [_build_tag_ref("DATA_DOMAIN", "SALES")],
                 assets_schema.CONTACT_STEWARD: "DATA_STEWARD",
                 assets_schema.CONTACT_SUPPORT: "DATA_SUPPORT",
                 assets_schema.CONTACT_ACCESS_APPROVAL: "DATA_APPROVER",
@@ -66,7 +74,7 @@ def load_assets() -> pd.DataFrame:
                 assets_schema.DESCRIPTION: "Marketing leads",
                 assets_schema.ROW_COUNT: 50,
                 assets_schema.BYTES: 2048,
-                assets_schema.TAGS: [_tag_ref("DATA_DOMAIN", "MARKETING")],
+                assets_schema.TAGS: [_build_tag_ref("DATA_DOMAIN", "MARKETING")],
                 assets_schema.CONTACT_STEWARD: "AD_STEWARD",
                 assets_schema.CONTACT_SUPPORT: "AD_SUPPORT",
                 assets_schema.CONTACT_ACCESS_APPROVAL: "AD_APPROVER",
@@ -82,7 +90,7 @@ def load_assets() -> pd.DataFrame:
                 assets_schema.DESCRIPTION: "Customer master",
                 assets_schema.ROW_COUNT: 30,
                 assets_schema.BYTES: 1024,
-                assets_schema.TAGS: [_tag_ref("DATA_CATEGORY", "MASTER")],
+                assets_schema.TAGS: [_build_tag_ref("DATA_CATEGORY", "MASTER")],
                 assets_schema.CONTACT_STEWARD: "DATA_STEWARD",
                 assets_schema.CONTACT_SUPPORT: "DATA_SUPPORT",
                 assets_schema.CONTACT_ACCESS_APPROVAL: "DATA_APPROVER",
@@ -96,7 +104,7 @@ def load_assets() -> pd.DataFrame:
 def load_columns() -> pd.DataFrame:
     """Fake のカラムカタログを返す。"""
     columns_schema = schema.Columns
-    db = _database_name()
+    db = _get_database_name()
     return pd.DataFrame(
         [
             {
@@ -124,7 +132,7 @@ def load_columns() -> pd.DataFrame:
                 columns_schema.ORDINAL_POSITION: 2,
                 columns_schema.DATA_TYPE: "NUMBER",
                 columns_schema.DESCRIPTION: "Order amount",
-                columns_schema.TAGS: [_tag_ref("SENSITIVITY", "CONFIDENTIAL")],
+                columns_schema.TAGS: [_build_tag_ref("SENSITIVITY", "CONFIDENTIAL")],
                 columns_schema.IS_PRIMARY_KEY: False,
                 columns_schema.IS_UNIQUE_KEY: False,
                 columns_schema.FOREIGN_KEYS: [],
@@ -140,7 +148,7 @@ def load_columns() -> pd.DataFrame:
                 columns_schema.ORDINAL_POSITION: 1,
                 columns_schema.DATA_TYPE: "VARCHAR",
                 columns_schema.DESCRIPTION: "Lead email address",
-                columns_schema.TAGS: [_tag_ref("PII", "YES")],
+                columns_schema.TAGS: [_build_tag_ref("PII", "YES")],
                 columns_schema.IS_PRIMARY_KEY: False,
                 columns_schema.IS_UNIQUE_KEY: False,
                 columns_schema.FOREIGN_KEYS: [],
@@ -156,7 +164,7 @@ def load_columns() -> pd.DataFrame:
                 columns_schema.ORDINAL_POSITION: 1,
                 columns_schema.DATA_TYPE: "VARCHAR",
                 columns_schema.DESCRIPTION: "Customer email address",
-                columns_schema.TAGS: [_tag_ref("PII", "YES")],
+                columns_schema.TAGS: [_build_tag_ref("PII", "YES")],
                 columns_schema.IS_PRIMARY_KEY: False,
                 columns_schema.IS_UNIQUE_KEY: False,
                 columns_schema.FOREIGN_KEYS: [],
@@ -198,11 +206,11 @@ def load_tags() -> pd.DataFrame:
     """Fake のタグカタログを返す。"""
     return pd.DataFrame(
         [
-            _tag_row("DATA_CATEGORY", "MASTER", "データ資産の分類"),
-            _tag_row("DATA_DOMAIN", "SALES", "業務ドメイン"),
-            _tag_row("DATA_DOMAIN", "MARKETING", "業務ドメイン"),
-            _tag_row("PII", "YES", "個人情報の有無"),
-            _tag_row("SENSITIVITY", "CONFIDENTIAL", "機密度"),
+            _build_tag_row("DATA_CATEGORY", "MASTER", "データ資産の分類"),
+            _build_tag_row("DATA_DOMAIN", "SALES", "業務ドメイン"),
+            _build_tag_row("DATA_DOMAIN", "MARKETING", "業務ドメイン"),
+            _build_tag_row("PII", "YES", "個人情報の有無"),
+            _build_tag_row("SENSITIVITY", "CONFIDENTIAL", "機密度"),
         ]
     )
 
@@ -210,7 +218,7 @@ def load_tags() -> pd.DataFrame:
 def load_asset_visibility() -> pd.DataFrame:
     """Fake の資産閲覧可否を返す。"""
     visibility_schema = schema.AssetVisibility
-    db = _database_name()
+    db = _get_database_name()
     return pd.DataFrame(
         [
             {
@@ -238,7 +246,7 @@ def load_asset_visibility() -> pd.DataFrame:
 def load_access_edges() -> pd.DataFrame:
     """Fake のアクセス経路エッジを返す。"""
     edges_schema = schema.AccessEdges
-    db = _database_name()
+    db = _get_database_name()
     return pd.DataFrame(
         [
             {

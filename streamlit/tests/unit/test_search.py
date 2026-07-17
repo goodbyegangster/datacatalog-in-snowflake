@@ -24,7 +24,7 @@ def tag_selection(tag_name: str, selected: list[str]) -> TagSelection:
     """テスト用のタグ選択条件を返す。"""
     return TagSelection(
         tag_database=catalog_data.database_name(),
-        tag_schema=catalog_data.TAG_SCHEMA,
+        tag_schema=catalog_data.tag_schema_name(tag_name),
         tag_name=tag_name,
         selected=selected,
         allowed=selected,

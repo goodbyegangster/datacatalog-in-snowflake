@@ -9,6 +9,8 @@ design-view.md の「page：データ資産」に対応。検索 UI は sidebar 
 
 from __future__ import annotations
 
+from dataclasses import dataclass
+
 import pandas as pd
 import streamlit as st
 
@@ -20,6 +22,16 @@ from components.assets import results as asset_results
 from components.assets import search as asset_search
 from logic import search
 from runtime import state
+
+
+@dataclass(frozen=True)
+class AssetCatalogData:
+    """データ資産ページで利用するカタログデータ。"""
+
+    assets: pd.DataFrame
+    columns: pd.DataFrame
+    tags: pd.DataFrame
+    visibility: pd.DataFrame
 
 
 def _render_base_css() -> None:
@@ -44,7 +56,7 @@ def _consume_nav_to_table_id(assets: pd.DataFrame) -> int | None:
     return None
 
 
-def _load_catalog_data() -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame] | None:
+def _load_catalog_data() -> AssetCatalogData | None:
     try:
         assets = catalog.load_assets()
         columns = catalog.load_columns()
@@ -57,7 +69,12 @@ def _load_catalog_data() -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.D
         if catalog.data_mode() == "fake":
             st.exception(exc)
         return None
-    return assets, columns, tags, visibility
+    return AssetCatalogData(
+        assets=assets,
+        columns=columns,
+        tags=tags,
+        visibility=visibility,
+    )
 
 
 def _render_without_condition(
@@ -135,17 +152,26 @@ def main() -> None:
     if catalog_data is None:
         return
 
-    assets, columns, tags, visibility = catalog_data
-    nav_table_id = _consume_nav_to_table_id(assets)
+    nav_table_id = _consume_nav_to_table_id(catalog_data.assets)
 
     with st.sidebar:
-        criteria = asset_search.render(assets, tags)
+        criteria = asset_search.render(catalog_data.assets, catalog_data.tags)
 
     with main_pane:
         if not asset_search.has_condition(criteria):
-            _render_without_condition(nav_table_id, assets, columns, visibility)
+            _render_without_condition(
+                nav_table_id,
+                catalog_data.assets,
+                catalog_data.columns,
+                catalog_data.visibility,
+            )
             return
-        _render_filtered_assets(assets, columns, visibility, criteria)
+        _render_filtered_assets(
+            catalog_data.assets,
+            catalog_data.columns,
+            catalog_data.visibility,
+            criteria,
+        )
 
 
 main()
