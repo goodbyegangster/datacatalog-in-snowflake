@@ -71,7 +71,7 @@ Streamlit in Snowflake アプリのリファクタリング候補を管理する
 
 ## 優先度 中
 
-- [ ] assets/users page の「検索結果 + 詳細ペイン」制御を小さく整理する
+- [x] assets/users page の「検索結果 + 詳細ペイン」制御を小さく整理する
   - 対象:
     - `streamlit/views/assets.py`
     - `streamlit/views/users.py`
@@ -83,6 +83,8 @@ Streamlit in Snowflake アプリのリファクタリング候補を管理する
     - その後、必要なら「fingerprint 変更時に selection を clear する」程度の helper に留める。
   - 注意:
     - OOUI 的なページ単位の読みやすさを壊すほど抽象化しない。
+  - 判断:
+    - fingerprint 変更時の selection clear helper は、assets/users で呼び出し条件や clear 対象が異なるため共通化を見送る。
 
 - [ ] search component の state 初期化・clear・fingerprint を整理する
   - 対象:
