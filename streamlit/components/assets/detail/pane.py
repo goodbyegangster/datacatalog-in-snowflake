@@ -14,7 +14,15 @@ from components.assets.detail import tab_columns, tab_contact, tab_stats, tab_us
 from runtime import state
 
 BadgeColor = Literal[
-    "red", "orange", "yellow", "blue", "green", "violet", "gray", "grey", "primary"
+    "red",
+    "orange",
+    "yellow",
+    "blue",
+    "green",
+    "violet",
+    "gray",
+    "grey",
+    "primary",
 ]
 
 ASSET_TYPE_BADGE_COLORS: dict[str, BadgeColor] = {
