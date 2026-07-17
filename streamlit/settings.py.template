@@ -1,14 +1,20 @@
 # このファイルはテンプレートです。実体の settings.py は make が .env から生成します。
 # 値を変更する場合は settings.py ではなく、このテンプレートと .env を編集してください。
 
+# pyright: reportIncompatibleVariableOverride=false
+
 from typing import Annotated, TypedDict
 
 
 class CatalogLocation(TypedDict):
-    """カタログテーブル所属先のデータベース名 / スキーマ名"""
+    """カタログテーブル所属先。
 
-    DATABASE_NAME: str  # カタログテーブルが所属するデータベース名
-    SCHEMA_NAME: str  # カタログテーブルが所属するスキーマ名
+    - DATABASE_NAME: カタログテーブルが所属するデータベース名。
+    - SCHEMA_NAME: カタログテーブルが所属するスキーマ名。
+    """
+
+    DATABASE_NAME: str
+    SCHEMA_NAME: str
 
 
 CATALOG_LOCATION: CatalogLocation = {
@@ -18,10 +24,14 @@ CATALOG_LOCATION: CatalogLocation = {
 
 
 class DisplayScope(TypedDict):
-    """Streamlit App で公開するデータ資産のデータベース名 / スキーマ名"""
+    """Streamlit App で公開するデータ資産の範囲。
 
-    DATABASE_NAME: str  # 公開するデータベース名
-    SCHEMA_NAME: str  # 公開するスキーマ名
+    - DATABASE_NAME: 公開するデータベース名。
+    - SCHEMA_NAME: 公開するスキーマ名。
+    """
+
+    DATABASE_NAME: str
+    SCHEMA_NAME: str
 
 
 DISPLAY_SCOPES: list[DisplayScope] = [
@@ -37,11 +47,16 @@ DISPLAY_SCOPES: list[DisplayScope] = [
 
 
 class SelectableTagKey(TypedDict):
-    """検索画面のフィルターとして利用可能なタグ名"""
+    """検索画面のフィルターとして利用可能なタグキー。
 
-    DATABASE_NAME: str  # タグが所属するデータベース名
-    SCHEMA_NAME: str  # タグが所属するスキーマ名
-    TAG_NAME: str  # タグ名
+    - DATABASE_NAME: タグが所属するデータベース名。
+    - SCHEMA_NAME: タグが所属するスキーマ名。
+    - TAG_NAME: タグ名。
+    """
+
+    DATABASE_NAME: str
+    SCHEMA_NAME: str
+    TAG_NAME: str
 
 
 SELECTABLE_TAG_KEYS: list[SelectableTagKey] = [
