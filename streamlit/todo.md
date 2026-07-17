@@ -126,3 +126,6 @@
 - /home/kawata/educ/datacatalog-in-snowflake/streamlit/catalog/providers/fake.py:11
   - TAG_SCHEMA をハードコードするのを辞めたい
   - 常に `TAG` という値になるとは限らない
+- /home/kawata/educ/datacatalog-in-snowflake/streamlit/views/assets.py:47
+  - 戻り値は値オブジェクトにしたい
+  - ここに置いてあることが適当なのか
