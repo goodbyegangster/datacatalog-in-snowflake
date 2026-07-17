@@ -28,7 +28,8 @@ _COMPACT_COLUMN_CONFIG = {
 }
 
 
-def _table_id_key(value: object) -> int:
+def _convert_table_id_to_key(value: object) -> int:
+    """TABLE_ID 値を一致理由 lookup 用の int key に変換する。"""
     if isinstance(value, Integral):
         return int(value)
     if isinstance(value, float) and value.is_integer():
@@ -36,12 +37,16 @@ def _table_id_key(value: object) -> int:
     return int(str(value))
 
 
-def _freeword_reason_text(table_id: object, reasons: Mapping[int, FreewordMatchReason]) -> str:
-    return reasons.get(_table_id_key(table_id), FreewordMatchReason()).text
+def _get_freeword_reason_text(
+    table_id: object,
+    reasons: Mapping[int, FreewordMatchReason],
+) -> str:
+    """TABLE_ID に対応するフリーワード一致理由の表示文字列を返す。"""
+    return reasons.get(_convert_table_id_to_key(table_id), FreewordMatchReason()).text
 
 
-def clear_selection() -> None:
-    """検索条件と整合しなくなった一覧/詳細の選択状態を解除する。"""
+def clear_asset_selection() -> None:
+    """選択中データ資産と一覧 widget の選択状態を解除する。"""
     st.session_state.pop(state.ASSET_SELECTED_TABLE_ID, None)
     st.session_state.pop(RESULTS_KEY, None)
 
@@ -72,7 +77,7 @@ def render(
                 "説明": ordered[assets_schema.DESCRIPTION],
                 "フリーワード一致": ordered[assets_schema.TABLE_ID]
                 .astype(int)
-                .map(lambda table_id: _freeword_reason_text(table_id, reasons)),
+                .map(lambda table_id: _get_freeword_reason_text(table_id, reasons)),
             }
         ).reset_index(drop=True)
         column_config = _COLUMN_CONFIG

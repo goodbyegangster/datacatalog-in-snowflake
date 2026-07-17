@@ -2,20 +2,29 @@
 
 from __future__ import annotations
 
+import pytest
+
+from components.assets import search as asset_search
 from runtime import state, widget_state
 
 
-def test_search_widget_keys_include_asset_user_and_tag_keys() -> None:
+def test_search_widget_keys_include_asset_user_and_tag_keys(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     """検索ウィジェットの維持対象 key を返す。"""
-    keys = widget_state.search_widget_keys(
+    monkeypatch.setattr(
+        asset_search,
+        "SELECTABLE_TAG_KEYS",
         [
             {
                 "DATABASE_NAME": "DB",
                 "SCHEMA_NAME": "SCHEMA",
                 "TAG_NAME": "DOMAIN",
             }
-        ]
+        ],
     )
+
+    keys = widget_state.search_widget_keys()
 
     assert state.SEARCH_ASSET_FREEWORD in keys
     assert state.SEARCH_ASSET_DATABASES in keys

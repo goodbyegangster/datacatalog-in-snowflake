@@ -14,32 +14,35 @@ from logic.search.common import parse_freeword
 class UserFreewordQuery:
     """ユーザーのフリーワードと検索対象（名前 / 表示名）。"""
 
-    text: str = ""
-    target_user_name: bool = True
-    target_display_name: bool = True
+    freeword_text: str = ""
+    is_user_name_search_target_enabled: bool = True
+    is_display_name_search_target_enabled: bool = True
 
 
 def filter_users(
-    users: pd.DataFrame, freeword: UserFreewordQuery, only_user_name: str | None = None
+    users: pd.DataFrame,
+    freeword: UserFreewordQuery,
+    current_user_filter_name: str | None = None,
 ) -> pd.DataFrame:
-    """ユーザーを絞り込む。``only_user_name`` 指定時は自ユーザーのみ。"""
+    """ユーザーを絞り込む。``current_user_filter_name`` 指定時は自ユーザーのみ。"""
     users_schema = schema.Users
     df = users
-    if only_user_name is not None:
-        df = df[df[users_schema.USER_NAME] == only_user_name]
+    if current_user_filter_name is not None:
+        df = df[df[users_schema.USER_NAME] == current_user_filter_name]
 
-    op, tokens = parse_freeword(freeword.text)
+    op, tokens = parse_freeword(freeword.freeword_text)
     if not tokens:
         return df
 
     def token_mask(token: str) -> pd.Series:
+        """1 トークンに一致するユーザー行の mask を返す。"""
         needle = token.lower()
         mask = pd.Series(data=False, index=df.index)
-        if freeword.target_user_name:
+        if freeword.is_user_name_search_target_enabled:
             mask |= (
                 df[users_schema.USER_NAME].fillna("").str.lower().str.contains(needle, regex=False)
             )
-        if freeword.target_display_name:
+        if freeword.is_display_name_search_target_enabled:
             mask |= (
                 df[users_schema.DISPLAY_NAME]
                 .fillna("")

@@ -58,14 +58,11 @@ def _load_catalog_data() -> UserCatalogData | None:
     return UserCatalogData(users=users, visibility=visibility)
 
 
-def _clear_selection_when_search_changed(
-    freeword: search.UserFreewordQuery,
-    only_user_name: str | None,
-) -> None:
+def _clear_selection_when_search_changed(criteria: user_search.UserSearchCriteria) -> None:
     """検索条件変更時に選択状態を解除する。"""
-    search_fingerprint = user_search.fingerprint(freeword, only_user_name)
+    search_fingerprint = user_search.build_fingerprint(criteria)
     if st.session_state.get(state.USER_SEARCH_FINGERPRINT) != search_fingerprint:
-        user_results.clear_selection()
+        user_results.clear_user_selection()
         st.session_state[state.USER_SEARCH_FINGERPRINT] = search_fingerprint
 
 
@@ -76,7 +73,7 @@ def _resolve_selected_user_name(filtered: pd.DataFrame) -> str | None:
     if prior is not None and prior not in set(
         filtered[users_schema.USER_NAME].astype(str).tolist()
     ):
-        user_results.clear_selection()
+        user_results.clear_user_selection()
         return None
     return prior
 
@@ -111,13 +108,16 @@ def _render_users_with_detail(
 def _render_filtered_users(
     *,
     catalog_data: UserCatalogData,
-    freeword: search.UserFreewordQuery,
-    only_user_name: str | None,
+    criteria: user_search.UserSearchCriteria,
 ) -> None:
     """検索条件に一致するユーザー一覧と詳細を表示する。"""
-    filtered = search.filter_users(catalog_data.users, freeword, only_user_name=only_user_name)
+    filtered = search.filter_users(
+        catalog_data.users,
+        criteria.freeword,
+        current_user_filter_name=criteria.current_user_filter_name,
+    )
     if filtered.empty:
-        user_results.clear_selection()
+        user_results.clear_user_selection()
         st.info("該当するユーザーがいません。検索条件を変更してください。")
         return
 
@@ -133,11 +133,11 @@ def main() -> None:
     if state.NAV_TO_USER_NAME in st.session_state:
         user_search.set_all_users_view_for_navigation()
     with st.sidebar:
-        freeword, only_user_name, only_self_enabled = user_search.render()
+        criteria = user_search.render()
 
     with main_pane:
-        if only_self_enabled and only_user_name is None:
-            user_results.clear_selection()
+        if criteria.is_only_self_filter_enabled and criteria.current_user_filter_name is None:
+            user_results.clear_user_selection()
             st.warning(user_search.CURRENT_USER_UNAVAILABLE_MESSAGE)
             return
 
@@ -145,7 +145,7 @@ def main() -> None:
         if catalog_data is None:
             return
 
-        _clear_selection_when_search_changed(freeword, only_user_name)
+        _clear_selection_when_search_changed(criteria)
 
         nav_user_name = _get_nav_user_name_to_show(catalog_data.users)
         if nav_user_name is not None:
@@ -153,8 +153,7 @@ def main() -> None:
 
         _render_filtered_users(
             catalog_data=catalog_data,
-            freeword=freeword,
-            only_user_name=only_user_name,
+            criteria=criteria,
         )
 
 

@@ -27,7 +27,7 @@ def tag_selection(tag_name: str, selected: list[str]) -> TagSelection:
         tag_schema=catalog_data.tag_schema_name(tag_name),
         tag_name=tag_name,
         selected=selected,
-        allowed=selected,
+        tag_value_options=selected,
     )
 
 
@@ -96,8 +96,8 @@ def test_filter_assets_applies_category_or_bucket() -> None:
     criteria = AssetSearchCriteria(
         selected_schemas=["DATA_AD"],
         selected_types=["DYNAMIC TABLE"],
-        hierarchy_or=True,
-        type_or=True,
+        is_hierarchy_or_enabled=True,
+        is_type_or_enabled=True,
     )
 
     result = search.filter_assets(catalog_data.assets(), catalog_data.columns(), criteria)
@@ -217,18 +217,25 @@ def test_scope_options_come_from_assets() -> None:
         ]
     )
 
-    assert search.scope_databases(assets) == ["DB1", "DB2"]
-    assert search.scope_schemas(assets, ["DB1"]) == ["S1", "S2"]
-    assert search.scope_schemas(assets, []) == []
+    assert search.get_scope_database_names(assets) == ["DB1", "DB2"]
+    assert search.get_scope_schema_names(assets, ["DB1"]) == ["S1", "S2"]
+    assert search.get_scope_schema_names(assets, []) == []
 
 
 def test_filter_users_matches_freeword_and_self_filter() -> None:
     """ユーザーのフリーワードと自ユーザー絞り込みを適用する。"""
     users = catalog_data.users()
 
-    only_self = search.filter_users(users, UserFreewordQuery(), only_user_name="ALICE")
-    service = search.filter_users(users, UserFreewordQuery(text="service"))
-    alice_and_analytics = search.filter_users(users, UserFreewordQuery(text="alice AND analytics"))
+    only_self = search.filter_users(
+        users,
+        UserFreewordQuery(),
+        current_user_filter_name="ALICE",
+    )
+    service = search.filter_users(users, UserFreewordQuery(freeword_text="service"))
+    alice_and_analytics = search.filter_users(
+        users,
+        UserFreewordQuery(freeword_text="alice AND analytics"),
+    )
 
     assert user_names(only_self) == ["ALICE"]
     assert user_names(service) == ["SVC_ETL"]

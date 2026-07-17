@@ -86,7 +86,7 @@ Streamlit in Snowflake アプリのリファクタリング候補を管理する
   - 判断:
     - fingerprint 変更時の selection clear helper は、assets/users で呼び出し条件や clear 対象が異なるため共通化を見送る。
 
-- [ ] search component の state 初期化・clear・fingerprint を整理する
+- [x] search component の state 初期化・clear・fingerprint を整理する
   - 対象:
     - `streamlit/components/assets/search.py`
     - `streamlit/components/users/search.py`
@@ -99,6 +99,10 @@ Streamlit in Snowflake アプリのリファクタリング候補を管理する
     - defaults と preserve 対象の関係を追いやすくする。
   - 注意:
     - Streamlit widget lifecycle の都合があるため、過度に汎用的な state manager は作らない。
+  - 判断:
+    - search component 側に `get_preserved_widget_keys()` を持たせ、`runtime/widget_state.py` は各 component の保持対象 key を合成するだけにした。
+    - `_build_default_values()`、`_initialize_state()`、`_clear_search_inputs()`、`build_fingerprint()` へ命名を揃えた。
+    - fingerprint は assets/users とも Value Object 化し、tuple の順番依存を避けた。
 
 - [ ] タグ検索 UI 用の tag metadata 生成を分離する
   - 対象:

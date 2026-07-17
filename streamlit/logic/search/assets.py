@@ -251,7 +251,7 @@ class TagSelection:
     tag_schema: str
     tag_name: str
     selected: list[str]
-    allowed: list[str]  # UI の選択肢（allowed_values）。フィルタ判定には用いない。
+    tag_value_options: list[str]  # UI の選択肢。フィルタ判定には用いない。
 
     @property
     def is_unconstrained(self) -> bool:
@@ -263,7 +263,8 @@ class TagSelection:
 class AssetSearchCriteria:
     """データ資産検索の条件一式。
 
-    ``*_or`` は検索条件グループ間の結合指定。False = AND（必須・初期）、True = OR（いずれか）。
+    ``is_*_or_enabled`` は検索条件グループ間の結合指定。
+    False = AND（必須・初期）、True = OR（いずれか）。
     """
 
     freeword: FreewordQuery = field(default_factory=FreewordQuery)
@@ -271,9 +272,9 @@ class AssetSearchCriteria:
     selected_schemas: list[str] = field(default_factory=list)
     selected_types: list[str] = field(default_factory=list)
     tag_selections: list[TagSelection] = field(default_factory=list)
-    hierarchy_or: bool = False
-    type_or: bool = False
-    tag_or: bool = False
+    is_hierarchy_or_enabled: bool = False
+    is_type_or_enabled: bool = False
+    is_tag_or_enabled: bool = False
 
 
 # --- Asset filter -----------------------------------------------------------
@@ -358,9 +359,9 @@ def filter_assets(
     and_masks: list[pd.Series] = []
     or_masks: list[pd.Series] = []
     for active, mask, is_or in (
-        (hierarchy_active, hierarchy_mask, criteria.hierarchy_or),
-        (type_active, asset_type_mask, criteria.type_or),
-        (tag_active, tag_mask, criteria.tag_or),
+        (hierarchy_active, hierarchy_mask, criteria.is_hierarchy_or_enabled),
+        (type_active, asset_type_mask, criteria.is_type_or_enabled),
+        (tag_active, tag_mask, criteria.is_tag_or_enabled),
     ):
         if not active:
             continue
@@ -382,13 +383,13 @@ def filter_assets(
 # --- Scope options ----------------------------------------------------------
 
 
-def scope_databases(assets: pd.DataFrame) -> list[str]:
+def get_scope_database_names(assets: pd.DataFrame) -> list[str]:
     """表示対象の資産に含まれるデータベース名（重複排除・ソート済み）。"""
     assets_schema = schema.Assets
     return sorted(assets[assets_schema.DATABASE_NAME].dropna().astype(str).unique().tolist())
 
 
-def scope_schemas(assets: pd.DataFrame, databases: list[str]) -> list[str]:
+def get_scope_schema_names(assets: pd.DataFrame, databases: list[str]) -> list[str]:
     """指定データベースに属する、表示対象資産のスキーマ名（重複排除・ソート済み）。"""
     assets_schema = schema.Assets
     if not databases:

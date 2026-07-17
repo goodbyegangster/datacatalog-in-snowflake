@@ -22,8 +22,8 @@ _COMPACT_COLUMN_CONFIG = {
 }
 
 
-def clear_selection() -> None:
-    """一覧/詳細の選択状態を解除する。"""
+def clear_user_selection() -> None:
+    """選択中ユーザーと一覧 widget の選択状態を解除する。"""
     st.session_state.pop(state.USER_SELECTED_NAME, None)
     st.session_state.pop(RESULTS_KEY, None)
 

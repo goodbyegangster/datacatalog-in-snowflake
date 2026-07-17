@@ -14,7 +14,15 @@ from components.users import results
 from runtime import navigation, state
 
 BadgeColor = Literal[
-    "red", "orange", "yellow", "blue", "green", "violet", "gray", "grey", "primary"
+    "red",
+    "orange",
+    "yellow",
+    "blue",
+    "green",
+    "violet",
+    "gray",
+    "grey",
+    "primary",
 ]
 
 ASSETS_TABLE_KEY = "user_assets_table"
@@ -44,7 +52,7 @@ def _get_user_type_badge_color(user_type: str) -> BadgeColor:
 
 def _close() -> None:
     """詳細ペインを閉じる。行選択ウィジェットの選択状態も解除する。"""
-    results.clear_selection()
+    results.clear_user_selection()
     st.session_state.pop(state.NAV_TO_USER_NAME, None)
 
 

@@ -98,16 +98,16 @@ def _render_assets_without_search_condition(
                 catalog_data.visibility,
             )
     else:
-        asset_results.clear_selection()
+        asset_results.clear_asset_selection()
         st.session_state.pop(state.ASSET_SEARCH_FINGERPRINT, None)
         st.info("サイドバーの検索条件を指定すると、一覧が表示されます。")
 
 
 def _clear_selection_when_search_changed(criteria: search.AssetSearchCriteria) -> None:
     """検索条件変更時に選択状態を解除する。"""
-    search_fingerprint = asset_search.fingerprint(criteria)
+    search_fingerprint = asset_search.build_fingerprint(criteria)
     if st.session_state.get(state.ASSET_SEARCH_FINGERPRINT) != search_fingerprint:
-        asset_results.clear_selection()
+        asset_results.clear_asset_selection()
         st.session_state[state.ASSET_SEARCH_FINGERPRINT] = search_fingerprint
 
 
@@ -161,7 +161,7 @@ def _render_filtered_assets(
     """検索条件に一致するデータ資産一覧と詳細を表示する。"""
     filtered = search.filter_assets(catalog_data.assets, catalog_data.columns, criteria)
     if filtered.empty:
-        asset_results.clear_selection()
+        asset_results.clear_asset_selection()
         st.info("該当するデータ資産がありません。検索条件を変更してください。")
         return
 
@@ -186,7 +186,7 @@ def main() -> None:
     with st.sidebar:
         criteria = asset_search.render(catalog_data.assets, catalog_data.tags)
 
-    has_search_condition = asset_search.has_condition(criteria)
+    has_search_condition = asset_search.has_search_condition(criteria)
     if has_search_condition:
         _clear_selection_when_search_changed(criteria)
 

@@ -15,8 +15,8 @@ from logic.search.assets import (
     filter_assets,
     freeword_asset_ids,
     freeword_match_reasons,
-    scope_databases,
-    scope_schemas,
+    get_scope_database_names,
+    get_scope_schema_names,
 )
 from logic.search.common import parse_freeword
 from logic.search.users import UserFreewordQuery, filter_users
@@ -31,7 +31,7 @@ __all__ = [
     "filter_users",
     "freeword_asset_ids",
     "freeword_match_reasons",
+    "get_scope_database_names",
+    "get_scope_schema_names",
     "parse_freeword",
-    "scope_databases",
-    "scope_schemas",
 ]
