@@ -7,20 +7,13 @@ import streamlit as st
 
 import settings
 from catalog import schema
-from components.common import dataframe_selection
+from components.common import dataframe_selection, formatters
 from runtime import navigation, user_context
 
 TABLE_KEY = "asset_users_table"
 CURRENT_USER_UNAVAILABLE_MESSAGE = (
     "ログインユーザー名を取得できないため、ログインユーザーのみ表示を適用できません。"
 )
-
-
-def _fmt_roles(roles: object) -> str:
-    """ロール配列を dataframe 表示向けに整形する。"""
-    if not isinstance(roles, list) or not roles:
-        return ""
-    return ", ".join(sorted(str(role) for role in roles))
 
 
 def render(asset: pd.Series, visibility: pd.DataFrame) -> None:
@@ -47,8 +40,10 @@ def render(asset: pd.Series, visibility: pd.DataFrame) -> None:
     display = pd.DataFrame(
         {
             "ユーザー": vis[visibility_schema.USER_NAME],
-            "ユーザー付与ロール": vis[visibility_schema.USER_ROLES].map(_fmt_roles),
-            "データ資産付与ロール": vis[visibility_schema.ASSET_ROLES].map(_fmt_roles),
+            "ユーザー付与ロール": vis[visibility_schema.USER_ROLES].map(formatters.format_roles),
+            "データ資産付与ロール": vis[visibility_schema.ASSET_ROLES].map(
+                formatters.format_roles
+            ),
         }
     ).reset_index(drop=True)
     action_slot = st.container()
@@ -71,12 +66,10 @@ def render(asset: pd.Series, visibility: pd.DataFrame) -> None:
     selected_user_name = (
         None if selected_user_row is None else str(display.iloc[selected_user_row]["ユーザー"])
     )
-    asset_fqn = ".".join(
-        [
-            str(asset[assets_schema.DATABASE_NAME]),
-            str(asset[assets_schema.SCHEMA_NAME]),
-            str(asset[assets_schema.ASSET_NAME]),
-        ]
+    asset_fqn = formatters.format_asset_fqn(
+        database_name=asset[assets_schema.DATABASE_NAME],
+        schema_name=asset[assets_schema.SCHEMA_NAME],
+        asset_name=asset[assets_schema.ASSET_NAME],
     )
     with action_slot:
         open_col, graph_col = st.columns(2)

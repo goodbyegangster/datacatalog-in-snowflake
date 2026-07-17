@@ -9,7 +9,7 @@ import pandas as pd
 import streamlit as st
 
 from catalog import schema
-from components.common import dataframe_selection
+from components.common import dataframe_selection, formatters
 from components.users import results
 from runtime import navigation, state
 
@@ -25,14 +25,7 @@ USER_TYPE_BADGE_COLORS: dict[str, BadgeColor] = {
 }
 
 
-def _fmt_roles(roles: object) -> str:
-    """ロール配列を dataframe 表示向けに整形する。"""
-    if not isinstance(roles, list) or not roles:
-        return ""
-    return ", ".join(sorted(str(role) for role in roles))
-
-
-def _display_user_type(user_type: object) -> str:
+def _normalize_user_type(user_type: object) -> str:
     """Snowflake ユーザー種別を表示用に正規化する。"""
     if (
         user_type is None
@@ -44,7 +37,7 @@ def _display_user_type(user_type: object) -> str:
     return str(user_type)
 
 
-def _user_type_badge_color(user_type: str) -> BadgeColor:
+def _get_user_type_badge_color(user_type: str) -> BadgeColor:
     """ユーザー種別に応じた badge 色を返す。"""
     return USER_TYPE_BADGE_COLORS.get(user_type, "gray")
 
@@ -81,12 +74,12 @@ def render(user_name: str, users: pd.DataFrame, visibility: pd.DataFrame) -> Non
     if pd.notna(display_name) and str(display_name) != "":
         st.markdown(f"**{display_name}**")
 
-    user_type = _display_user_type(user[users_schema.USER_TYPE])
+    user_type = _normalize_user_type(user[users_schema.USER_TYPE])
     disabled = bool(user[users_schema.DISABLED])
     col1, col2 = st.columns(2)
     with col1:
         st.caption("タイプ")
-        st.badge(user_type, color=_user_type_badge_color(user_type))
+        st.badge(user_type, color=_get_user_type_badge_color(user_type))
     with col2:
         st.caption("ステータス")
         st.badge("無効" if disabled else "有効", color="red" if disabled else "green")
@@ -110,9 +103,11 @@ def render(user_name: str, users: pd.DataFrame, visibility: pd.DataFrame) -> Non
             "データベース": vis_display_source[visibility_schema.DATABASE_NAME],
             "スキーマ": vis_display_source[visibility_schema.SCHEMA_NAME],
             "名前": vis_display_source[visibility_schema.ASSET_NAME],
-            "ユーザー付与ロール": vis_display_source[visibility_schema.USER_ROLES].map(_fmt_roles),
+            "ユーザー付与ロール": vis_display_source[visibility_schema.USER_ROLES].map(
+                formatters.format_roles
+            ),
             "データ資産付与ロール": vis_display_source[visibility_schema.ASSET_ROLES].map(
-                _fmt_roles
+                formatters.format_roles
             ),
         }
     ).reset_index(drop=True)
@@ -161,13 +156,11 @@ def render(user_name: str, users: pd.DataFrame, visibility: pd.DataFrame) -> Non
             ):
                 if selected_asset_row is None:
                     return
-                selected_asset = display.iloc[selected_asset_row]
-                asset_fqn = ".".join(
-                    [
-                        str(selected_asset["データベース"]),
-                        str(selected_asset["スキーマ"]),
-                        str(selected_asset["名前"]),
-                    ]
+                selected_asset = vis_display_source.iloc[selected_asset_row]
+                asset_fqn = formatters.format_asset_fqn(
+                    database_name=selected_asset[visibility_schema.DATABASE_NAME],
+                    schema_name=selected_asset[visibility_schema.SCHEMA_NAME],
+                    asset_name=selected_asset[visibility_schema.ASSET_NAME],
                 )
                 navigation.open_graph_page(
                     user_name=user_name,

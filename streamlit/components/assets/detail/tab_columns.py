@@ -6,26 +6,27 @@ import pandas as pd
 import streamlit as st
 
 from catalog import schema
+from components.common import formatters
 
 
-def _fmt_tags(tags: list[dict]) -> str:
+def _format_tags(tags: list[dict]) -> str:
     """TAGS 列（object の list）を表示用の文字列へ整形する。"""
     if not isinstance(tags, list) or not tags:
         return ""
     return ", ".join(f"{t['TAG_NAME']}={t['TAG_VALUE']}" for t in tags)
 
 
-def _fmt_foreign_keys(foreign_keys: object) -> str:
+def _format_foreign_keys(foreign_keys: object) -> str:
     """FOREIGN_KEYS 列（object の list）を表示用の文字列へ整形する。"""
     if not isinstance(foreign_keys, list) or not foreign_keys:
         return ""
     return ", ".join(
-        ".".join(
+        formatters.format_name_path(
             [
-                str(fk["REFERENCED_DATABASE"]),
-                str(fk["REFERENCED_SCHEMA"]),
-                str(fk["REFERENCED_TABLE"]),
-                str(fk["REFERENCED_COLUMN"]),
+                fk["REFERENCED_DATABASE"],
+                fk["REFERENCED_SCHEMA"],
+                fk["REFERENCED_TABLE"],
+                fk["REFERENCED_COLUMN"],
             ]
         )
         for fk in foreign_keys
@@ -52,9 +53,9 @@ def render(table_id: int, columns: pd.DataFrame) -> None:
             "PKEY": cols[columns_schema.IS_PRIMARY_KEY],
             "NOT NULL": cols[columns_schema.IS_NULLABLE],
             "UNIQUE": cols[columns_schema.IS_UNIQUE_KEY],
-            "外部 KEY": cols[columns_schema.FOREIGN_KEYS].map(_fmt_foreign_keys),
+            "外部 KEY": cols[columns_schema.FOREIGN_KEYS].map(_format_foreign_keys),
             "masking policy": cols[columns_schema.MASKING_POLICY_NAME].fillna("").astype(bool),
-            "タグ": cols[columns_schema.TAGS].map(_fmt_tags),
+            "タグ": cols[columns_schema.TAGS].map(_format_tags),
         }
     )
     st.dataframe(

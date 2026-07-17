@@ -41,7 +41,7 @@ Streamlit in Snowflake アプリのリファクタリング候補を管理する
   - 注意:
     - selection が空の rerun では既存詳細を維持する、という設計は維持する。
 
-- [ ] ロール配列 / FQN / 表示文字列の formatter を共通化する
+- [x] ロール配列 / FQN / 表示文字列の formatter を共通化する
   - 対象:
     - `streamlit/components/assets/detail/tab_users.py`
     - `streamlit/components/users/detail/pane.py`
