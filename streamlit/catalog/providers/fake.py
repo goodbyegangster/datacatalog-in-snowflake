@@ -23,6 +23,7 @@ def _find_selectable_tag_key(tag_name: str) -> settings.SelectableTagKey:
 
 
 def _build_tag_ref(tag_name: str, tag_value: str) -> dict[str, str]:
+    """資産やカラムに埋め込むタグ参照を作る。"""
     tag_key = _find_selectable_tag_key(tag_name)
     return {
         "TAG_DATABASE": tag_key["DATABASE_NAME"],
@@ -33,6 +34,7 @@ def _build_tag_ref(tag_name: str, tag_value: str) -> dict[str, str]:
 
 
 def _build_tag_row(tag_name: str, tag_value: str, tag_comment: str) -> dict[str, str]:
+    """タグ一覧として返すタグ行を作る。"""
     tag_key = _find_selectable_tag_key(tag_name)
     return {
         "TAG_DATABASE": tag_key["DATABASE_NAME"],
