@@ -33,8 +33,11 @@ def _render_base_css() -> None:
     styles.render_base_css()
 
 
-def _consume_nav_to_table_id(assets: pd.DataFrame) -> int | None:
-    """ページ間遷移で指定されたデータ資産 ID を取り出し、存在する場合のみ返す。"""
+def _get_nav_table_id_to_show(assets: pd.DataFrame) -> int | None:
+    """遷移元から指定された表示対象のデータ資産 ID を返す。
+
+    取得した NAV_TO_TABLE_ID は session_state から削除する。
+    """
     table_id = st.session_state.pop(state.NAV_TO_TABLE_ID, None)
     if table_id is None:
         return None
@@ -45,12 +48,12 @@ def _consume_nav_to_table_id(assets: pd.DataFrame) -> int | None:
 
     assets_schema = schema.Assets
     if normalized in set(assets[assets_schema.TABLE_ID].astype(int).tolist()):
-        st.session_state[state.ASSET_SELECTED_TABLE_ID] = normalized
         return normalized
     return None
 
 
 def _load_catalog_data() -> AssetCatalogData | None:
+    """データ資産ページで利用するカタログデータを読み込む。"""
     try:
         assets = catalog.load_assets()
         columns = catalog.load_columns()
@@ -67,50 +70,67 @@ def _load_catalog_data() -> AssetCatalogData | None:
     )
 
 
-def _render_without_condition(
+def _render_assets_without_search_condition(
+    *,
     nav_table_id: int | None,
-    assets: pd.DataFrame,
-    columns: pd.DataFrame,
-    visibility: pd.DataFrame,
+    catalog_data: AssetCatalogData,
 ) -> None:
-    previous_search = st.session_state.get(state.ASSET_SEARCH_FINGERPRINT) is not None
-    selected_table_id = st.session_state.get(state.ASSET_SELECTED_TABLE_ID)
+    """検索条件未指定時に、遷移指定または既存選択がある場合は詳細を表示し、なければ案内を表示する。"""
+    has_active_search_fingerprint = st.session_state.get(state.ASSET_SEARCH_FINGERPRINT) is not None
+    selected_table_id: int | None = st.session_state.get(state.ASSET_SELECTED_TABLE_ID)
     if nav_table_id is not None:
         st.session_state.pop(state.ASSET_SEARCH_FINGERPRINT, None)
-        st.session_state[state.ASSET_SELECTED_TABLE_ID] = nav_table_id
         selected_table_id = nav_table_id
-        previous_search = False
+        has_active_search_fingerprint = False
 
-    if selected_table_id is not None and not previous_search:
+    should_show_selected_asset_detail = (
+        selected_table_id is not None and not has_active_search_fingerprint
+    )
+    if should_show_selected_asset_detail and selected_table_id is not None:
         list_col, detail_col = st.columns([1, 3])
         with list_col:
             st.info("検索条件が未指定のため、一覧は非表示です。")
         with detail_col:
-            asset_detail.render(selected_table_id, assets, columns, visibility)
+            asset_detail.render(
+                selected_table_id,
+                catalog_data.assets,
+                catalog_data.columns,
+                catalog_data.visibility,
+            )
     else:
         asset_results.clear_selection()
         st.session_state.pop(state.ASSET_SEARCH_FINGERPRINT, None)
         st.info("サイドバーの検索条件を指定すると、一覧が表示されます。")
 
 
-def _render_filtered_assets(
-    assets: pd.DataFrame,
-    columns: pd.DataFrame,
-    visibility: pd.DataFrame,
-    criteria: search.AssetSearchCriteria,
-) -> None:
+def _clear_selection_when_search_changed(criteria: search.AssetSearchCriteria) -> None:
+    """検索条件変更時に選択状態を解除する。"""
     search_fingerprint = asset_search.fingerprint(criteria)
     if st.session_state.get(state.ASSET_SEARCH_FINGERPRINT) != search_fingerprint:
         asset_results.clear_selection()
         st.session_state[state.ASSET_SEARCH_FINGERPRINT] = search_fingerprint
 
-    filtered = search.filter_assets(assets, columns, criteria)
-    if filtered.empty:
-        asset_results.clear_selection()
-        st.info("該当するデータ資産がありません。検索条件を変更してください。")
-        return
 
-    freeword_reasons = search.freeword_match_reasons(criteria.freeword, assets, columns)
+def _rerun_when_selection_changed(selected_now: int | None, prior: int | None) -> None:
+    """選択データ資産が変わった場合に詳細ペインを更新する。"""
+    # 詳細ペイン内の操作でも selected_now は None になり得るため、既存詳細を維持する。
+    if selected_now is not None and selected_now != prior:
+        st.session_state[state.ASSET_SELECTED_TABLE_ID] = selected_now
+        st.rerun()
+
+
+def _render_assets_with_detail(
+    *,
+    filtered: pd.DataFrame,
+    catalog_data: AssetCatalogData,
+    criteria: search.AssetSearchCriteria,
+) -> None:
+    """データ資産検索結果と選択データ資産の詳細を表示する。"""
+    freeword_reasons = search.freeword_match_reasons(
+        criteria.freeword,
+        catalog_data.assets,
+        catalog_data.columns,
+    )
     prior = st.session_state.get(state.ASSET_SELECTED_TABLE_ID)
     if prior is None:
         selected_now = asset_results.render(filtered, freeword_reasons=freeword_reasons)
@@ -123,12 +143,33 @@ def _render_filtered_assets(
                 freeword_reasons=freeword_reasons,
             )
         with detail_col:
-            asset_detail.render(prior, assets, columns, visibility)
+            asset_detail.render(
+                prior,
+                catalog_data.assets,
+                catalog_data.columns,
+                catalog_data.visibility,
+            )
 
-    # 選択セルがない rerun は、詳細ペイン内の操作でも発生するため既存詳細を維持する。
-    if selected_now is not None and selected_now != prior:
-        st.session_state[state.ASSET_SELECTED_TABLE_ID] = selected_now
-        st.rerun()
+    _rerun_when_selection_changed(selected_now, prior)
+
+
+def _render_filtered_assets(
+    *,
+    catalog_data: AssetCatalogData,
+    criteria: search.AssetSearchCriteria,
+) -> None:
+    """検索条件に一致するデータ資産一覧と詳細を表示する。"""
+    filtered = search.filter_assets(catalog_data.assets, catalog_data.columns, criteria)
+    if filtered.empty:
+        asset_results.clear_selection()
+        st.info("該当するデータ資産がありません。検索条件を変更してください。")
+        return
+
+    _render_assets_with_detail(
+        filtered=filtered,
+        catalog_data=catalog_data,
+        criteria=criteria,
+    )
 
 
 def main() -> None:
@@ -142,25 +183,27 @@ def main() -> None:
     if catalog_data is None:
         return
 
-    nav_table_id = _consume_nav_to_table_id(catalog_data.assets)
-
     with st.sidebar:
         criteria = asset_search.render(catalog_data.assets, catalog_data.tags)
 
+    has_search_condition = asset_search.has_condition(criteria)
+    if has_search_condition:
+        _clear_selection_when_search_changed(criteria)
+
+    nav_table_id = _get_nav_table_id_to_show(catalog_data.assets)
+    if nav_table_id is not None:
+        st.session_state[state.ASSET_SELECTED_TABLE_ID] = nav_table_id
+
     with main_pane:
-        if not asset_search.has_condition(criteria):
-            _render_without_condition(
-                nav_table_id,
-                catalog_data.assets,
-                catalog_data.columns,
-                catalog_data.visibility,
+        if not has_search_condition:
+            _render_assets_without_search_condition(
+                nav_table_id=nav_table_id,
+                catalog_data=catalog_data,
             )
             return
         _render_filtered_assets(
-            catalog_data.assets,
-            catalog_data.columns,
-            catalog_data.visibility,
-            criteria,
+            catalog_data=catalog_data,
+            criteria=criteria,
         )
 
 

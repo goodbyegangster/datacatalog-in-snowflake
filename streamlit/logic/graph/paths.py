@@ -104,6 +104,6 @@ def build_user_asset_graph(
     )
     return UserAssetGraph(
         paths=paths,
-        dot=dot_renderer.paths_to_dot(paths, user_name, asset_fqn, edges),
+        dot=dot_renderer.render_paths_to_dot(paths, user_name, asset_fqn, edges),
         path_limit_exceeded=path_limit_exceeded,
     )

@@ -197,7 +197,8 @@ def test_users_page_stops_when_current_user_is_unavailable(
         ("ログインユーザーのみ表示", True, True)
     ]
     assert [warning.value for warning in app.warning] == [
-        "ログインユーザー名を取得できないため、ログインユーザーのみ表示を適用できません。"
+        "ログインユーザーのみ表示が有効ですが、現在のログインユーザー名を取得できないため、"
+        "ユーザー一覧を表示できません。"
     ]
     assert len(app.dataframe) == 0
 

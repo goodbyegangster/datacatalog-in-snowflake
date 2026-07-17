@@ -10,7 +10,8 @@ from logic.search import UserFreewordQuery
 from runtime import state, user_context
 
 CURRENT_USER_UNAVAILABLE_MESSAGE = (
-    "ログインユーザー名を取得できないため、ログインユーザーのみ表示を適用できません。"
+    "ログインユーザーのみ表示が有効ですが、現在のログインユーザー名を取得できないため、"
+    "ユーザー一覧を表示できません。"
 )
 FREEWORD_TARGET_KEYS = (
     state.SEARCH_USER_TARGET_USER_NAME,
@@ -45,8 +46,8 @@ def _clear() -> None:
     results.clear_selection()
 
 
-def prepare_for_user_navigation() -> None:
-    """明示的なユーザー遷移時に、遷移先を隠す検索条件を解除する。"""
+def set_all_users_view_for_navigation() -> None:
+    """ユーザー指定の遷移時に、フリーワードを消して全ユーザー表示へ戻す。"""
     st.session_state[state.SEARCH_USER_FREEWORD] = ""
     if not settings.IS_VISIBLE_ONLY_SELF_USER:
         st.session_state[state.SEARCH_USER_ONLY_SELF] = False

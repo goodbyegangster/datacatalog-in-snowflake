@@ -1,6 +1,6 @@
 """ロール継承 graph の経路探索と DOT 生成。"""
 
-from logic.graph.dot_renderer import legend_dot, paths_to_dot
+from logic.graph.dot_renderer import render_legend_dot, render_paths_to_dot
 from logic.graph.paths import (
     GRAPH_RELATION_TYPES,
     UserAssetGraph,
@@ -15,6 +15,6 @@ __all__ = [
     "_find_user_asset_paths",
     "build_user_asset_graph",
     "find_user_asset_paths",
-    "legend_dot",
-    "paths_to_dot",
+    "render_legend_dot",
+    "render_paths_to_dot",
 ]

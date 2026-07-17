@@ -12,7 +12,8 @@ from runtime import navigation, user_context
 
 TABLE_KEY = "asset_users_table"
 CURRENT_USER_UNAVAILABLE_MESSAGE = (
-    "ログインユーザー名を取得できないため、ログインユーザーのみ表示を適用できません。"
+    "ログインユーザーのみ表示が有効ですが、現在のログインユーザー名を取得できないため、"
+    "閲覧可能ユーザーを表示できません。"
 )
 
 

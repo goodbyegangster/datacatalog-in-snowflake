@@ -44,9 +44,9 @@ def test_build_user_asset_graph_returns_dot_for_reachable_asset() -> None:
     assert 'label="凡例"' not in result.dot
 
 
-def test_legend_dot_returns_node_legend() -> None:
+def test_render_legend_dot_returns_node_legend() -> None:
     """凡例 DOT にユーザー、ロール、資産ノードを含める。"""
-    result = graph.legend_dot()
+    result = graph.render_legend_dot()
 
     assert 'label="凡例"' in result
     assert "legend_user" in result
