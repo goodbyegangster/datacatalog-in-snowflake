@@ -150,7 +150,7 @@ Streamlit in Snowflake アプリのリファクタリング候補を管理する
     - private helper はテスト対象にせず、`DISPLAY_SCOPES` 絞り込みだけを `catalog/frame.py` の public な純関数へ切り出した。
     - `filter_rows_by_display_scopes()` の unit test を追加し、DB / スキーマの一致条件を検証した。
 
-- [ ] fake provider と tests fixture の重複を整理する
+- [x] fake provider と tests fixture の重複を整理する
   - 対象:
     - `streamlit/catalog/providers/fake.py`
     - `streamlit/tests/fixtures/catalog_data.py`
@@ -160,6 +160,9 @@ Streamlit in Snowflake アプリのリファクタリング候補を管理する
     - 画面確認用 fake data と unit test fixture のズレを減らす。
   - 注意:
     - test fixture はテスト意図を表すため、完全共通化しすぎない。
+  - 判断:
+    - `tests/fixtures/catalog_data.py` は fake provider を呼ぶ薄い wrapper になっており、fixture 側に fake data 本体を重複保持していない。
+    - テスト内に残る `ORDERS` / `ALICE` などのリテラルは期待値としてテスト意図を表すため、現時点では残す。
 
 ## 優先度 低 / 後続
 
@@ -175,7 +178,7 @@ Streamlit in Snowflake アプリのリファクタリング候補を管理する
   - 注意:
     - SiS ではなく fake mode のローカル Streamlit で確認する。
 
-- [ ] `settings.py` 生成物と template の扱いを整理する
+- [x] `settings.py` 生成物と template の扱いを整理する
   - 対象:
     - `streamlit/settings.py`
     - `streamlit/settings.py.template`
@@ -186,6 +189,9 @@ Streamlit in Snowflake アプリのリファクタリング候補を管理する
     - README またはコメントで「生成物」「編集元」の関係を明確にする。
   - 注意:
     - これはコード整理というより運用整理。
+  - 判断:
+    - `streamlit/README.md` の Usage に、`settings.py` は生成物であり、編集元は `settings.py.template` と `.env` であることを追記した。
+    - `snowflake.yml` / `.streamlit/secrets.toml` も `make init-*` が生成する旨に説明を整理した。
 
 - [ ] docs の追随差分を別タスクで整理する
   - 対象:
