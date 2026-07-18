@@ -15,7 +15,7 @@ def test_render_catalog_load_error_hides_exception_outside_fake_mode(
     exceptions: list[Exception] = []
     exc = RuntimeError("load failed")
 
-    monkeypatch.setattr(error_handling.catalog, "data_mode", lambda: "snowflake")
+    monkeypatch.setattr(error_handling.catalog, "get_data_mode", lambda: "snowflake")
     monkeypatch.setattr(error_handling.st, "error", messages.append)
     monkeypatch.setattr(error_handling.st, "exception", exceptions.append)
 
@@ -33,7 +33,7 @@ def test_render_catalog_load_error_shows_exception_in_fake_mode(
     exceptions: list[Exception] = []
     exc = RuntimeError("load failed")
 
-    monkeypatch.setattr(error_handling.catalog, "data_mode", lambda: "fake")
+    monkeypatch.setattr(error_handling.catalog, "get_data_mode", lambda: "fake")
     monkeypatch.setattr(error_handling.st, "error", messages.append)
     monkeypatch.setattr(error_handling.st, "exception", exceptions.append)
 

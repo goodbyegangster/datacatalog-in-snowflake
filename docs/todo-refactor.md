@@ -118,7 +118,7 @@ Streamlit in Snowflake アプリのリファクタリング候補を管理する
     - `TagSearchMetadata` を追加し、タグ UI 描画に必要な `widget_key` / 選択肢 / コメントを事前に組み立てるようにした。
     - `render()` のタグ描画部分は metadata を順に描画し、検索条件へ変換するだけにした。
 
-- [ ] provider facade の型を `Protocol` で明確にする
+- [x] provider facade の型を `Protocol` で明確にする
   - 対象:
     - `streamlit/catalog/provider.py`
     - `streamlit/catalog/providers/fake.py`
@@ -130,6 +130,9 @@ Streamlit in Snowflake アプリのリファクタリング候補を管理する
     - 将来 provider を増やす場合の差し替え境界を明確にする。
   - 注意:
     - 実行時の仕組みは現状のままでよく、クラス化は必須ではない。
+  - 判断:
+    - `CatalogProvider` Protocol を追加し、provider module が満たすべき `load_*()` 関数セットを明示した。
+    - `_provider()` の戻り値を `CatalogProvider` にし、fake / snowflake の切り替え方法は維持した。
 
 - [ ] Snowflake provider の normalize / JSON parse / scope filter をテストしやすくする
   - 対象:

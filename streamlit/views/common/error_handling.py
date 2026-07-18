@@ -14,5 +14,5 @@ CATALOG_LOAD_ERROR_MESSAGE = (
 def render_catalog_load_error(exc: Exception) -> None:
     """カタログロード失敗時のエラーを表示する。"""
     st.error(CATALOG_LOAD_ERROR_MESSAGE)
-    if catalog.data_mode() == "fake":
+    if catalog.get_data_mode() == "fake":
         st.exception(exc)

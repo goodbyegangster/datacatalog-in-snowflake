@@ -1,12 +1,6 @@
-"""カタログ表のスキーマ定義（列名と行の型）。
+"""カタログ DataFrame の列名と行型を定義する。
 
-各カタログ表について、列名を ``StrEnum``（1 表 = 1 クラス）で定数化し、行の型を
-``TypedDict`` で記述する。UI / ロジック層は magic string ではなく列 Enum を用いて
-DataFrame を参照する（例: ``df[Assets.ASSET_NAME]``）。
-
-``StrEnum`` メンバーは str のサブクラスであり ``str(member) == member.value``。
-DataFrame の列ラベルは Enum の値（= 文字列）と一致させる（``catalog._frame`` が保証する）。
-列の並び・名称は design-model.md および dcm の refresh procedure と一致させること。
+UI / ロジック層はこの module の StrEnum を使って列参照する。
 """
 
 from __future__ import annotations
@@ -14,11 +8,11 @@ from __future__ import annotations
 from enum import StrEnum
 from typing import TypedDict
 
-# --- 配列列に含まれる object の型 ---------------------------------------------
+# --- list[dict] として扱う列の要素型 ------------------------------------------
 
 
 class TagRef(TypedDict):
-    """TAGS 列（ASSETS / COLUMNS）の 1 要素。"""
+    """ASSETS.TAGS / COLUMNS.TAGS の 1 要素。"""
 
     TAG_DATABASE: str
     TAG_SCHEMA: str
@@ -27,7 +21,7 @@ class TagRef(TypedDict):
 
 
 class ForeignKeyRef(TypedDict):
-    """COLUMNS.FOREIGN_KEYS 列の 1 要素（参照先）。"""
+    """COLUMNS.FOREIGN_KEYS の 1 要素。"""
 
     REFERENCED_DATABASE: str
     REFERENCED_SCHEMA: str

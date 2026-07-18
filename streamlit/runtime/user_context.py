@@ -11,7 +11,7 @@ FAKE_CURRENT_USER_NAME = "ALICE"
 
 def current_user_name() -> str | None:
     """Streamlit のログインユーザー名を返す。fake mode では固定ユーザーを返す。"""
-    if catalog.data_mode() == "fake":
+    if catalog.get_data_mode() == "fake":
         return FAKE_CURRENT_USER_NAME
 
     user = st.user.to_dict()
