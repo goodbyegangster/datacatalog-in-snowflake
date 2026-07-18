@@ -104,7 +104,7 @@ Streamlit in Snowflake アプリのリファクタリング候補を管理する
     - `_build_default_values()`、`_initialize_state()`、`_clear_search_inputs()`、`build_fingerprint()` へ命名を揃えた。
     - fingerprint は assets/users とも Value Object 化し、tuple の順番依存を避けた。
 
-- [ ] タグ検索 UI 用の tag metadata 生成を分離する
+- [x] タグ検索 UI 用の tag metadata 生成を分離する
   - 対象:
     - `streamlit/components/assets/search.py`
   - 現状:
@@ -114,6 +114,9 @@ Streamlit in Snowflake アプリのリファクタリング候補を管理する
     - search UI の描画処理を短くする。
   - 注意:
     - 現状のデータ量では性能問題というより読みやすさの改善。
+  - 判断:
+    - `TagSearchMetadata` を追加し、タグ UI 描画に必要な `widget_key` / 選択肢 / コメントを事前に組み立てるようにした。
+    - `render()` のタグ描画部分は metadata を順に描画し、検索条件へ変換するだけにした。
 
 - [ ] provider facade の型を `Protocol` で明確にする
   - 対象:

@@ -54,6 +54,26 @@ class AssetSearchFingerprint:
     is_tag_or_enabled: bool
 
 
+@dataclass(frozen=True)
+class _TagMasterMetadata:
+    """TAGS マスターから取得したタグ検索 UI 用の値。"""
+
+    value_options: list[str]
+    comment: str | None
+
+
+@dataclass(frozen=True)
+class TagSearchMetadata:
+    """タグ検索 UI の描画と検索条件生成に使う値。"""
+
+    tag_database: str
+    tag_schema: str
+    tag_name: str
+    widget_key: str
+    value_options: list[str]
+    comment: str | None
+
+
 def _build_default_values() -> dict[str, object]:
     """検索ウィジェットの初期値。"""
     return {
@@ -71,34 +91,77 @@ def _build_default_values() -> dict[str, object]:
     }
 
 
-def _get_tag_allowed_values(tags: pd.DataFrame, tag_key: SelectableTagKey) -> list[str]:
-    """TAGS マスターから、指定タグの allowed_values を取得する。"""
+def _build_tag_master_metadata_by_key(
+    tags: pd.DataFrame,
+) -> dict[tuple[str, str, str], _TagMasterMetadata]:
+    """TAGS マスターをタグキーごとの UI 用 metadata にまとめる。"""
     tags_schema = schema.Tags
-    mask = (
-        (tags[tags_schema.TAG_DATABASE] == tag_key["DATABASE_NAME"])
-        & (tags[tags_schema.TAG_SCHEMA] == tag_key["SCHEMA_NAME"])
-        & (tags[tags_schema.TAG_NAME] == tag_key["TAG_NAME"])
-    )
-    values = tags.loc[mask, str(tags_schema.TAG_VALUE)].dropna().astype(str).tolist()
-    return sorted(values)
+    values_by_key: dict[tuple[str, str, str], set[str]] = {}
+    comments_by_key: dict[tuple[str, str, str], set[str]] = {}
+
+    for tag_database, tag_schema, tag_name, tag_value, tag_comment in tags[
+        [
+            tags_schema.TAG_DATABASE,
+            tags_schema.TAG_SCHEMA,
+            tags_schema.TAG_NAME,
+            tags_schema.TAG_VALUE,
+            tags_schema.TAG_COMMENT,
+        ]
+    ].itertuples(index=False, name=None):
+        key = (str(tag_database), str(tag_schema), str(tag_name))
+        if pd.notna(tag_value):
+            values_by_key.setdefault(key, set()).add(str(tag_value))
+        if pd.notna(tag_comment) and (comment := str(tag_comment).strip()):
+            comments_by_key.setdefault(key, set()).add(comment)
+
+    return {
+        key: _TagMasterMetadata(
+            value_options=sorted(values),
+            comment="\n\n".join(sorted(comments_by_key.get(key, set()))) or None,
+        )
+        for key, values in values_by_key.items()
+    }
 
 
-def _get_tag_comment(tags: pd.DataFrame, tag_key: SelectableTagKey) -> str | None:
-    """TAGS マスターから、指定タグのコメントを取得する。"""
-    tags_schema = schema.Tags
-    mask = (
-        (tags[tags_schema.TAG_DATABASE] == tag_key["DATABASE_NAME"])
-        & (tags[tags_schema.TAG_SCHEMA] == tag_key["SCHEMA_NAME"])
-        & (tags[tags_schema.TAG_NAME] == tag_key["TAG_NAME"])
-    )
-    comments = [
-        str(value).strip()
-        for value in tags.loc[mask, str(tags_schema.TAG_COMMENT)].dropna().unique().tolist()
-        if str(value).strip()
+def _build_tag_search_metadata(tags: pd.DataFrame) -> list[TagSearchMetadata]:
+    """検索対象タグごとの UI 用 metadata を組み立てる。"""
+    metadata_by_key = _build_tag_master_metadata_by_key(tags)
+    return [
+        _build_tag_search_metadata_item(tag_key, metadata_by_key)
+        for tag_key in SELECTABLE_TAG_KEYS
     ]
-    if not comments:
-        return None
-    return "\n\n".join(sorted(comments))
+
+
+def _build_tag_search_metadata_item(
+    tag_key: SelectableTagKey,
+    metadata_by_key: dict[tuple[str, str, str], _TagMasterMetadata],
+) -> TagSearchMetadata:
+    """検索対象タグ 1 件分の UI 用 metadata を組み立てる。"""
+    key = (
+        tag_key["DATABASE_NAME"],
+        tag_key["SCHEMA_NAME"],
+        tag_key["TAG_NAME"],
+    )
+    metadata = metadata_by_key.get(key, _TagMasterMetadata(value_options=[], comment=None))
+    return TagSearchMetadata(
+        tag_database=tag_key["DATABASE_NAME"],
+        tag_schema=tag_key["SCHEMA_NAME"],
+        tag_name=tag_key["TAG_NAME"],
+        widget_key=_build_tag_widget_key(tag_key),
+        value_options=metadata.value_options,
+        comment=metadata.comment,
+    )
+
+
+def _build_tag_selection(tag_metadata: TagSearchMetadata) -> TagSelection:
+    """現在の session_state からタグ検索条件を組み立てる。"""
+    return TagSelection(
+        tag_database=tag_metadata.tag_database,
+        tag_schema=tag_metadata.tag_schema,
+        tag_name=tag_metadata.tag_name,
+        selected=st.session_state.get(tag_metadata.widget_key, []),
+        tag_value_options=tag_metadata.value_options,
+    )
 
 
 def _build_tag_widget_key(tag_key: SelectableTagKey) -> str:
@@ -254,30 +317,20 @@ def render(assets: pd.DataFrame, tags: pd.DataFrame) -> AssetSearchCriteria:
             label_visibility="collapsed",
         )
 
-    tag_selections: list[TagSelection] = []
-    tag_widget_keys = [_build_tag_widget_key(t) for t in SELECTABLE_TAG_KEYS]
+    tag_metadata_list = _build_tag_search_metadata(tags)
+    tag_widget_keys = [tag_metadata.widget_key for tag_metadata in tag_metadata_list]
     has_selected_tag_values = any(st.session_state.get(k, []) for k in tag_widget_keys)
     with st.expander("タグ", expanded=has_selected_tag_values):
         _render_combine_control(state.SEARCH_ASSET_OP_TAG)
-        for tag_key, widget_key in zip(SELECTABLE_TAG_KEYS, tag_widget_keys, strict=True):
-            tag_value_options = _get_tag_allowed_values(tags, tag_key)
-            st.markdown(f"**{tag_key['TAG_NAME']}**")
-            if comment := _get_tag_comment(tags, tag_key):
-                st.caption(comment)
+        for tag_metadata in tag_metadata_list:
+            st.markdown(f"**{tag_metadata.tag_name}**")
+            if tag_metadata.comment:
+                st.caption(tag_metadata.comment)
             st.multiselect(
-                tag_key["TAG_NAME"],
-                tag_value_options,
-                key=widget_key,
+                tag_metadata.tag_name,
+                tag_metadata.value_options,
+                key=tag_metadata.widget_key,
                 label_visibility="collapsed",
-            )
-            tag_selections.append(
-                TagSelection(
-                    tag_database=tag_key["DATABASE_NAME"],
-                    tag_schema=tag_key["SCHEMA_NAME"],
-                    tag_name=tag_key["TAG_NAME"],
-                    selected=st.session_state.get(widget_key, []),
-                    tag_value_options=tag_value_options,
-                )
             )
 
     return AssetSearchCriteria(
@@ -291,7 +344,9 @@ def render(assets: pd.DataFrame, tags: pd.DataFrame) -> AssetSearchCriteria:
         selected_databases=st.session_state.get(state.SEARCH_ASSET_DATABASES, []),
         selected_schemas=st.session_state.get(state.SEARCH_ASSET_SCHEMAS, []),
         selected_types=st.session_state.get(state.SEARCH_ASSET_TYPES, []),
-        tag_selections=tag_selections,
+        tag_selections=[
+            _build_tag_selection(tag_metadata) for tag_metadata in tag_metadata_list
+        ],
         is_hierarchy_or_enabled=_is_or_operator_enabled(state.SEARCH_ASSET_OP_HIERARCHY),
         is_type_or_enabled=_is_or_operator_enabled(state.SEARCH_ASSET_OP_TYPE),
         is_tag_or_enabled=_is_or_operator_enabled(state.SEARCH_ASSET_OP_TAG),
