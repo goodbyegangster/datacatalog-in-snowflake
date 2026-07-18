@@ -30,8 +30,8 @@ def filter_users(
     if current_user_filter_name is not None:
         df = df[df[users_schema.USER_NAME] == current_user_filter_name]
 
-    op, tokens = parse_freeword(freeword.freeword_text)
-    if not tokens:
+    parsed = parse_freeword(freeword.freeword_text)
+    if not parsed.tokens:
         return df
 
     def token_mask(token: str) -> pd.Series:
@@ -51,8 +51,8 @@ def filter_users(
             )
         return mask
 
-    masks = [token_mask(t) for t in tokens]
+    masks = [token_mask(t) for t in parsed.tokens]
     combined = masks[0]
     for m in masks[1:]:
-        combined = combined | m if op == "or" else combined & m
+        combined = combined | m if parsed.operator == "or" else combined & m
     return df[combined]

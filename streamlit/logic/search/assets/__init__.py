@@ -12,6 +12,7 @@ from logic.search.assets.filter import (
 )
 from logic.search.assets.freeword import (
     FreewordMatchReason,
+    FreewordMatchReasons,
     FreewordQuery,
     build_freeword_match_reasons,
     get_freeword_asset_ids,

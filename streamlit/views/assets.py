@@ -159,7 +159,11 @@ def _render_filtered_assets(
     criteria: search.AssetSearchCriteria,
 ) -> None:
     """検索条件に一致するデータ資産一覧と詳細を表示する。"""
-    filtered = search.filter_assets(catalog_data.assets, catalog_data.columns, criteria)
+    filtered = search.filter_assets(
+        assets=catalog_data.assets,
+        columns=catalog_data.columns,
+        criteria=criteria,
+    )
     if filtered.empty:
         asset_results.clear_asset_selection()
         st.info("該当するデータ資産がありません。検索条件を変更してください。")

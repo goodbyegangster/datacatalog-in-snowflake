@@ -2,15 +2,12 @@
 
 from __future__ import annotations
 
-from collections.abc import Mapping
-from numbers import Integral
-
 import pandas as pd
 import streamlit as st
 
 from catalog import schema
 from components.common import dataframe_selection
-from logic.search import FreewordMatchReason
+from logic.search import FreewordMatchReasons
 from runtime import state
 
 RESULTS_KEY = "asset_table"
@@ -28,23 +25,6 @@ _COMPACT_COLUMN_CONFIG = {
 }
 
 
-def _convert_table_id_to_key(value: object) -> int:
-    """TABLE_ID 値を一致理由 lookup 用の int key に変換する。"""
-    if isinstance(value, Integral):
-        return int(value)
-    if isinstance(value, float) and value.is_integer():
-        return int(value)
-    return int(str(value))
-
-
-def _get_freeword_reason_text(
-    table_id: object,
-    reasons: Mapping[int, FreewordMatchReason],
-) -> str:
-    """TABLE_ID に対応するフリーワード一致理由の表示文字列を返す。"""
-    return reasons.get(_convert_table_id_to_key(table_id), FreewordMatchReason()).text
-
-
 def clear_asset_selection() -> None:
     """選択中データ資産と一覧 widget の選択状態を解除する。"""
     st.session_state.pop(state.ASSET_SELECTED_TABLE_ID, None)
@@ -55,14 +35,14 @@ def render(
     assets: pd.DataFrame,
     *,
     compact: bool = False,
-    freeword_reasons: Mapping[int, FreewordMatchReason] | None = None,
+    freeword_reasons: FreewordMatchReasons | None = None,
 ) -> int | None:
     """データ資産一覧を表示し、選択中の TABLE_ID を返す。"""
     assets_schema = schema.Assets
     ordered = assets.sort_values(
         [assets_schema.DATABASE_NAME, assets_schema.SCHEMA_NAME, assets_schema.ASSET_NAME]
     ).reset_index(drop=True)
-    reasons = freeword_reasons or {}
+    reasons = freeword_reasons or FreewordMatchReasons()
 
     if compact:
         display = pd.DataFrame({"名前": ordered[assets_schema.ASSET_NAME]}).reset_index(drop=True)
@@ -77,7 +57,7 @@ def render(
                 "説明": ordered[assets_schema.DESCRIPTION],
                 "フリーワード一致": ordered[assets_schema.TABLE_ID]
                 .astype(int)
-                .map(lambda table_id: _get_freeword_reason_text(table_id, reasons)),
+                .map(reasons.get_text),
             }
         ).reset_index(drop=True)
         column_config = _COLUMN_CONFIG

@@ -68,11 +68,11 @@ def get_freeword_asset_ids(
     fq: FreewordQuery, assets: pd.DataFrame, columns: pd.DataFrame
 ) -> set[int] | None:
     """フリーワード検索に一致する TABLE_ID を返す。空入力なら None を返す。"""
-    op, tokens = parse_freeword(fq.text)
-    if not tokens:
+    parsed = parse_freeword(fq.text)
+    if not parsed.tokens:
         return None
-    per_token = [_find_asset_ids_matching_token(t, assets, columns, fq) for t in tokens]
-    if op == "or":
+    per_token = [_find_asset_ids_matching_token(t, assets, columns, fq) for t in parsed.tokens]
+    if parsed.operator == "or":
         return set().union(*per_token)
     result = per_token[0]
     for s in per_token[1:]:
@@ -85,6 +85,22 @@ class FreewordMatchReason:
     """フリーワード一致理由の表示値。"""
 
     text: str = ""
+
+
+@dataclass(frozen=True)
+class FreewordMatchReasons:
+    """TABLE_ID ごとのフリーワード一致理由。
+
+    Attributes:
+        by_table_id: データ資産の TABLE_ID を key にした一致理由。
+
+    """
+
+    by_table_id: dict[int, FreewordMatchReason] = field(default_factory=dict)
+
+    def get_text(self, table_id: object) -> str:
+        """指定 TABLE_ID の一致理由を返す。未登録なら空文字を返す。"""
+        return self.by_table_id.get(_convert_to_int(table_id), FreewordMatchReason()).text
 
 
 @dataclass
@@ -210,32 +226,64 @@ def _format_reason(hit: _FreewordMatchHit) -> str:
             return ""
 
 
+def _get_matched_asset_ids_for_reasons(
+    *,
+    fq: FreewordQuery,
+    assets: pd.DataFrame,
+    columns: pd.DataFrame,
+    per_token_reasons: list[dict[int, _FreewordMatchHit]],
+    operator: str,
+) -> set[int]:
+    """一致理由を作る対象 TABLE_ID を返す。"""
+    if operator == "and":
+        return get_freeword_asset_ids(fq, assets, columns) or set()
+    return set().union(*(set(reasons) for reasons in per_token_reasons))
+
+
+def _merge_reason_hits(
+    *,
+    matched_ids: set[int],
+    per_token_reasons: list[dict[int, _FreewordMatchHit]],
+) -> dict[int, _FreewordMatchHit]:
+    """トークンごとの一致箇所を TABLE_ID 単位へ集約する。"""
+    reasons_by_id: dict[int, _FreewordMatchHit] = {}
+    for token_reasons in per_token_reasons:
+        for table_id in matched_ids & set(token_reasons):
+            current_hit = reasons_by_id.get(table_id)
+            if current_hit is None:
+                reasons_by_id[table_id] = token_reasons[table_id]
+                continue
+            reasons_by_id[table_id] = _merge_hits(current_hit, token_reasons[table_id])
+    return reasons_by_id
+
+
 def build_freeword_match_reasons(
     fq: FreewordQuery, assets: pd.DataFrame, columns: pd.DataFrame
-) -> dict[int, FreewordMatchReason]:
+) -> FreewordMatchReasons:
     """フリーワード検索の一致理由を TABLE_ID ごとに組み立てる。"""
-    op, tokens = parse_freeword(fq.text)
-    if not tokens:
-        return {}
+    parsed = parse_freeword(fq.text)
+    if not parsed.tokens:
+        return FreewordMatchReasons()
 
-    per_token = [_find_match_reasons_by_token(t, assets, columns, fq) for t in tokens]
-    if op == "and":
-        matched_ids = get_freeword_asset_ids(fq, assets, columns) or set()
-    else:
-        matched_ids = set().union(*(set(reasons) for reasons in per_token))
-
-    reasons_by_id: dict[int, _FreewordMatchHit] = {}
-    for token_reasons in per_token:
-        for table_id in matched_ids & set(token_reasons):
-            if table_id in reasons_by_id:
-                reasons_by_id[table_id] = _merge_hits(
-                    reasons_by_id[table_id], token_reasons[table_id]
-                )
-            else:
-                reasons_by_id[table_id] = token_reasons[table_id]
-    return {
-        table_id: FreewordMatchReason(
-            text=_format_reason(hit),
-        )
-        for table_id, hit in reasons_by_id.items()
-    }
+    per_token_reasons = [
+        _find_match_reasons_by_token(t, assets, columns, fq) for t in parsed.tokens
+    ]
+    matched_ids = _get_matched_asset_ids_for_reasons(
+        fq=fq,
+        assets=assets,
+        columns=columns,
+        per_token_reasons=per_token_reasons,
+        operator=parsed.operator,
+    )
+    reasons_by_id = _merge_reason_hits(
+        matched_ids=matched_ids,
+        per_token_reasons=per_token_reasons,
+    )
+    return FreewordMatchReasons(
+        by_table_id={
+            table_id: FreewordMatchReason(
+                text=_format_reason(hit),
+            )
+            for table_id, hit in reasons_by_id.items()
+        }
+    )

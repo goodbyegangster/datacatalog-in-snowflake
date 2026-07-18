@@ -4,4 +4,4 @@
 
 from __future__ import annotations
 
-from logic.search.common.freeword import parse_freeword
+from logic.search.common.freeword import FreewordParseResult, parse_freeword

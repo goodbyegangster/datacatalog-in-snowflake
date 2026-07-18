@@ -6,7 +6,13 @@ import pandas as pd
 
 from catalog import schema
 from logic import search
-from logic.search import AssetSearchCriteria, FreewordQuery, TagSelection, UserFreewordQuery
+from logic.search import (
+    AssetSearchCriteria,
+    FreewordParseResult,
+    FreewordQuery,
+    TagSelection,
+    UserFreewordQuery,
+)
 from tests.fixtures import catalog_data
 
 
@@ -33,12 +39,15 @@ def tag_selection(tag_name: str, selected: list[str]) -> TagSelection:
 
 def test_parse_freeword_uses_or_before_and() -> None:
     """OR を AND より先に分割する。"""
-    assert search.parse_freeword("orders OR leads AND customer") == (
-        "or",
-        ["orders", "leads AND customer"],
+    assert search.parse_freeword("orders OR leads AND customer") == FreewordParseResult(
+        operator="or",
+        tokens=["orders", "leads AND customer"],
     )
-    assert search.parse_freeword("orders AND amount") == ("and", ["orders", "amount"])
-    assert search.parse_freeword("  ") == ("and", [])
+    assert search.parse_freeword("orders AND amount") == FreewordParseResult(
+        operator="and",
+        tokens=["orders", "amount"],
+    )
+    assert search.parse_freeword("  ") == FreewordParseResult(operator="and", tokens=[])
 
 
 def test_filter_assets_matches_column_freeword() -> None:
@@ -53,7 +62,11 @@ def test_filter_assets_matches_column_freeword() -> None:
         )
     )
 
-    result = search.filter_assets(catalog_data.assets(), catalog_data.columns(), criteria)
+    result = search.filter_assets(
+        assets=catalog_data.assets(),
+        columns=catalog_data.columns(),
+        criteria=criteria,
+    )
 
     assert asset_names(result) == ["CAMPAIGN_LEADS", "CUSTOMERS"]
 
@@ -64,14 +77,14 @@ def test_filter_assets_matches_and_and_or_freeword() -> None:
     columns = catalog_data.columns()
 
     and_result = search.filter_assets(
-        assets,
-        columns,
-        AssetSearchCriteria(freeword=FreewordQuery(text="Customer AND master")),
+        assets=assets,
+        columns=columns,
+        criteria=AssetSearchCriteria(freeword=FreewordQuery(text="Customer AND master")),
     )
     or_result = search.filter_assets(
-        assets,
-        columns,
-        AssetSearchCriteria(freeword=FreewordQuery(text="orders OR campaign")),
+        assets=assets,
+        columns=columns,
+        criteria=AssetSearchCriteria(freeword=FreewordQuery(text="orders OR campaign")),
     )
 
     assert asset_names(and_result) == ["CUSTOMERS"]
@@ -86,7 +99,11 @@ def test_filter_assets_applies_hierarchy_and_type_as_and_bucket() -> None:
         selected_types=["BASE TABLE"],
     )
 
-    result = search.filter_assets(catalog_data.assets(), catalog_data.columns(), criteria)
+    result = search.filter_assets(
+        assets=catalog_data.assets(),
+        columns=catalog_data.columns(),
+        criteria=criteria,
+    )
 
     assert asset_names(result) == ["ORDERS"]
 
@@ -100,7 +117,11 @@ def test_filter_assets_applies_category_or_bucket() -> None:
         is_type_or_enabled=True,
     )
 
-    result = search.filter_assets(catalog_data.assets(), catalog_data.columns(), criteria)
+    result = search.filter_assets(
+        assets=catalog_data.assets(),
+        columns=catalog_data.columns(),
+        criteria=criteria,
+    )
 
     assert asset_names(result) == ["CAMPAIGN_LEADS", "CUSTOMERS"]
 
@@ -111,19 +132,19 @@ def test_filter_assets_matches_tags_on_asset_and_columns() -> None:
     columns = catalog_data.columns()
 
     asset_tag_result = search.filter_assets(
-        assets,
-        columns,
-        AssetSearchCriteria(tag_selections=[tag_selection("DATA_DOMAIN", ["SALES"])]),
+        assets=assets,
+        columns=columns,
+        criteria=AssetSearchCriteria(tag_selections=[tag_selection("DATA_DOMAIN", ["SALES"])]),
     )
     column_tag_result = search.filter_assets(
-        assets,
-        columns,
-        AssetSearchCriteria(tag_selections=[tag_selection("PII", ["YES"])]),
+        assets=assets,
+        columns=columns,
+        criteria=AssetSearchCriteria(tag_selections=[tag_selection("PII", ["YES"])]),
     )
     multi_tag_result = search.filter_assets(
-        assets,
-        columns,
-        AssetSearchCriteria(
+        assets=assets,
+        columns=columns,
+        criteria=AssetSearchCriteria(
             tag_selections=[
                 tag_selection("DATA_DOMAIN", ["SALES"]),
                 tag_selection("SENSITIVITY", ["CONFIDENTIAL"]),
@@ -144,8 +165,8 @@ def test_freeword_match_reasons_show_asset_and_column_hits() -> None:
         catalog_data.columns(),
     )
 
-    assert reasons[2].text == "カラム名 EMAIL、カラム説明 EMAIL に一致。"
-    assert reasons[3].text == "カラム名 CUSTOMER_EMAIL、カラム説明 CUSTOMER_EMAIL に一致。"
+    assert reasons.get_text(2) == "カラム名 EMAIL、カラム説明 EMAIL に一致。"
+    assert reasons.get_text(3) == "カラム名 CUSTOMER_EMAIL、カラム説明 CUSTOMER_EMAIL に一致。"
 
 
 def test_freeword_match_reasons_split_object_and_column_sentences() -> None:
@@ -157,7 +178,7 @@ def test_freeword_match_reasons_split_object_and_column_sentences() -> None:
     )
 
     assert (
-        reasons[1].text
+        reasons.get_text(1)
         == "名前 / 説明 に一致。カラム名 ORDER_ID、カラム説明 ORDER_ID, AMOUNT に一致。"
     )
 
@@ -202,7 +223,7 @@ def test_freeword_match_reasons_limit_column_names() -> None:
         columns,
     )
 
-    assert reasons[1].text == "カラム名 ORDER_EMAIL, BILLING_EMAIL ほか1件 に一致。"
+    assert reasons.get_text(1) == "カラム名 ORDER_EMAIL, BILLING_EMAIL ほか1件 に一致。"
 
 
 def test_scope_options_come_from_assets() -> None:

@@ -7,6 +7,7 @@ from __future__ import annotations
 from logic.search.assets import (
     AssetSearchCriteria,
     FreewordMatchReason,
+    FreewordMatchReasons,
     FreewordQuery,
     TagSelection,
     build_freeword_match_reasons,
@@ -15,5 +16,5 @@ from logic.search.assets import (
     get_scope_database_names,
     get_scope_schema_names,
 )
-from logic.search.common import parse_freeword
+from logic.search.common import FreewordParseResult, parse_freeword
 from logic.search.users import UserFreewordQuery, filter_users

@@ -2,18 +2,46 @@
 
 from __future__ import annotations
 
+from dataclasses import dataclass
+from typing import Literal
 
-def parse_freeword(text: str) -> tuple[str, list[str]]:
-    """フリーワードを (結合演算子, トークン列) に分解する。
+FreewordOperator = Literal["and", "or"]
 
-    ` OR ` を含めば OR、無く ` AND ` を含めば AND、いずれも無ければ単一トークン（AND 扱い）。
-    空文字・空白のみなら空トークン列（= 無制約）を返す。
+
+@dataclass(frozen=True)
+class FreewordParseResult:
+    """フリーワードを検索条件へ分解した結果。
+
+    Attributes:
+        operator: トークン同士の結合方法。``OR`` 指定時だけ ``"or"`` になる。
+        tokens: 空白を除去した検索トークン。空ならフリーワード条件なしとして扱う。
+
+    """
+
+    operator: FreewordOperator
+    tokens: list[str]
+
+
+def parse_freeword(text: str) -> FreewordParseResult:
+    """フリーワードを結合方法と検索トークンへ分解する。
+
+    - `` OR `` を含む場合は OR 条件として分割する。
+    - `` OR `` を含まず `` AND `` を含む場合は AND 条件として分割する。
+    - どちらも含まない場合は、入力全体を 1 トークンの AND 条件として扱う。
+    - 空文字または空白のみの場合は、フリーワード条件なしとして扱う。
+
     """
     text = (text or "").strip()
     if not text:
-        return ("and", [])
+        return FreewordParseResult(operator="and", tokens=[])
     if " OR " in text:
-        return ("or", [t.strip() for t in text.split(" OR ") if t.strip()])
+        return FreewordParseResult(
+            operator="or",
+            tokens=[t.strip() for t in text.split(" OR ") if t.strip()],
+        )
     if " AND " in text:
-        return ("and", [t.strip() for t in text.split(" AND ") if t.strip()])
-    return ("and", [text])
+        return FreewordParseResult(
+            operator="and",
+            tokens=[t.strip() for t in text.split(" AND ") if t.strip()],
+        )
+    return FreewordParseResult(operator="and", tokens=[text])

@@ -26,8 +26,10 @@ class TagSelection:
         return not self.selected
 
 
-def _build_tag_value_matcher(sel: TagSelection, wanted: set[str]) -> Callable[[object], bool]:
-    """タグ参照リストが選択タグ値を含むか判定する関数を返す。"""
+def _build_selected_tag_value_matcher(
+    sel: TagSelection, wanted: set[str]
+) -> Callable[[object], bool]:
+    """タグ参照リストが選択されたタグキー・タグ値を含むか判定する関数を返す。"""
 
     def matches(tags: object) -> bool:
         if not isinstance(tags, list):
@@ -43,24 +45,44 @@ def _build_tag_value_matcher(sel: TagSelection, wanted: set[str]) -> Callable[[o
     return matches
 
 
+def _get_asset_ids_matching_asset_tags(
+    assets: pd.DataFrame,
+    matches: Callable[[object], bool],
+) -> set[int]:
+    """資産自身に付いたタグが検索条件に一致する TABLE_ID を返す。"""
+    assets_schema = schema.Assets
+    return set(assets.loc[assets[assets_schema.TAGS].map(matches), assets_schema.TABLE_ID])
+
+
+def _get_asset_ids_matching_column_tags(
+    columns: pd.DataFrame,
+    matches: Callable[[object], bool],
+) -> set[int]:
+    """カラムに付いたタグが検索条件に一致する資産の TABLE_ID を返す。"""
+    if columns.empty:
+        return set()
+
+    columns_schema = schema.Columns
+    column_tag_matches = columns[columns_schema.TAGS].map(matches)
+    return set(columns.loc[column_tag_matches, columns_schema.TABLE_ID])
+
+
 def build_tag_mask(
     *, assets: pd.DataFrame, columns: pd.DataFrame, selections: list[TagSelection]
 ) -> pd.Series:
     """タグ検索条件に一致するデータ資産のマスクを組み立てる。
 
-    資産自身のタグだけでなく、その資産のカラムに付いたタグも対象に含める。
+    各タグ条件について、資産自身のタグとカラムに付いたタグのどちらかが一致した資産を残す。
+    複数のタグ条件がある場合は、全てのタグ条件に一致する資産だけを残す。
     """
     assets_schema = schema.Assets
     mask = pd.Series(data=True, index=assets.index)
     for sel in selections:
         if sel.is_unconstrained:
             continue
-        matches = _build_tag_value_matcher(sel, set(sel.selected))
-        matched_ids = set(
-            assets.loc[assets[assets_schema.TAGS].map(matches), assets_schema.TABLE_ID]
-        )
-        if not columns.empty:
-            col_hit = columns[schema.Columns.TAGS].map(matches)
-            matched_ids |= set(columns.loc[col_hit, schema.Columns.TABLE_ID])
-        mask &= assets[assets_schema.TABLE_ID].isin(matched_ids)
+        matches = _build_selected_tag_value_matcher(sel, set(sel.selected))
+        asset_tag_matched_ids = _get_asset_ids_matching_asset_tags(assets, matches)
+        column_tag_matched_ids = _get_asset_ids_matching_column_tags(columns, matches)
+        tag_matched_asset_ids = asset_tag_matched_ids | column_tag_matched_ids
+        mask &= assets[assets_schema.TABLE_ID].isin(tag_matched_asset_ids)
     return mask
