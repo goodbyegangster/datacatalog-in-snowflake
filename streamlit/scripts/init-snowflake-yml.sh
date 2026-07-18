@@ -1,6 +1,4 @@
 #!/usr/bin/env bash
-# shellcheck disable=SC2155
-#
 # .env の値から snowflake.yml を生成する。
 set -Eeuo pipefail
 

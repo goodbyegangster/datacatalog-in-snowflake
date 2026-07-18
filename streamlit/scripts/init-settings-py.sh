@@ -1,6 +1,4 @@
 #!/usr/bin/env bash
-# shellcheck disable=SC2155
-#
 # .env の値から settings.py を生成する。
 set -Eeuo pipefail
 
