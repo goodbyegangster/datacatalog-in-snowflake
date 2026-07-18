@@ -9,7 +9,7 @@ import pandas as pd
 import streamlit as st
 from snowflake.snowpark import Session
 
-from catalog import schema
+from catalog import frame, schema
 from infrastructure.snowflake import get_session
 from settings import CATALOG_LOCATION, DISPLAY_SCOPES
 
@@ -56,23 +56,17 @@ def _parse_json_column(df: pd.DataFrame, column: StrEnum) -> pd.DataFrame:
     return parsed
 
 
-def _filter_rows_by_display_scopes(
-    df: pd.DataFrame, db_col: StrEnum, schema_col: StrEnum
-) -> pd.DataFrame:
-    """DISPLAY_SCOPES（公開対象の DB / スキーマ）に属する行だけを残す。"""
-    scopes = {(s["DATABASE_NAME"], s["SCHEMA_NAME"]) for s in DISPLAY_SCOPES}
-    keys = pd.Series(list(zip(df[str(db_col)], df[str(schema_col)], strict=True)), index=df.index)
-    return df[keys.isin(scopes)]
-
-
 @st.cache_data(ttl=CACHE_TTL)
 def load_assets() -> pd.DataFrame:
     """CATALOG.ASSETS。DISPLAY_SCOPES に含まれる資産のみ。"""
     assets_schema = schema.Assets
     df = _read_catalog_table(get_session(), "ASSETS")
     df = _parse_json_column(df, assets_schema.TAGS)
-    df = _filter_rows_by_display_scopes(
-        df, assets_schema.DATABASE_NAME, assets_schema.SCHEMA_NAME
+    df = frame.filter_rows_by_display_scopes(
+        df,
+        db_col=assets_schema.DATABASE_NAME,
+        schema_col=assets_schema.SCHEMA_NAME,
+        display_scopes=DISPLAY_SCOPES,
     )
     return _normalize_catalog_table(df, schema.Assets)
 
@@ -84,8 +78,11 @@ def load_columns() -> pd.DataFrame:
     df = _read_catalog_table(get_session(), "COLUMNS")
     df = _parse_json_column(df, columns_schema.TAGS)
     df = _parse_json_column(df, columns_schema.FOREIGN_KEYS)
-    df = _filter_rows_by_display_scopes(
-        df, columns_schema.DATABASE_NAME, columns_schema.SCHEMA_NAME
+    df = frame.filter_rows_by_display_scopes(
+        df,
+        db_col=columns_schema.DATABASE_NAME,
+        schema_col=columns_schema.SCHEMA_NAME,
+        display_scopes=DISPLAY_SCOPES,
     )
     return _normalize_catalog_table(df, schema.Columns)
 
@@ -118,7 +115,10 @@ def load_asset_visibility() -> pd.DataFrame:
     df = _read_catalog_table(get_session(), "ASSET_VISIBILITY")
     df = _parse_json_column(df, visibility_schema.USER_ROLES)
     df = _parse_json_column(df, visibility_schema.ASSET_ROLES)
-    df = _filter_rows_by_display_scopes(
-        df, visibility_schema.DATABASE_NAME, visibility_schema.SCHEMA_NAME
+    df = frame.filter_rows_by_display_scopes(
+        df,
+        db_col=visibility_schema.DATABASE_NAME,
+        schema_col=visibility_schema.SCHEMA_NAME,
+        display_scopes=DISPLAY_SCOPES,
     )
     return _normalize_catalog_table(df, schema.AssetVisibility)

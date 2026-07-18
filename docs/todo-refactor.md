@@ -134,16 +134,21 @@ Streamlit in Snowflake アプリのリファクタリング候補を管理する
     - `CatalogProvider` Protocol を追加し、provider module が満たすべき `load_*()` 関数セットを明示した。
     - `_provider()` の戻り値を `CatalogProvider` にし、fake / snowflake の切り替え方法は維持した。
 
-- [ ] Snowflake provider の normalize / JSON parse / scope filter をテストしやすくする
+- [x] Snowflake provider の normalize / JSON parse / scope filter をテストしやすくする
   - 対象:
     - `streamlit/catalog/providers/snowflake.py`
+    - `streamlit/catalog/frame.py`
   - 現状:
-    - `_normalize()`、`_parse_json_column()`、`_filter_display_scopes()` は良い単位だが、Snowflake provider 内の private helper に閉じている。
+    - `_normalize_catalog_table()`、`_parse_json_column()` は良い単位だが、Snowflake provider 内の private helper に閉じている。
+    - `DISPLAY_SCOPES` 絞り込みは `catalog/frame.py` の `filter_rows_by_display_scopes()` へ切り出し済み。
   - 狙い:
     - 不正な列、VARIANT 由来 JSON、`DISPLAY_SCOPES` 絞り込みの unit test を追加しやすくする。
     - 将来データ形が揺れた時の防波堤にする。
   - 注意:
     - public API を増やしすぎず、テスト対象として private helper を許容するか、`catalog/frame.py` 等へ切り出すかを選ぶ。
+  - 判断:
+    - private helper はテスト対象にせず、`DISPLAY_SCOPES` 絞り込みだけを `catalog/frame.py` の public な純関数へ切り出した。
+    - `filter_rows_by_display_scopes()` の unit test を追加し、DB / スキーマの一致条件を検証した。
 
 - [ ] fake provider と tests fixture の重複を整理する
   - 対象:
