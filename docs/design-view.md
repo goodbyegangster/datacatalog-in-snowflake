@@ -335,6 +335,10 @@ flowchart LR
 ```
 
 - `st.session_state` に「遷移先で選択させたい ID」を積んで `st.switch_page()` で移動する
+- ページ間遷移の state 操作と `st.switch_page()` は `streamlit/runtime/navigation.py` に集約する
+  - 通常遷移は `open_user_page()` / `open_asset_page()` を使う
+  - graph 遷移は `open_graph_page()` で対象ユーザー・対象資産・戻り先を積む
+  - graph ページでは `resolve_graph_target()` / `resolve_graph_return_page()` で遷移 state を解決する
 - graph ページからの「戻る」系ボタンは、遷移元ページ名を `st.session_state` に保持して実現する
   - `st.text_input` 等の widget key に紐づく state は、該当 widget が描画されないページへ移ると cleanup 対象になり得る
   - 検索条件は `streamlit_app.py` で widget cleanup を interrupt し、ページをまたいで保持する

@@ -36,10 +36,27 @@ Streamlit in Snowflake（SiS）実装規則を定義する。
 ## Directory Layout
 
 - [streamlit/README.md](../streamlit/README.md) を参照
+- 検索ロジックは `streamlit/logic/search/` 配下で責務別 package として管理する
+  - `assets/filter.py`: データ資産検索条件の合成
+  - `assets/freeword.py`: データ資産フリーワード検索
+  - `assets/tags.py`: データ資産タグ検索
+  - `users/filter.py`: ユーザー検索
+  - `common/freeword.py`: フリーワード条件の解析
+- Streamlit の UI 補助処理は `streamlit/components/common/` に置く
+  - dataframe selection 取り出し、表示 formatter、badge 色定義など
+- page をまたぐ runtime 契約は `streamlit/runtime/` に置く
+  - `state.py`: `st.session_state` key 名
+  - `navigation.py`: ページ間遷移 state と `st.switch_page()`
+  - `widget_state.py`: ページをまたいで保持する検索 widget key
+- page 共通の表示処理は `streamlit/views/common/` に置く
+  - カタログロード時のエラー表示など
 
 ## 検索の実装
 
 - ウィジェット：`st.text_input` / `st.checkbox` / `st.multiselect` / `st.segmented_control`（カテゴリー間の AND/OR）/ `st.expander`（カテゴリーのアコーディオン）
+- 検索条件の合成やフリーワード解析は Streamlit から切り離した純関数として `logic/search` に置く
+  - `logic.search` package の import は facade として利用してよい
+  - 実処理は `__init__.py` ではなく責務別 module に置く
 - 検索ウィジェットの選択値は `st.session_state` の key を明示して保持する。特にカテゴリー2（階層）の DB / スキーマ選択値は、[design-search.md](design-search.md) の連動仕様を成立させるため session_state 管理が必須:
   - スキーマの選択肢は、選択中の DB に**連動**して算出する（子プルダウンが親に依存）
   - DB プルダウンの `on_change` コールバックで、スキーマの選択 session_state をクリアし**未選択へリセット**する（未選択 = 無制約）

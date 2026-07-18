@@ -42,10 +42,13 @@ streamlit/
 │   └── providers/            # fake provider / Snowflake provider
 ├── components/               # page component
 │   ├── assets/               # データ資産 page の search / results / detail
+│   ├── common/               # component 共通 helper
 │   └── users/                # ユーザー page の search / results / detail
 ├── infrastructure/           # Snowflake 接続など外部基盤との接続
 ├── logic/                    # search / graph の純粋ロジック
-├── runtime/                  # session_state key / ログインユーザー情報
+│   ├── graph/                # ロール継承 graph の経路探索 / DOT 生成
+│   └── search/               # assets / users / common に分けた検索ロジック
+├── runtime/                  # session_state key / navigation / widget state / ログインユーザー情報
 ├── scripts/                  # .env から設定ファイルを生成する script
 ├── styles/                   # 全ページ共通 / ページ固有 CSS と loader
 ├── tests/                    # pytest
@@ -53,6 +56,7 @@ streamlit/
 │   ├── fixtures/             # fake catalog 用 test data
 │   └── unit/                 # search / graph の unit test
 ├── views/                    # Streamlit page 本体
+│   └── common/               # page 共通 helper
 ├── Makefile
 ├── pyproject.toml            # 依存定義
 ├── settings.py.template      # 表示 / 検索スコープ定義の template
