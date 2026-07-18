@@ -1,7 +1,9 @@
+/* graph ページではアプリ内の戻る導線を使うため、Streamlit の sidebar を隠す。 */
 [data-testid="stSidebar"] {
   display: none;
 }
 
+/* sidebar を隠したページでは、展開ボタンだけが残らないようにする。 */
 [data-testid="stSidebarCollapsedControl"] {
   display: none;
 }

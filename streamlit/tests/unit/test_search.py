@@ -138,7 +138,7 @@ def test_filter_assets_matches_tags_on_asset_and_columns() -> None:
 
 def test_freeword_match_reasons_show_asset_and_column_hits() -> None:
     """一致理由に資産とカラムのヒット箇所を表示する。"""
-    reasons = search.freeword_match_reasons(
+    reasons = search.build_freeword_match_reasons(
         FreewordQuery(text="email"),
         catalog_data.assets(),
         catalog_data.columns(),
@@ -150,7 +150,7 @@ def test_freeword_match_reasons_show_asset_and_column_hits() -> None:
 
 def test_freeword_match_reasons_split_object_and_column_sentences() -> None:
     """オブジェクトとカラムの一致理由を文で分ける。"""
-    reasons = search.freeword_match_reasons(
+    reasons = search.build_freeword_match_reasons(
         FreewordQuery(text="order"),
         catalog_data.assets(),
         catalog_data.columns(),
@@ -190,7 +190,7 @@ def test_freeword_match_reasons_limit_column_names() -> None:
     )
     columns = pd.concat([columns, extra_columns], ignore_index=True)
 
-    reasons = search.freeword_match_reasons(
+    reasons = search.build_freeword_match_reasons(
         FreewordQuery(
             text="email",
             target_asset_name=False,

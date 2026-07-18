@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import hashlib
-from typing import Literal
 
 import pandas as pd
 import streamlit as st
@@ -11,21 +10,10 @@ import streamlit as st
 from catalog import schema
 from components.assets import results
 from components.assets.detail import tab_columns, tab_contact, tab_stats, tab_users
+from components.common.badges import StreamlitBadgeColor
 from runtime import state
 
-BadgeColor = Literal[
-    "red",
-    "orange",
-    "yellow",
-    "blue",
-    "green",
-    "violet",
-    "gray",
-    "grey",
-    "primary",
-]
-
-ASSET_TYPE_BADGE_COLORS: dict[str, BadgeColor] = {
+ASSET_TYPE_BADGE_COLORS: dict[str, StreamlitBadgeColor] = {
     "BASE TABLE": "blue",
     "VIEW": "green",
     "MATERIALIZED VIEW": "violet",
@@ -36,7 +24,7 @@ ASSET_TYPE_BADGE_COLORS: dict[str, BadgeColor] = {
     "EVENT TABLE": "red",
     "TEMPORARY TABLE": "gray",
 }
-TAG_BADGE_COLOR_PALETTE: tuple[BadgeColor, ...] = (
+TAG_BADGE_COLOR_PALETTE: tuple[StreamlitBadgeColor, ...] = (
     "blue",
     "green",
     "orange",
@@ -48,19 +36,19 @@ TAG_BADGE_COLOR_PALETTE: tuple[BadgeColor, ...] = (
 )
 
 
-def _asset_type_badge_color(asset_type: str) -> BadgeColor:
+def _get_asset_type_badge_color(asset_type: str) -> StreamlitBadgeColor:
     """ASSET_TYPE に応じた badge 色を返す。"""
     return ASSET_TYPE_BADGE_COLORS.get(asset_type, "gray")
 
 
-def _tag_badge_color(tag_name: str) -> BadgeColor:
+def _get_tag_badge_color(tag_name: str) -> StreamlitBadgeColor:
     """タグキー名から安定した badge 色を返す。"""
     digest = hashlib.sha256(tag_name.encode("utf-8")).digest()
     index = digest[0] % len(TAG_BADGE_COLOR_PALETTE)
     return TAG_BADGE_COLOR_PALETTE[index]
 
 
-def _close() -> None:
+def _close_detail_pane() -> None:
     """詳細ペインを閉じる。行選択ウィジェットの選択状態も解除する。"""
     st.session_state.pop(state.ASSET_SELECTED_TABLE_ID, None)
     st.session_state.pop(results.RESULTS_KEY, None)
@@ -90,7 +78,7 @@ def render(
                 "",
                 icon=":material/close:",
                 help="詳細を閉じる",
-                on_click=_close,
+                on_click=_close_detail_pane,
                 key="asset_detail_close",
                 type="primary",
             )
@@ -109,7 +97,7 @@ def render(
             st.caption("オブジェクト種別")
             st.badge(
                 asset[assets_schema.ASSET_TYPE],
-                color=_asset_type_badge_color(asset[assets_schema.ASSET_TYPE]),
+                color=_get_asset_type_badge_color(asset[assets_schema.ASSET_TYPE]),
             )
         with col4:
             is_public = bool(asset[assets_schema.IS_PUBLIC_VISIBILITY])
@@ -129,7 +117,7 @@ def render(
                     st.badge(
                         f"{tag_name}: {tag['TAG_VALUE']}",
                         icon=":material/sell:",
-                        color=_tag_badge_color(tag_name),
+                        color=_get_tag_badge_color(tag_name),
                     )
         else:
             st.caption("タグはありません")

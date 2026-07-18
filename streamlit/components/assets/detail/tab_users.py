@@ -24,7 +24,7 @@ def render(asset: pd.Series, visibility: pd.DataFrame) -> None:
     table_id = int(asset[assets_schema.TABLE_ID])
     vis = visibility[visibility[visibility_schema.TABLE_ID] == table_id]
     if settings.IS_VISIBLE_ONLY_SELF_USER:
-        current_user_name = user_context.current_user_name()
+        current_user_name = user_context.get_current_user_name()
         if current_user_name is None:
             st.warning(CURRENT_USER_UNAVAILABLE_MESSAGE)
             return

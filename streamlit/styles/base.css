@@ -1,3 +1,4 @@
+/* Streamlit 既定の下余白が大きいため、ページ末尾の余白を抑える。 */
 [data-testid="stMainBlockContainer"] {
   padding-bottom: 32px;
 }

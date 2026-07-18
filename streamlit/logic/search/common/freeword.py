@@ -1,4 +1,4 @@
-"""検索ロジック共通の小さな helper。"""
+"""フリーワード検索条件の解析ロジック。"""
 
 from __future__ import annotations
 

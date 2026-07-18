@@ -126,7 +126,7 @@ def _render_assets_with_detail(
     criteria: search.AssetSearchCriteria,
 ) -> None:
     """データ資産検索結果と選択データ資産の詳細を表示する。"""
-    freeword_reasons = search.freeword_match_reasons(
+    freeword_reasons = search.build_freeword_match_reasons(
         criteria.freeword,
         catalog_data.assets,
         catalog_data.columns,

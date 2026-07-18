@@ -3,30 +3,18 @@
 from __future__ import annotations
 
 import math
-from typing import Literal
 
 import pandas as pd
 import streamlit as st
 
 from catalog import schema
 from components.common import dataframe_selection, formatters
+from components.common.badges import StreamlitBadgeColor
 from components.users import results
 from runtime import navigation, state
 
-BadgeColor = Literal[
-    "red",
-    "orange",
-    "yellow",
-    "blue",
-    "green",
-    "violet",
-    "gray",
-    "grey",
-    "primary",
-]
-
 ASSETS_TABLE_KEY = "user_assets_table"
-USER_TYPE_BADGE_COLORS: dict[str, BadgeColor] = {
+USER_TYPE_BADGE_COLORS: dict[str, StreamlitBadgeColor] = {
     "PERSON": "blue",
     "SERVICE": "orange",
     "LEGACY_SERVICE": "gray",
@@ -45,12 +33,12 @@ def _normalize_user_type(user_type: object) -> str:
     return str(user_type)
 
 
-def _get_user_type_badge_color(user_type: str) -> BadgeColor:
+def _get_user_type_badge_color(user_type: str) -> StreamlitBadgeColor:
     """ユーザー種別に応じた badge 色を返す。"""
     return USER_TYPE_BADGE_COLORS.get(user_type, "gray")
 
 
-def _close() -> None:
+def _close_detail_pane() -> None:
     """詳細ペインを閉じる。行選択ウィジェットの選択状態も解除する。"""
     results.clear_user_selection()
     st.session_state.pop(state.NAV_TO_USER_NAME, None)
@@ -73,7 +61,7 @@ def render(user_name: str, users: pd.DataFrame, visibility: pd.DataFrame) -> Non
             "",
             icon=":material/close:",
             help="詳細を閉じる",
-            on_click=_close,
+            on_click=_close_detail_pane,
             key="user_detail_close",
             type="primary",
         )

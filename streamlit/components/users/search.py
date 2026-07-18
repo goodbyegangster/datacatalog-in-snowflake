@@ -119,7 +119,7 @@ def _render_only_self_toggle() -> OnlySelfFilter:
     if settings.IS_VISIBLE_ONLY_SELF_USER:
         is_only_self_filter_enabled = True
     current_user_filter_name = (
-        user_context.current_user_name() if is_only_self_filter_enabled else None
+        user_context.get_current_user_name() if is_only_self_filter_enabled else None
     )
     return OnlySelfFilter(
         is_enabled=is_only_self_filter_enabled,
