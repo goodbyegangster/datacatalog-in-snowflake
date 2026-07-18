@@ -46,6 +46,7 @@ def _find_asset_ids_matching_token(
     ids: set[int] = set()
 
     def contains(series: pd.Series) -> pd.Series:
+        """大文字小文字を無視して token を含む行の mask を返す。"""
         return series.fillna("").str.lower().str.contains(needle, regex=False)
 
     if fq.target_asset_name:
@@ -128,6 +129,7 @@ def _find_match_reasons_by_token(
     reasons: dict[int, _FreewordMatchHit] = {}
 
     def contains(series: pd.Series) -> pd.Series:
+        """大文字小文字を無視して token を含む行の mask を返す。"""
         return series.fillna("").str.lower().str.contains(needle, regex=False)
 
     if fq.target_asset_name:
@@ -160,6 +162,7 @@ def _find_match_reasons_by_token(
 
 
 def _format_object_target(hit: _FreewordMatchHit) -> str:
+    """資産名 / 説明の一致箇所を表示文字列にする。"""
     object_parts: list[str] = []
     if hit.asset_name:
         object_parts.append("名前")
@@ -169,6 +172,7 @@ def _format_object_target(hit: _FreewordMatchHit) -> str:
 
 
 def _format_column_target(label: str, column_names: list[str]) -> str | None:
+    """カラム一致箇所 1 種類分の表示文字列を組み立てる。"""
     if not column_names:
         return None
     visible = column_names[:COLUMN_REASON_LIMIT]
@@ -181,6 +185,7 @@ def _format_column_target(label: str, column_names: list[str]) -> str | None:
 
 
 def _format_column_targets(hit: _FreewordMatchHit) -> str:
+    """カラム名 / カラム説明の一致箇所を表示文字列にする。"""
     column_parts: list[str] = []
     if column_name_reason := _format_column_target("カラム名", hit.column_names):
         column_parts.append(column_name_reason)
@@ -190,6 +195,7 @@ def _format_column_targets(hit: _FreewordMatchHit) -> str:
 
 
 def _format_reason(hit: _FreewordMatchHit) -> str:
+    """一致箇所の情報から一覧表示用の理由文を組み立てる。"""
     object_text = _format_object_target(hit)
     column_text = _format_column_targets(hit)
 
