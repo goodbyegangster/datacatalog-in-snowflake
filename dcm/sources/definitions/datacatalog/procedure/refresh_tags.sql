@@ -1,5 +1,3 @@
--- noqa: disable=LT02
-
 -- 検索プルダウン用のタグ値マスター。
 -- ACCOUNT_USAGE.TAGS の allowed_values を展開して保持する（未使用の値も含めることで
 -- 「その値を持つデータ資産が無い」ことを表現できる）。

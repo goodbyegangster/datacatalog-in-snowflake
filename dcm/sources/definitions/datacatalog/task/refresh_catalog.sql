@@ -1,5 +1,3 @@
--- noqa: disable=LT02
-
 define task {{ datacatalog_database_name }}.TASK.REFRESH_CATALOG
     warehouse = {{ datacatalog_warehouse_name }}
     schedule = 'USING CRON 0 */3 * * * UTC'

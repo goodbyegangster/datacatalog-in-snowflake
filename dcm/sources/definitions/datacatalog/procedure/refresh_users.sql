@@ -1,5 +1,3 @@
--- noqa: disable=LT02
-
 define procedure {{ datacatalog_database_name }}.PROCEDURE.REFRESH_USERS()
     returns string
     language sql

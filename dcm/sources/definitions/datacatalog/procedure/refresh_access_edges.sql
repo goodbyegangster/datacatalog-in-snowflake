@@ -1,5 +1,3 @@
--- noqa: disable=LT02
-
 define procedure {{ datacatalog_database_name }}.PROCEDURE.REFRESH_ACCESS_EDGES()
     returns string
     language sql

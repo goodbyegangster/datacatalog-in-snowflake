@@ -1,5 +1,3 @@
--- noqa: disable=LT02
-
 define table {{ datacatalog_database_name }}.SAMPLE_DATA_AD.CAMPAIGN_LEADS (
     LEAD_ID number comment 'リードID',
     FULL_NAME varchar(255) not null comment '氏名',

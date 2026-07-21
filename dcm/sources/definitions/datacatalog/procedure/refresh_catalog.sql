@@ -1,5 +1,3 @@
--- noqa: disable=LT02
-
 -- マスターテーブルを依存順にリフレッシュするオーケストレーター。
 -- 依存順：USERS / ASSETS → COLUMNS / ACCESS_EDGES → ASSET_VISIBILITY（TAGS は依存なし）
 

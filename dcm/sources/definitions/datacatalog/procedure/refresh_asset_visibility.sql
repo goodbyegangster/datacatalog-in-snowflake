@@ -1,5 +1,3 @@
--- noqa: disable=LT02
-
 -- ACCESS_EDGES を再帰的に辿り、User↔Asset の閲覧可否（展開済みペア）を生成する。
 -- 依存：CATALOG.ACCESS_EDGES / CATALOG.ASSETS（先に refresh 済みであること）。
 

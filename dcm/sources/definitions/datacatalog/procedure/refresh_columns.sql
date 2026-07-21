@@ -1,5 +1,3 @@
--- noqa: disable=LT02
-
 -- 依存：CATALOG.ASSETS（先に refresh 済みであること）。
 
 define procedure {{ datacatalog_database_name }}.PROCEDURE.REFRESH_COLUMNS()
