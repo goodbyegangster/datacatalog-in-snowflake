@@ -36,8 +36,8 @@ begin
             t.comment       as description,
             t.row_count,
             t.bytes
-        from snowflake.account_usage.tables as t
-        inner join snowflake.account_usage.databases as d
+        from SNOWFLAKE.ACCOUNT_USAGE.TABLES as t
+        inner join SNOWFLAKE.ACCOUNT_USAGE.DATABASES as d
             on d.database_name = t.table_catalog
         where t.deleted is null
             and d.deleted is null
@@ -64,8 +64,9 @@ begin
                 tr.tag_schema,
                 tr.tag_name,
                 tr.tag_value
-            from snowflake.account_usage.tag_references as tr
+            from SNOWFLAKE.ACCOUNT_USAGE.TAG_REFERENCES as tr
             where tr.domain = 'TABLE'
+                and tr.object_deleted is null
                 and tr.column_name is null
         ) as d
         group by d.object_database, d.object_schema, d.object_name
@@ -79,7 +80,8 @@ begin
             max(iff(cr.contact_purpose = 'SUPPORT',             cr.contact_name, null)) as contact_support,
             max(iff(cr.contact_purpose = 'ACCESS_APPROVAL',     cr.contact_name, null)) as contact_access_approval,
             max(iff(cr.contact_purpose = 'SECURITY_COMPLIANCE', cr.contact_name, null)) as contact_security_compliance
-        from snowflake.account_usage.contact_references as cr
+        from SNOWFLAKE.ACCOUNT_USAGE.CONTACT_REFERENCES as cr
+        where cr.object_deleted is null
         group by cr.object_database, cr.object_schema, cr.object_name
     ),
     public_vis as (
@@ -87,7 +89,7 @@ begin
             g.table_catalog as database_name,
             g.table_schema  as schema_name,
             g.name          as object_name
-        from snowflake.account_usage.grants_to_roles as g
+        from SNOWFLAKE.ACCOUNT_USAGE.GRANTS_TO_ROLES as g
         where g.deleted_on is null
           and g.grantee_name = 'PUBLIC'
           and g.granted_on in ('TABLE', 'VIEW', 'MATERIALIZED VIEW', 'EXTERNAL TABLE')

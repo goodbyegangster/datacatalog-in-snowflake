@@ -23,7 +23,7 @@ begin
         'USER_TO_ROLE'::varchar(20)   as relation_type,
         null::varchar(50)             as privilege,
         'ROLE'::varchar(50)           as granted_on
-    from snowflake.account_usage.grants_to_users as gu
+    from SNOWFLAKE.ACCOUNT_USAGE.GRANTS_TO_USERS as gu
     inner join {{ datacatalog_database_name }}.CATALOG.USERS as u
         on u.user_name = gu.grantee_name
     where gu.deleted_on is null
@@ -42,7 +42,7 @@ begin
         'ROLE_TO_ROLE'::varchar(20),
         gr.privilege::varchar(50),
         gr.granted_on::varchar(50)
-    from snowflake.account_usage.grants_to_roles as gr
+    from SNOWFLAKE.ACCOUNT_USAGE.GRANTS_TO_ROLES as gr
     where gr.deleted_on is null
       and gr.granted_on in ('ROLE', 'DATABASE_ROLE')
       and gr.granted_to in ('ROLE', 'DATABASE_ROLE')
@@ -61,7 +61,7 @@ begin
         'ROLE_TO_ASSET'::varchar(20),
         gr.privilege::varchar(50),
         gr.granted_on::varchar(50)
-    from snowflake.account_usage.grants_to_roles as gr
+    from SNOWFLAKE.ACCOUNT_USAGE.GRANTS_TO_ROLES as gr
     inner join {{ datacatalog_database_name }}.CATALOG.ASSETS as a
         on  a.database_name = gr.table_catalog
         and a.schema_name   = gr.table_schema

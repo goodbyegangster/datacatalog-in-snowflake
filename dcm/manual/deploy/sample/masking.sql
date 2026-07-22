@@ -16,10 +16,10 @@ end
 
 -- FULL_NAME カラムに適用
 alter table <% datacatalog_database_name %>.SAMPLE_DATA_AD.CAMPAIGN_LEADS
-modify column FULL_NAME set masking policy <% datacatalog_database_name %>.SAMPLE_POLICY.MASK_FULL_NAME
+    modify column FULL_NAME set masking policy <% datacatalog_database_name %>.SAMPLE_POLICY.MASK_FULL_NAME
 ;
 
 -- EMAIL カラムに適用
 alter table <% datacatalog_database_name %>.SAMPLE_DATA_AD.CAMPAIGN_LEADS
-modify column EMAIL set masking policy <% datacatalog_database_name %>.SAMPLE_POLICY.MASK_EMAIL
+    modify column EMAIL set masking policy <% datacatalog_database_name %>.SAMPLE_POLICY.MASK_EMAIL
 ;

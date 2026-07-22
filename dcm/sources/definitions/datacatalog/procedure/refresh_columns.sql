@@ -70,7 +70,7 @@ begin
             data_type,
             comment,
             is_nullable
-        from snowflake.account_usage.columns
+        from SNOWFLAKE.ACCOUNT_USAGE.COLUMNS
         where
             deleted is null
             -- dynamic table に METADATA$ カラムが現れるため除外
@@ -116,8 +116,9 @@ begin
                 tr.tag_schema,
                 tr.tag_name,
                 tr.tag_value
-            from snowflake.account_usage.tag_references as tr
+            from SNOWFLAKE.ACCOUNT_USAGE.TAG_REFERENCES as tr
             where tr.domain = 'COLUMN'
+              and tr.object_deleted is null
               and tr.column_name is not null
         ) as d
         group by d.object_database, d.object_schema, d.object_name, d.column_name
@@ -129,7 +130,7 @@ begin
             pr.ref_entity_name,
             pr.ref_column_name,
             pr.policy_name
-        from snowflake.account_usage.policy_references as pr
+        from SNOWFLAKE.ACCOUNT_USAGE.POLICY_REFERENCES as pr
         where pr.policy_kind = 'MASKING_POLICY'
           and pr.ref_column_name is not null
     ),

@@ -60,7 +60,7 @@ create schema if not exists <% dcm_database_name %>.DCM
     comment = 'dcm object schema'
 ;
 
--- PyPI 向けの external access を削除
+-- PyPI 向けの external access を作成
 use role ACCOUNTADMIN;
 
 create or replace external access integration <% external_access_pypi_name %>

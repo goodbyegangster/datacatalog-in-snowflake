@@ -16,7 +16,7 @@ begin
         display_name::varchar(255)            as display_name,
         coalesce(type, 'PERSON')::varchar(50) as user_type,
         disabled::boolean                     as disabled
-    from snowflake.account_usage.users
+    from SNOWFLAKE.ACCOUNT_USAGE.USERS
     where deleted_on is null
         and (type in ('PERSON', 'SERVICE', 'LEGACY_SERVICE') or type is null)
     ;

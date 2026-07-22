@@ -13,10 +13,10 @@ grant usage on schema {{ datacatalog_database_name }}.CATALOG to role {{ sis_own
 
 -- datacatalog.catalog スキーマ select 権限
 grant select, references on all tables in schema {{ datacatalog_database_name }}.CATALOG
-    to role  {{ sis_owner_role_name }}
+    to role {{ sis_owner_role_name }}
 ;
 grant select, references on future tables in schema {{ datacatalog_database_name }}.CATALOG
-    to role  {{ sis_owner_role_name }}
+    to role {{ sis_owner_role_name }}
 ;
 
 -- streamlit app 作成権限

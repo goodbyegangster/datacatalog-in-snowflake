@@ -26,8 +26,6 @@ make manual-deploy-catalog
 make manual-deploy-sample
 ```
 
-削除は `make dcm-purge`（オブジェクト）、`make dcm-drop`（プロジェクト）、`make manual-remove-catalog` / `make manual-remove-sample`（手動デプロイ分）を使う。
-
 ## Directory Layout
 
 ```text

@@ -24,7 +24,7 @@ begin
         t.tag_name::varchar(255),
         av.value::varchar(255),
         t.tag_comment::varchar
-    from snowflake.account_usage.tags as t,
+    from SNOWFLAKE.ACCOUNT_USAGE.TAGS as t,
          lateral flatten(input => t.allowed_values) as av
     where t.deleted is null;
 
