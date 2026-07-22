@@ -1,0 +1,15 @@
+__pycache__/
+.config/
+.pytest_cache/
+.ruff_cache/
+.streamlit/secrets.toml
+.venv/
+*.py[cod]
+**/__pycache__/
+Makefile
+pyrightconfig.json
+scripts/
+settings.py
+snowflake.yml
+snowflake.yml.template
+tests/

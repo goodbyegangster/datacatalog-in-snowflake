@@ -59,3 +59,7 @@ logs: ## Streamlit App のログを確認
 	snow streamlit logs app \
 	  -c $(SNOWFLAKE_CLI_CONNECTION_NAME) \
 	  --role $(SIS_OWNER_ROLE_NAME)
+
+.PHONE: docker_build
+docker_build: ## fake catalog で起動するコンテナイメージをビルド
+	docker build -t datacatalog-streamlit-fake .
