@@ -1,6 +1,7 @@
 define procedure {{ datacatalog_database_name }}.PROCEDURE.REFRESH_ACCESS_EDGES()
     returns string
     language sql
+    comment = 'ACCESS_EDGES テーブル洗替処理'
     execute as owner
 as
 $$

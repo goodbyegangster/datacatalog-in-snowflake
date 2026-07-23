@@ -1,13 +1,12 @@
--- 依存：CATALOG.ASSETS（先に refresh 済みであること）。
-
 define procedure {{ datacatalog_database_name }}.PROCEDURE.REFRESH_COLUMNS()
     returns string
     language sql
+    comment = 'COLUMNS テーブル洗替処理'
     execute as owner
 as
 $$
 begin
-    -- 制約情報をアカウント全体の SHOW から一時表へ退避
+    -- 制約情報（PKEY）をアカウント全体の SHOW コマンド結果を一時表へ退避
     show primary keys in account;
     create or replace temporary table {{ datacatalog_database_name }}.CATALOG.TMP_PK as
         select
@@ -17,6 +16,7 @@ begin
             "column_name"   as col
         from table(result_scan(last_query_id()));
 
+    -- 制約情報（UNIQUE）をアカウント全体の SHOW コマンド結果を一時表へ退避
     show unique keys in account;
     create or replace temporary table {{ datacatalog_database_name }}.CATALOG.TMP_UK as
         select
@@ -26,6 +26,7 @@ begin
             "column_name"   as col
         from table(result_scan(last_query_id()));
 
+    -- 制約情報（FKEY）をアカウント全体の SHOW コマンド結果を一時表へ退避
     show imported keys in account;
     create or replace temporary table {{ datacatalog_database_name }}.CATALOG.TMP_FK as
         select
@@ -55,86 +56,102 @@ begin
         IS_NULLABLE         comment '制約_NOT_NULL（false = NOT NULL）',
         MASKING_POLICY_NAME comment 'マスキングポリシー'
     ) as
-    with assets as (
+    with
+    -- ACCOUNT_USAGE.COLUMNS から現存カラムだけを抽出する
+    source_columns as (
         select
-            table_id
-        from {{ datacatalog_database_name }}.CATALOG.ASSETS
-    ),
-    columns as (
-        select
-            table_catalog,
-            table_schema,
-            table_name,
-            column_name,
-            ordinal_position,
-            data_type,
-            comment,
-            is_nullable
+            table_catalog    as DATABASE_NAME,
+            table_schema     as SCHEMA_NAME,
+            table_name       as TABLE_NAME,
+            column_name      as COLUMN_NAME,
+            ordinal_position as ORDINAL_POSITION,
+            data_type        as DATA_TYPE,
+            comment          as DESCRIPTION,
+            is_nullable      as IS_NULLABLE_TEXT
         from SNOWFLAKE.ACCOUNT_USAGE.COLUMNS
         where
             deleted is null
             -- dynamic table に METADATA$ カラムが現れるため除外
             and not startswith(column_name, 'METADATA$')
     ),
-    cols as (
+
+    -- CATALOG.ASSETS と結合し、対象資産のカラムに TABLE_ID を付与する
+    asset_columns as (
         select
-            a.table_id,
-            c.table_catalog,
-            c.table_schema,
-            c.table_name,
-            c.column_name,
-            c.ordinal_position,
-            c.data_type,
-            c.comment as description,
-            c.is_nullable
-        from columns as c
+            a.TABLE_ID,
+            c.DATABASE_NAME,
+            c.SCHEMA_NAME,
+            c.TABLE_NAME,
+            c.COLUMN_NAME,
+            c.ORDINAL_POSITION,
+            c.DATA_TYPE,
+            c.DESCRIPTION,
+            c.IS_NULLABLE_TEXT
+        from source_columns as c
         inner join {{ datacatalog_database_name }}.CATALOG.ASSETS as a
-            on  a.database_name = c.table_catalog
-            and a.schema_name   = c.table_schema
-            and a.asset_name    = c.table_name
+            on  a.DATABASE_NAME = c.DATABASE_NAME
+            and a.SCHEMA_NAME   = c.SCHEMA_NAME
+            and a.ASSET_NAME    = c.TABLE_NAME
     ),
-    ctags as (
+
+    -- TAG_REFERENCES の同一タグ重複を除外する
+    distinct_column_tag_references as (
         select
-            d.object_database,
-            d.object_schema,
-            d.object_name,
-            d.column_name,
+            tr.object_database as DATABASE_NAME,
+            tr.object_schema   as SCHEMA_NAME,
+            tr.object_name     as TABLE_NAME,
+            tr.column_name     as COLUMN_NAME,
+            tr.tag_database    as TAG_DATABASE,
+            tr.tag_schema      as TAG_SCHEMA,
+            tr.tag_name        as TAG_NAME,
+            tr.tag_value       as TAG_VALUE
+        from SNOWFLAKE.ACCOUNT_USAGE.TAG_REFERENCES as tr
+        where tr.domain = 'COLUMN'
+          and tr.object_deleted is null
+          and tr.column_name is not null
+        group by
+            tr.object_database,
+            tr.object_schema,
+            tr.object_name,
+            tr.column_name,
+            tr.tag_database,
+            tr.tag_schema,
+            tr.tag_name,
+            tr.tag_value
+    ),
+
+    -- カラム単位にタグを配列へ集約する
+    column_tags as (
+        select
+            d.DATABASE_NAME,
+            d.SCHEMA_NAME,
+            d.TABLE_NAME,
+            d.COLUMN_NAME,
             array_agg(object_construct(
-                'TAG_DATABASE', d.tag_database,
-                'TAG_SCHEMA',   d.tag_schema,
-                'TAG_NAME',     d.tag_name,
-                'TAG_VALUE',    d.tag_value
-            )) as tags
-        from (
-            -- TAG_REFERENCES は同一タグを重複行で返すことがあるため重複排除
-            select distinct
-                tr.object_database,
-                tr.object_schema,
-                tr.object_name,
-                tr.column_name,
-                tr.tag_database,
-                tr.tag_schema,
-                tr.tag_name,
-                tr.tag_value
-            from SNOWFLAKE.ACCOUNT_USAGE.TAG_REFERENCES as tr
-            where tr.domain = 'COLUMN'
-              and tr.object_deleted is null
-              and tr.column_name is not null
-        ) as d
-        group by d.object_database, d.object_schema, d.object_name, d.column_name
+                'TAG_DATABASE', d.TAG_DATABASE,
+                'TAG_SCHEMA',   d.TAG_SCHEMA,
+                'TAG_NAME',     d.TAG_NAME,
+                'TAG_VALUE',    d.TAG_VALUE
+            )) as TAGS
+        from distinct_column_tag_references as d
+        group by d.DATABASE_NAME, d.SCHEMA_NAME, d.TABLE_NAME, d.COLUMN_NAME
     ),
-    mpol as (
+
+    -- POLICY_REFERENCES からカラムに適用された masking policy を抽出する
+    masking_policies as (
         select
-            pr.ref_database_name,
-            pr.ref_schema_name,
-            pr.ref_entity_name,
-            pr.ref_column_name,
-            pr.policy_name
+            pr.ref_database_name as DATABASE_NAME,
+            pr.ref_schema_name   as SCHEMA_NAME,
+            pr.ref_entity_name   as TABLE_NAME,
+            pr.ref_column_name   as COLUMN_NAME,
+            pr.policy_name       as MASKING_POLICY_NAME
         from SNOWFLAKE.ACCOUNT_USAGE.POLICY_REFERENCES as pr
         where pr.policy_kind = 'MASKING_POLICY'
           and pr.ref_column_name is not null
     ),
-    fk as (
+
+    -- SHOW IMPORTED KEYS の結果をカラム単位に参照先配列へ集約する
+    foreign_keys as (
         select
             db, sch, tbl, col,
             array_agg(object_construct(
@@ -142,42 +159,74 @@ begin
                 'REFERENCED_SCHEMA',   ref_sch,
                 'REFERENCED_TABLE',    ref_tbl,
                 'REFERENCED_COLUMN',   ref_col
-            )) as foreign_keys
+            )) as FOREIGN_KEYS
         from {{ datacatalog_database_name }}.CATALOG.TMP_FK
         group by db, sch, tbl, col
+    ),
+
+    -- カラム情報に制約、タグ、masking policy を付与する
+    catalog_columns as (
+        select
+            cols.TABLE_ID::number                      as TABLE_ID,
+            cols.DATABASE_NAME::varchar(255)           as DATABASE_NAME,
+            cols.SCHEMA_NAME::varchar(255)             as SCHEMA_NAME,
+            cols.TABLE_NAME::varchar(255)              as TABLE_NAME,
+            cols.COLUMN_NAME::varchar(255)             as COLUMN_NAME,
+            cols.ORDINAL_POSITION::number              as ORDINAL_POSITION,
+            cols.DATA_TYPE::varchar(255)               as DATA_TYPE,
+            cols.DESCRIPTION::varchar                  as DESCRIPTION,
+            coalesce(tags.TAGS, array_construct())     as TAGS,
+            iff(pk.col is not null, true, false)::boolean
+                                                      as IS_PRIMARY_KEY,
+            iff(uk.col is not null, true, false)::boolean
+                                                      as IS_UNIQUE_KEY,
+            coalesce(fk.FOREIGN_KEYS, array_construct())
+                                                      as FOREIGN_KEYS,
+            (cols.IS_NULLABLE_TEXT = 'YES')::boolean   as IS_NULLABLE,
+            mpol.MASKING_POLICY_NAME::varchar(255)     as MASKING_POLICY_NAME
+        from asset_columns as cols
+        left join {{ datacatalog_database_name }}.CATALOG.TMP_PK as pk
+            on  pk.db  = cols.DATABASE_NAME
+            and pk.sch = cols.SCHEMA_NAME
+            and pk.tbl = cols.TABLE_NAME
+            and pk.col = cols.COLUMN_NAME
+        left join {{ datacatalog_database_name }}.CATALOG.TMP_UK as uk
+            on  uk.db  = cols.DATABASE_NAME
+            and uk.sch = cols.SCHEMA_NAME
+            and uk.tbl = cols.TABLE_NAME
+            and uk.col = cols.COLUMN_NAME
+        left join foreign_keys as fk
+            on  fk.db  = cols.DATABASE_NAME
+            and fk.sch = cols.SCHEMA_NAME
+            and fk.tbl = cols.TABLE_NAME
+            and fk.col = cols.COLUMN_NAME
+        left join column_tags as tags
+            on  tags.DATABASE_NAME = cols.DATABASE_NAME
+            and tags.SCHEMA_NAME   = cols.SCHEMA_NAME
+            and tags.TABLE_NAME    = cols.TABLE_NAME
+            and tags.COLUMN_NAME   = cols.COLUMN_NAME
+        left join masking_policies as mpol
+            on  mpol.DATABASE_NAME = cols.DATABASE_NAME
+            and mpol.SCHEMA_NAME   = cols.SCHEMA_NAME
+            and mpol.TABLE_NAME    = cols.TABLE_NAME
+            and mpol.COLUMN_NAME   = cols.COLUMN_NAME
     )
     select
-        cols.table_id::number,
-        cols.table_catalog::varchar(255),
-        cols.table_schema::varchar(255),
-        cols.table_name::varchar(255),
-        cols.column_name::varchar(255),
-        cols.ordinal_position::number,
-        cols.data_type::varchar(255),
-        cols.description::varchar,
-        coalesce(ctags.tags, array_construct()),
-        iff(pk.col is not null, true, false)::boolean,
-        iff(uk.col is not null, true, false)::boolean,
-        coalesce(fk.foreign_keys, array_construct()),
-        (cols.is_nullable = 'YES')::boolean,
-        mpol.policy_name::varchar(255)
-    from cols
-    left join {{ datacatalog_database_name }}.CATALOG.TMP_PK as pk
-        on pk.db = cols.table_catalog and pk.sch = cols.table_schema and pk.tbl = cols.table_name and pk.col = cols.column_name
-    left join {{ datacatalog_database_name }}.CATALOG.TMP_UK as uk
-        on uk.db = cols.table_catalog and uk.sch = cols.table_schema and uk.tbl = cols.table_name and uk.col = cols.column_name
-    left join fk
-        on fk.db = cols.table_catalog and fk.sch = cols.table_schema and fk.tbl = cols.table_name and fk.col = cols.column_name
-    left join ctags
-        on  ctags.object_database = cols.table_catalog
-        and ctags.object_schema   = cols.table_schema
-        and ctags.object_name     = cols.table_name
-        and ctags.column_name     = cols.column_name
-    left join mpol
-        on  mpol.ref_database_name = cols.table_catalog
-        and mpol.ref_schema_name   = cols.table_schema
-        and mpol.ref_entity_name   = cols.table_name
-        and mpol.ref_column_name   = cols.column_name
+        TABLE_ID,
+        DATABASE_NAME,
+        SCHEMA_NAME,
+        TABLE_NAME,
+        COLUMN_NAME,
+        ORDINAL_POSITION,
+        DATA_TYPE,
+        DESCRIPTION,
+        TAGS,
+        IS_PRIMARY_KEY,
+        IS_UNIQUE_KEY,
+        FOREIGN_KEYS,
+        IS_NULLABLE,
+        MASKING_POLICY_NAME
+    from catalog_columns
     ;
 
     return 'CATALOG.COLUMNS refreshed';

@@ -1,6 +1,7 @@
 define procedure {{ datacatalog_database_name }}.PROCEDURE.REFRESH_ASSETS()
     returns string
     language sql
+    comment = 'ASSETS テーブル洗替処理'
     execute as owner
 as
 $$

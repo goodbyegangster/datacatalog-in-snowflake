@@ -1,6 +1,7 @@
 define procedure {{ datacatalog_database_name }}.PROCEDURE.REFRESH_USERS()
     returns string
     language sql
+    comment = 'USERS テーブル洗替処理'
     execute as owner
 as
 $$

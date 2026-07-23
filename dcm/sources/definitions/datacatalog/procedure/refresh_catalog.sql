@@ -4,6 +4,7 @@
 define procedure {{ datacatalog_database_name }}.PROCEDURE.REFRESH_CATALOG()
     returns string
     language sql
+    comment = 'CATALOG テーブル洗替処理'
     execute as owner
 as
 $$

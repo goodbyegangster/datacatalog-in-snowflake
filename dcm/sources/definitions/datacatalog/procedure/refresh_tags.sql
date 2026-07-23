@@ -7,6 +7,7 @@
 define procedure {{ datacatalog_database_name }}.PROCEDURE.REFRESH_TAGS()
     returns string
     language sql
+    comment = 'TAGS テーブル洗替処理'
     execute as owner
 as
 $$

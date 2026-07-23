@@ -4,6 +4,7 @@
 define procedure {{ datacatalog_database_name }}.PROCEDURE.REFRESH_ASSET_VISIBILITY()
     returns string
     language sql
+    comment = 'ASSET_VISIBILITY テーブル洗替処理'
     execute as owner
 as
 $$
