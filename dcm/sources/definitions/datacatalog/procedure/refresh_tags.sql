@@ -1,9 +1,3 @@
--- 検索プルダウン用のタグ値マスター。
--- ACCOUNT_USAGE.TAGS の allowed_values を展開して保持する（未使用の値も含めることで
--- 「その値を持つデータ資産が無い」ことを表現できる）。
--- 依存なし（ACCOUNT_USAGE.TAGS のみ）。
--- NOTE: allowed_values 未定義（自由記述）のタグは値を列挙できないため本マスターには現れない。
-
 define procedure {{ datacatalog_database_name }}.PROCEDURE.REFRESH_TAGS()
     returns string
     language sql
@@ -20,13 +14,14 @@ begin
         TAG_COMMENT  comment 'タグ定義のコメント'
     ) as
     select
-        t.tag_database::varchar(255),
-        t.tag_schema::varchar(255),
-        t.tag_name::varchar(255),
-        av.value::varchar(255),
-        t.tag_comment::varchar
+        t.tag_database::varchar(255) as TAG_DATABASE,
+        t.tag_schema::varchar(255)   as TAG_SCHEMA,
+        t.tag_name::varchar(255)     as TAG_NAME,
+        av.value::varchar(255)       as TAG_VALUE,
+        t.tag_comment::varchar       as TAG_COMMENT
     from SNOWFLAKE.ACCOUNT_USAGE.TAGS as t,
-         lateral flatten(input => t.allowed_values) as av
+        -- allowed_values 未定義（自由記述）のタグは値を列挙できないため本マスターには現れない
+        lateral flatten(input => t.allowed_values) as av
     where t.deleted is null;
 
     return 'CATALOG.TAGS refreshed';

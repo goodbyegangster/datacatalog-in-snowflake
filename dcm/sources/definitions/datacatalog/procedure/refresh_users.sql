@@ -13,13 +13,16 @@ begin
         DISABLED     comment 'ステータス（true = 無効）'
     ) as
     select
-        name::varchar(255)                    as user_name,
-        display_name::varchar(255)            as display_name,
-        coalesce(type, 'PERSON')::varchar(50) as user_type,
-        disabled::boolean                     as disabled
+        name::varchar(255)                    as USER_NAME,
+        display_name::varchar(255)            as DISPLAY_NAME,
+        coalesce(type, 'PERSON')::varchar(50) as USER_TYPE,
+        disabled::boolean                     as DISABLED
     from SNOWFLAKE.ACCOUNT_USAGE.USERS
     where deleted_on is null
-        and (type in ('PERSON', 'SERVICE', 'LEGACY_SERVICE') or type is null)
+        and (
+            type in ('PERSON', 'SERVICE', 'LEGACY_SERVICE')
+            or type is null
+        )
     ;
 
     return 'CATALOG.USERS refreshed';

@@ -1,6 +1,3 @@
--- マスターテーブルを依存順にリフレッシュするオーケストレーター。
--- 依存順：USERS / ASSETS → COLUMNS / ACCESS_EDGES → ASSET_VISIBILITY（TAGS は依存なし）
-
 define procedure {{ datacatalog_database_name }}.PROCEDURE.REFRESH_CATALOG()
     returns string
     language sql
