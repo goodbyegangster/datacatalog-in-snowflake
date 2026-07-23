@@ -22,21 +22,23 @@ begin
         CONTACT_SECURITY_COMPLIANCE comment '連絡先_セキュリティとコンプライアンス',
         IS_PUBLIC_VISIBILITY        comment 'PUBLIC ロールに OWNERSHIP/SELECT があり全ユーザーが参照可能なら true'
     ) as
-    with base as (
+    with
+    -- ACCOUNT_USAGE.TABLES と DATABASES から現存する標準 DB 内の資産を抽出し、base_assets とする
+    base_assets as (
         select
-            t.table_id,
-            t.table_catalog as database_name,
-            t.table_schema  as schema_name,
-            t.table_name    as asset_name,
+            t.table_id      as TABLE_ID,
+            t.table_catalog as DATABASE_NAME,
+            t.table_schema  as SCHEMA_NAME,
+            t.table_name    as ASSET_NAME,
             case
                 when t.is_dynamic = 'YES' then 'DYNAMIC TABLE'
                 when t.is_iceberg = 'YES' then 'ICEBERG TABLE'
                 when t.is_hybrid  = 'YES' then 'HYBRID TABLE'
                 else t.table_type
-            end             as asset_type,
-            t.comment       as description,
-            t.row_count,
-            t.bytes
+            end             as ASSET_TYPE,
+            t.comment       as DESCRIPTION,
+            t.row_count     as ROW_COUNT,
+            t.bytes         as BYTES
         from SNOWFLAKE.ACCOUNT_USAGE.TABLES as t
         inner join SNOWFLAKE.ACCOUNT_USAGE.DATABASES as d
             on d.database_name = t.table_catalog
@@ -44,86 +46,119 @@ begin
             and d.deleted is null
             and d.type = 'STANDARD'
     ),
-    tags as (
-        select
-            d.object_database,
-            d.object_schema,
-            d.object_name,
-            array_agg(object_construct(
-                'TAG_DATABASE', d.tag_database,
-                'TAG_SCHEMA',   d.tag_schema,
-                'TAG_NAME',     d.tag_name,
-                'TAG_VALUE',    d.tag_value
-            )) as tags
-        from (
-            -- TAG_REFERENCES は同一タグを重複行で返すことがあるため重複排除
-            select distinct
-                tr.object_database,
-                tr.object_schema,
-                tr.object_name,
-                tr.tag_database,
-                tr.tag_schema,
-                tr.tag_name,
-                tr.tag_value
-            from SNOWFLAKE.ACCOUNT_USAGE.TAG_REFERENCES as tr
-            where tr.domain = 'TABLE'
-                and tr.object_deleted is null
-                and tr.column_name is null
-        ) as d
-        group by d.object_database, d.object_schema, d.object_name
-    ),
-    contacts as (
-        select
-            cr.object_database,
-            cr.object_schema,
-            cr.object_name,
-            max(iff(cr.contact_purpose = 'STEWARD',             cr.contact_name, null)) as contact_steward,
-            max(iff(cr.contact_purpose = 'SUPPORT',             cr.contact_name, null)) as contact_support,
-            max(iff(cr.contact_purpose = 'ACCESS_APPROVAL',     cr.contact_name, null)) as contact_access_approval,
-            max(iff(cr.contact_purpose = 'SECURITY_COMPLIANCE', cr.contact_name, null)) as contact_security_compliance
-        from SNOWFLAKE.ACCOUNT_USAGE.CONTACT_REFERENCES as cr
-        where cr.object_deleted is null
-        group by cr.object_database, cr.object_schema, cr.object_name
-    ),
-    public_vis as (
+
+    -- ACCOUNT_USAGE.TAG_REFERENCES から現存する資産タグを取得し、重複を除いて distinct_asset_tag_references とする
+    distinct_asset_tag_references as (
         select distinct
-            g.table_catalog as database_name,
-            g.table_schema  as schema_name,
-            g.name          as object_name
-        from SNOWFLAKE.ACCOUNT_USAGE.GRANTS_TO_ROLES as g
-        where g.deleted_on is null
-          and g.grantee_name = 'PUBLIC'
-          and g.granted_on in ('TABLE', 'VIEW', 'MATERIALIZED VIEW', 'EXTERNAL TABLE')
-          and g.privilege in ('SELECT', 'OWNERSHIP')
+            object_database as DATABASE_NAME,
+            object_schema   as SCHEMA_NAME,
+            object_name     as ASSET_NAME,
+            tag_database    as TAG_DATABASE,
+            tag_schema      as TAG_SCHEMA,
+            tag_name        as TAG_NAME,
+            tag_value       as TAG_VALUE
+        from SNOWFLAKE.ACCOUNT_USAGE.TAG_REFERENCES
+        -- 値 TABLE で対象資産に付与されているタグ情報を収集可能
+        -- NOTE: https://docs.snowflake.com/en/sql-reference/functions/tag_references#arguments
+        -- 'TABLE': Use this for all table-like objects such as views, materialized views, and external tables.
+        where domain = 'TABLE'
+            and object_deleted is null
+            and column_name is null
+    ),
+
+    -- distinct_asset_tag_references のタグを資産ごとに配列へまとめ、TAGS を持つ asset_tags とする
+    asset_tags as (
+        select
+            DATABASE_NAME,
+            SCHEMA_NAME,
+            ASSET_NAME,
+            array_agg(object_construct(
+                'TAG_DATABASE', TAG_DATABASE,
+                'TAG_SCHEMA',   TAG_SCHEMA,
+                'TAG_NAME',     TAG_NAME,
+                'TAG_VALUE',    TAG_VALUE
+            )) as TAGS
+        from distinct_asset_tag_references
+        group by DATABASE_NAME, SCHEMA_NAME, ASSET_NAME
+    ),
+
+    -- ACCOUNT_USAGE.CONTACT_REFERENCES の連絡先をオブジェクトごとに目的別で集約し、asset_contacts とする
+    asset_contacts as (
+        select
+            object_database as DATABASE_NAME,
+            object_schema   as SCHEMA_NAME,
+            object_name     as ASSET_NAME,
+            max(iff(contact_purpose = 'STEWARD',             contact_name, null)) as CONTACT_STEWARD,
+            max(iff(contact_purpose = 'SUPPORT',             contact_name, null)) as CONTACT_SUPPORT,
+            max(iff(contact_purpose = 'ACCESS_APPROVAL',     contact_name, null)) as CONTACT_ACCESS_APPROVAL,
+            max(iff(contact_purpose = 'SECURITY_COMPLIANCE', contact_name, null)) as CONTACT_SECURITY_COMPLIANCE
+        from SNOWFLAKE.ACCOUNT_USAGE.CONTACT_REFERENCES
+        where object_deleted is null
+        group by object_database, object_schema, object_name
+    ),
+
+    -- ACCOUNT_USAGE.GRANTS_TO_ROLES から PUBLIC が参照できる資産を抽出し、public_visible_assets とする
+    public_visible_assets as (
+        select distinct
+            table_catalog as DATABASE_NAME,
+            table_schema  as SCHEMA_NAME,
+            name          as ASSET_NAME
+        from SNOWFLAKE.ACCOUNT_USAGE.GRANTS_TO_ROLES
+        where deleted_on is null
+          and grantee_name = 'PUBLIC'
+          -- DYNAMIC TABLE / ICEBERG TABLE / HYBRID TABLE は値 'TABLE' にて取得される
+          and granted_on in ('TABLE', 'VIEW', 'MATERIALIZED VIEW', 'EXTERNAL TABLE')
+          and privilege in ('SELECT', 'OWNERSHIP')
+    ),
+
+    -- base_assets にタグ、連絡先、公開可否を付与し、最終出力用の catalog_assets とする
+    catalog_assets as (
+        select
+            assets.TABLE_ID::number                          as TABLE_ID,
+            assets.DATABASE_NAME::varchar(255)               as DATABASE_NAME,
+            assets.SCHEMA_NAME::varchar(255)                 as SCHEMA_NAME,
+            assets.ASSET_NAME::varchar(255)                  as ASSET_NAME,
+            assets.ASSET_TYPE::varchar(50)                   as ASSET_TYPE,
+            assets.DESCRIPTION::varchar                      as DESCRIPTION,
+            assets.ROW_COUNT::number                         as ROW_COUNT,
+            assets.BYTES::number                             as BYTES,
+            coalesce(tags.TAGS, array_construct())           as TAGS,
+            contacts.CONTACT_STEWARD::varchar(255)           as CONTACT_STEWARD,
+            contacts.CONTACT_SUPPORT::varchar(255)           as CONTACT_SUPPORT,
+            contacts.CONTACT_ACCESS_APPROVAL::varchar(255)   as CONTACT_ACCESS_APPROVAL,
+            contacts.CONTACT_SECURITY_COMPLIANCE::varchar(255)
+                                                            as CONTACT_SECURITY_COMPLIANCE,
+            (public_vis.ASSET_NAME is not null)::boolean     as IS_PUBLIC_VISIBILITY
+        from base_assets as assets
+        left join asset_tags as tags
+            on  tags.DATABASE_NAME = assets.DATABASE_NAME
+            and tags.SCHEMA_NAME   = assets.SCHEMA_NAME
+            and tags.ASSET_NAME    = assets.ASSET_NAME
+        left join asset_contacts as contacts
+            on  contacts.DATABASE_NAME = assets.DATABASE_NAME
+            and contacts.SCHEMA_NAME   = assets.SCHEMA_NAME
+            and contacts.ASSET_NAME    = assets.ASSET_NAME
+        left join public_visible_assets as public_vis
+            on  public_vis.DATABASE_NAME = assets.DATABASE_NAME
+            and public_vis.SCHEMA_NAME   = assets.SCHEMA_NAME
+            and public_vis.ASSET_NAME    = assets.ASSET_NAME
     )
     select
-        base.table_id::number,
-        base.database_name::varchar(255),
-        base.schema_name::varchar(255),
-        base.asset_name::varchar(255),
-        base.asset_type::varchar(50),
-        base.description::varchar,
-        base.row_count::number,
-        base.bytes::number,
-        coalesce(tags.tags, array_construct()),
-        contacts.contact_steward::varchar(255),
-        contacts.contact_support::varchar(255),
-        contacts.contact_access_approval::varchar(255),
-        contacts.contact_security_compliance::varchar(255),
-        (public_vis.object_name is not null)::boolean
-    from base
-    left join tags
-        on  tags.object_database = base.database_name
-        and tags.object_schema   = base.schema_name
-        and tags.object_name     = base.asset_name
-    left join contacts
-        on  contacts.object_database = base.database_name
-        and contacts.object_schema   = base.schema_name
-        and contacts.object_name     = base.asset_name
-    left join public_vis
-        on  public_vis.database_name = base.database_name
-        and public_vis.schema_name   = base.schema_name
-        and public_vis.object_name   = base.asset_name
+        TABLE_ID,
+        DATABASE_NAME,
+        SCHEMA_NAME,
+        ASSET_NAME,
+        ASSET_TYPE,
+        DESCRIPTION,
+        ROW_COUNT,
+        BYTES,
+        TAGS,
+        CONTACT_STEWARD,
+        CONTACT_SUPPORT,
+        CONTACT_ACCESS_APPROVAL,
+        CONTACT_SECURITY_COMPLIANCE,
+        IS_PUBLIC_VISIBILITY
+    from catalog_assets
     ;
 
     return 'CATALOG.ASSETS refreshed';

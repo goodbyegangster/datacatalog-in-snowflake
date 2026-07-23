@@ -6,38 +6,38 @@ define procedure {{ datacatalog_database_name }}.PROCEDURE.REFRESH_COLUMNS()
 as
 $$
 begin
-    -- 制約情報（PKEY）をアカウント全体の SHOW コマンド結果を一時表へ退避
+    -- 制約情報（PKEY）の SHOW コマンド結果を一時表へ退避
     show primary keys in account;
     create or replace temporary table {{ datacatalog_database_name }}.CATALOG.TMP_PK as
         select
-            "database_name" as db,
-            "schema_name"   as sch,
-            "table_name"    as tbl,
-            "column_name"   as col
+            "database_name" as DATABASE_NAME,
+            "schema_name"   as SCHEMA_NAME,
+            "table_name"    as TABLE_NAME,
+            "column_name"   as COLUMN_NAME
         from table(result_scan(last_query_id()));
 
-    -- 制約情報（UNIQUE）をアカウント全体の SHOW コマンド結果を一時表へ退避
+    -- 制約情報（UNIQUE）の SHOW コマンド結果を一時表へ退避
     show unique keys in account;
     create or replace temporary table {{ datacatalog_database_name }}.CATALOG.TMP_UK as
         select
-            "database_name" as db,
-            "schema_name"   as sch,
-            "table_name"    as tbl,
-            "column_name"   as col
+            "database_name" as DATABASE_NAME,
+            "schema_name"   as SCHEMA_NAME,
+            "table_name"    as TABLE_NAME,
+            "column_name"   as COLUMN_NAME
         from table(result_scan(last_query_id()));
 
-    -- 制約情報（FKEY）をアカウント全体の SHOW コマンド結果を一時表へ退避
+    -- 制約情報（FKEY）の SHOW コマンド結果を一時表へ退避
     show imported keys in account;
     create or replace temporary table {{ datacatalog_database_name }}.CATALOG.TMP_FK as
         select
-            "fk_database_name" as db,
-            "fk_schema_name"   as sch,
-            "fk_table_name"    as tbl,
-            "fk_column_name"   as col,
-            "pk_database_name" as ref_db,
-            "pk_schema_name"   as ref_sch,
-            "pk_table_name"    as ref_tbl,
-            "pk_column_name"   as ref_col
+            "fk_database_name" as DATABASE_NAME,
+            "fk_schema_name"   as SCHEMA_NAME,
+            "fk_table_name"    as TABLE_NAME,
+            "fk_column_name"   as COLUMN_NAME,
+            "pk_database_name" as REFERENCED_DATABASE_NAME,
+            "pk_schema_name"   as REFERENCED_SCHEMA_NAME,
+            "pk_table_name"    as REFERENCED_TABLE_NAME,
+            "pk_column_name"   as REFERENCED_COLUMN_NAME
         from table(result_scan(last_query_id()));
 
     create or replace table {{ datacatalog_database_name }}.CATALOG.COLUMNS (
@@ -57,7 +57,7 @@ begin
         MASKING_POLICY_NAME comment 'マスキングポリシー'
     ) as
     with
-    -- ACCOUNT_USAGE.COLUMNS から現存カラムだけを抽出する
+    -- ACCOUNT_USAGE.COLUMNS から現存するカラムを取得し、METADATA$ 列を除いて source_columns とする
     source_columns as (
         select
             table_catalog    as DATABASE_NAME,
@@ -75,7 +75,7 @@ begin
             and not startswith(column_name, 'METADATA$')
     ),
 
-    -- CATALOG.ASSETS と結合し、対象資産のカラムに TABLE_ID を付与する
+    -- source_columns を CATALOG.ASSETS と照合し、対象資産のカラムに TABLE_ID を付けて asset_columns とする
     asset_columns as (
         select
             a.TABLE_ID,
@@ -94,7 +94,7 @@ begin
             and a.ASSET_NAME    = c.TABLE_NAME
     ),
 
-    -- TAG_REFERENCES の同一タグ重複を除外する
+    -- ACCOUNT_USAGE.TAG_REFERENCES から有効なカラムタグを取得し、重複を除いて distinct_column_tag_references とする
     distinct_column_tag_references as (
         select
             tr.object_database as DATABASE_NAME,
@@ -120,7 +120,7 @@ begin
             tr.tag_value
     ),
 
-    -- カラム単位にタグを配列へ集約する
+    -- distinct_column_tag_references のタグをカラムごとに配列へまとめ、TAGS を持つ column_tags とする
     column_tags as (
         select
             d.DATABASE_NAME,
@@ -137,7 +137,7 @@ begin
         group by d.DATABASE_NAME, d.SCHEMA_NAME, d.TABLE_NAME, d.COLUMN_NAME
     ),
 
-    -- POLICY_REFERENCES からカラムに適用された masking policy を抽出する
+    -- ACCOUNT_USAGE.POLICY_REFERENCES からカラムに適用されたマスキングポリシーを抽出し、masking_policies とする
     masking_policies as (
         select
             pr.ref_database_name as DATABASE_NAME,
@@ -150,21 +150,24 @@ begin
           and pr.ref_column_name is not null
     ),
 
-    -- SHOW IMPORTED KEYS の結果をカラム単位に参照先配列へ集約する
+    -- TMP_FK の外部キー参照先をカラムごとに配列へまとめ、FOREIGN_KEYS を持つ foreign_keys とする
     foreign_keys as (
         select
-            db, sch, tbl, col,
+            DATABASE_NAME,
+            SCHEMA_NAME,
+            TABLE_NAME,
+            COLUMN_NAME,
             array_agg(object_construct(
-                'REFERENCED_DATABASE', ref_db,
-                'REFERENCED_SCHEMA',   ref_sch,
-                'REFERENCED_TABLE',    ref_tbl,
-                'REFERENCED_COLUMN',   ref_col
+                'REFERENCED_DATABASE', REFERENCED_DATABASE_NAME,
+                'REFERENCED_SCHEMA',   REFERENCED_SCHEMA_NAME,
+                'REFERENCED_TABLE',    REFERENCED_TABLE_NAME,
+                'REFERENCED_COLUMN',   REFERENCED_COLUMN_NAME
             )) as FOREIGN_KEYS
         from {{ datacatalog_database_name }}.CATALOG.TMP_FK
-        group by db, sch, tbl, col
+        group by DATABASE_NAME, SCHEMA_NAME, TABLE_NAME, COLUMN_NAME
     ),
 
-    -- カラム情報に制約、タグ、masking policy を付与する
+    -- asset_columns に制約、タグ、外部キー、マスキングポリシーを付与し、最終出力用の catalog_columns とする
     catalog_columns as (
         select
             cols.TABLE_ID::number                      as TABLE_ID,
@@ -176,9 +179,9 @@ begin
             cols.DATA_TYPE::varchar(255)               as DATA_TYPE,
             cols.DESCRIPTION::varchar                  as DESCRIPTION,
             coalesce(tags.TAGS, array_construct())     as TAGS,
-            iff(pk.col is not null, true, false)::boolean
+            iff(pk.COLUMN_NAME is not null, true, false)::boolean
                                                       as IS_PRIMARY_KEY,
-            iff(uk.col is not null, true, false)::boolean
+            iff(uk.COLUMN_NAME is not null, true, false)::boolean
                                                       as IS_UNIQUE_KEY,
             coalesce(fk.FOREIGN_KEYS, array_construct())
                                                       as FOREIGN_KEYS,
@@ -186,20 +189,20 @@ begin
             mpol.MASKING_POLICY_NAME::varchar(255)     as MASKING_POLICY_NAME
         from asset_columns as cols
         left join {{ datacatalog_database_name }}.CATALOG.TMP_PK as pk
-            on  pk.db  = cols.DATABASE_NAME
-            and pk.sch = cols.SCHEMA_NAME
-            and pk.tbl = cols.TABLE_NAME
-            and pk.col = cols.COLUMN_NAME
+            on  pk.DATABASE_NAME = cols.DATABASE_NAME
+            and pk.SCHEMA_NAME   = cols.SCHEMA_NAME
+            and pk.TABLE_NAME    = cols.TABLE_NAME
+            and pk.COLUMN_NAME   = cols.COLUMN_NAME
         left join {{ datacatalog_database_name }}.CATALOG.TMP_UK as uk
-            on  uk.db  = cols.DATABASE_NAME
-            and uk.sch = cols.SCHEMA_NAME
-            and uk.tbl = cols.TABLE_NAME
-            and uk.col = cols.COLUMN_NAME
+            on  uk.DATABASE_NAME = cols.DATABASE_NAME
+            and uk.SCHEMA_NAME   = cols.SCHEMA_NAME
+            and uk.TABLE_NAME    = cols.TABLE_NAME
+            and uk.COLUMN_NAME   = cols.COLUMN_NAME
         left join foreign_keys as fk
-            on  fk.db  = cols.DATABASE_NAME
-            and fk.sch = cols.SCHEMA_NAME
-            and fk.tbl = cols.TABLE_NAME
-            and fk.col = cols.COLUMN_NAME
+            on  fk.DATABASE_NAME = cols.DATABASE_NAME
+            and fk.SCHEMA_NAME   = cols.SCHEMA_NAME
+            and fk.TABLE_NAME    = cols.TABLE_NAME
+            and fk.COLUMN_NAME   = cols.COLUMN_NAME
         left join column_tags as tags
             on  tags.DATABASE_NAME = cols.DATABASE_NAME
             and tags.SCHEMA_NAME   = cols.SCHEMA_NAME

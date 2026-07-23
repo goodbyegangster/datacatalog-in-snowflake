@@ -1,4 +1,4 @@
--- ACCESS_EDGES を再帰的に辿り、User↔Asset の閲覧可否（展開済みペア）を生成する。
+-- ユーザーと閲覧可能な資産のペアを、ユーザーへの直接付与ロールと資産に直接権限を持つロールとともに生成する。
 
 define procedure {{ datacatalog_database_name }}.PROCEDURE.REFRESH_ASSET_VISIBILITY()
     returns string
@@ -17,52 +17,104 @@ begin
         USER_ROLES    comment 'user に直接付与された role 名一覧',
         ASSET_ROLES   comment 'asset に直接権限を持つ role / database role 名一覧'
     ) as
-    with recursive reach as (
-        -- 起点：user -> 直下ロール（first_role = 1 hop ロール）
+    with recursive
+    -- ACCESS_EDGES よりユーザーに直接付与されたロールから継承関係を辿り、到達可能なロールを展開したデータをつくる
+    -- Snowflake では循環するロール階層を設定できないため、この再帰 CTE では循環検知を行わない
+    reach (USER_NAME, ROLE_NODE, FIRST_ROLE) as (
+        -- ユーザーに直接付与されたロールを、継承探索の起点と FIRST_ROLE に設定する
         select
-            e.source_node as user_name,
-            e.target_node as role_node,
-            e.target_node as first_role
+            e.SOURCE_NODE as USER_NAME,
+            e.TARGET_NODE as ROLE_NODE,
+            e.TARGET_NODE as FIRST_ROLE
         from {{ datacatalog_database_name }}.CATALOG.ACCESS_EDGES as e
-        where e.relation_type = 'USER_TO_ROLE'
+        where e.RELATION_TYPE = 'USER_TO_ROLE'
 
         union all
 
-        -- 継承：role -> role / role -> database role（全段）
+        -- ROLE_TO_ROLE を辿り、ユーザーが権限を継承できるロールをすべて展開する
         select
-            r.user_name,
-            e.target_node as role_node,
-            r.first_role
+            r.USER_NAME,
+            e.TARGET_NODE as ROLE_NODE,
+            r.FIRST_ROLE
         from reach as r
         inner join {{ datacatalog_database_name }}.CATALOG.ACCESS_EDGES as e
-            on  e.relation_type = 'ROLE_TO_ROLE'
-            and e.source_node   = r.role_node
+            on  e.RELATION_TYPE = 'ROLE_TO_ROLE'
+            and e.SOURCE_NODE   = r.ROLE_NODE
     ),
-    asset_grant as (
-        -- ロール（アカウント/DB）が直接 SELECT / OWNERSHIP を持つ資産
+
+    -- ASSETS の識別子を ACCESS_EDGES と同じ引用規則で変換し、ノード名の照合に使う asset_nodes とする
+    asset_nodes as (
         select
-            e.source_node as role_node,
-            a.table_id,
-            a.database_name,
-            a.schema_name,
-            a.asset_name
+            TABLE_ID,
+            DATABASE_NAME,
+            SCHEMA_NAME,
+            ASSET_NAME,
+            -- 二重引用符で囲む識別子に含まれる引用符は、識別子の一部として扱えるよう二重化する
+            (
+                iff(
+                    contains(DATABASE_NAME, '.') or contains(DATABASE_NAME, '"'),
+                    '"' || replace(DATABASE_NAME, '"', '""') || '"',
+                    DATABASE_NAME
+                )
+                || '.'
+                || iff(
+                    contains(SCHEMA_NAME, '.') or contains(SCHEMA_NAME, '"'),
+                    '"' || replace(SCHEMA_NAME, '"', '""') || '"',
+                    SCHEMA_NAME
+                )
+                || '.'
+                || iff(
+                    contains(ASSET_NAME, '.') or contains(ASSET_NAME, '"'),
+                    '"' || replace(ASSET_NAME, '"', '""') || '"',
+                    ASSET_NAME
+                )
+            ) as ASSET_NODE
+        from {{ datacatalog_database_name }}.CATALOG.ASSETS
+    ),
+
+    -- ACCESS_EDGES と asset_nodes を照合し、資産に対する権限を直接付与されたロールと資産のペアを asset_grant とする
+    asset_grant as (
+        select
+            e.SOURCE_NODE  as ROLE_NODE,
+            a.TABLE_ID     as TABLE_ID,
+            a.DATABASE_NAME,
+            a.SCHEMA_NAME,
+            a.ASSET_NAME
         from {{ datacatalog_database_name }}.CATALOG.ACCESS_EDGES as e
-        inner join {{ datacatalog_database_name }}.CATALOG.ASSETS as a
-            on (a.database_name || '.' || a.schema_name || '.' || a.asset_name) = e.target_node
-        where e.relation_type = 'ROLE_TO_ASSET'
+        inner join asset_nodes as a
+            on a.ASSET_NODE = e.TARGET_NODE
+        where e.RELATION_TYPE = 'ROLE_TO_ASSET'
+    ),
+
+    -- reach と asset_grant から閲覧可能なユーザーと資産のペアを作り、双方の直接付与ロールを集約して catalog_asset_visibility とする
+    catalog_asset_visibility as (
+        select
+            r.USER_NAME::varchar(255)     as USER_NAME,
+            ag.TABLE_ID::number           as TABLE_ID,
+            ag.DATABASE_NAME::varchar(255) as DATABASE_NAME,
+            ag.SCHEMA_NAME::varchar(255)   as SCHEMA_NAME,
+            ag.ASSET_NAME::varchar(255)    as ASSET_NAME,
+            array_agg(distinct r.FIRST_ROLE) within group (order by r.FIRST_ROLE) as USER_ROLES,
+            array_agg(distinct ag.ROLE_NODE) within group (order by ag.ROLE_NODE) as ASSET_ROLES
+        from reach as r
+        inner join asset_grant as ag
+            on ag.ROLE_NODE = r.ROLE_NODE
+        group by
+            r.USER_NAME,
+            ag.TABLE_ID,
+            ag.DATABASE_NAME,
+            ag.SCHEMA_NAME,
+            ag.ASSET_NAME
     )
     select
-        r.user_name::varchar(255),
-        ag.table_id::number,
-        ag.database_name::varchar(255),
-        ag.schema_name::varchar(255),
-        ag.asset_name::varchar(255),
-        array_agg(distinct r.first_role),
-        array_agg(distinct ag.role_node)
-    from reach as r
-    inner join asset_grant as ag
-        on ag.role_node = r.role_node
-    group by r.user_name, ag.table_id, ag.database_name, ag.schema_name, ag.asset_name
+        USER_NAME,
+        TABLE_ID,
+        DATABASE_NAME,
+        SCHEMA_NAME,
+        ASSET_NAME,
+        USER_ROLES,
+        ASSET_ROLES
+    from catalog_asset_visibility
     ;
 
     return 'CATALOG.ASSET_VISIBILITY refreshed';
