@@ -3,7 +3,8 @@
 
 [theme]
 base = "light"
-primaryColor = "#29B5E8"        # Snowflake blue
+primaryColor = "#29B5E8"         # Snowflake blue
+backgroundColor = "#f5f7f794"    # 背景色
 
 [server]
 runOnSave = true
