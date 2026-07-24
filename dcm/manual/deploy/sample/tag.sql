@@ -35,10 +35,3 @@ alter table <% datacatalog_database_name %>.SAMPLE_DATA_SALES.PRODUCT_CATEGORIES
     <% datacatalog_database_name %>.SAMPLE_TAG.DATA_CATEGORY = 'master',
     <% datacatalog_database_name %>.SAMPLE_TAG.SENSITIVITY = 'internal'
 ;
-
--- V_PRODUCTS ビューに tag を付与
-alter view <% datacatalog_database_name %>.SAMPLE_DATA_SALES.V_PRODUCTS set tag
-    <% datacatalog_database_name %>.SAMPLE_TAG.DATA_DOMAIN = 'sales',
-    <% datacatalog_database_name %>.SAMPLE_TAG.DATA_CATEGORY = 'master',
-    <% datacatalog_database_name %>.SAMPLE_TAG.SENSITIVITY = 'internal'
-;
